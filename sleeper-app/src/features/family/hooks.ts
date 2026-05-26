@@ -24,8 +24,17 @@ export interface PendingInvitation {
   created_at: string;
 }
 
+export interface PendingInvitationForMe {
+  id: string;
+  family_id: string;
+  family_name: string;
+  email: string;
+  created_at: string;
+}
+
 const familyQueryKey = (userId: string) => ['family', userId] as const;
 const invitationsQueryKey = (familyId: string) => ['family-invitations', familyId] as const;
+const myPendingInvitationsQueryKey = (userId: string) => ['my-pending-invitations', userId] as const;
 
 export function useCurrentFamily(): UseQueryResult<FamilyWithMembers | null> {
   const { user } = useAuth();
@@ -146,13 +155,76 @@ export function useRevokeInvitation() {
       const { error } = await supabase
         .from('family_invitations')
         .delete()
-        .eq('id', invitationId);
+        .eq('id', invitationId)
+        .eq('family_id', familyId);
 
       if (error) throw error;
       return { familyId };
     },
     onSuccess: ({ familyId }) => {
       void queryClient.invalidateQueries({ queryKey: invitationsQueryKey(familyId) });
+    },
+  });
+}
+
+// Lista zaproszen czekajacych na biezacego usera (matching jego email).
+// Wymaga zalogowanego usera. RPC SECURITY DEFINER czyta z auth.jwt().
+export function useMyPendingInvitations(): UseQueryResult<PendingInvitationForMe[]> {
+  const { user } = useAuth();
+  const userId = user?.id;
+
+  return useQuery({
+    queryKey: myPendingInvitationsQueryKey(userId ?? 'anonymous'),
+    enabled: Boolean(userId),
+    queryFn: async (): Promise<PendingInvitationForMe[]> => {
+      if (!userId) return [];
+
+      const { data, error } = await supabase.rpc('get_my_pending_invitations');
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+}
+
+// Akceptacja zaproszenia przez explicit consent.
+// Przepiena usera ze starej rodziny do nowej (usuwa stara jesli osierocona).
+export function useAcceptInvitation() {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const userId = user?.id;
+
+  return useMutation({
+    mutationFn: async (invitationId: string) => {
+      const { data, error } = await supabase.rpc('accept_invitation', {
+        _invitation_id: invitationId,
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      if (!userId) return;
+      void queryClient.invalidateQueries({ queryKey: familyQueryKey(userId) });
+      void queryClient.invalidateQueries({ queryKey: myPendingInvitationsQueryKey(userId) });
+    },
+  });
+}
+
+// Idempotent fallback: zapewnia rodzine dla biezacego usera.
+// Uzywany gdy useCurrentFamily zwraca null (trigger zfailowal lub user osierocony).
+export function useEnsureFamily() {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const userId = user?.id;
+
+  return useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.rpc('ensure_family');
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      if (!userId) return;
+      void queryClient.invalidateQueries({ queryKey: familyQueryKey(userId) });
     },
   });
 }

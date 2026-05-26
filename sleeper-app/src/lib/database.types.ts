@@ -129,6 +129,18 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_invitation: { Args: { _invitation_id: string }; Returns: string }
+      ensure_family: { Args: never; Returns: string }
+      get_my_pending_invitations: {
+        Args: never
+        Returns: {
+          created_at: string
+          email: string
+          family_id: string
+          family_name: string
+          id: string
+        }[]
+      }
       is_family_member: { Args: { _family_id: string }; Returns: boolean }
     }
     Enums: {

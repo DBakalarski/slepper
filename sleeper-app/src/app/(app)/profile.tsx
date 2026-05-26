@@ -1,3 +1,4 @@
+import type { PostgrestError } from '@supabase/supabase-js';
 import { useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -5,12 +6,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/features/auth/AuthProvider';
 import {
   useCurrentFamily,
+  useEnsureFamily,
   useFamilyInvitations,
   useInviteMember,
   useRevokeInvitation,
   type FamilyMember,
   type PendingInvitation,
-} from '@/features/family/api';
+} from '@/features/family/hooks';
 import { supabase } from '@/lib/supabase';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -23,6 +25,7 @@ export default function ProfileScreen() {
   const inviteMember = useInviteMember();
   const revokeInvitation = useRevokeInvitation();
 
+  const ensureFamily = useEnsureFamily();
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteError, setInviteError] = useState<string | null>(null);
   const [inviteInfo, setInviteInfo] = useState<string | null>(null);
@@ -49,13 +52,22 @@ export default function ProfileScreen() {
       setInviteEmail('');
       setInviteInfo(`Zaproszenie do ${trimmed} wyslane.`);
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Nieznany blad';
-      if (message.toLowerCase().includes('duplicate')) {
+      if (isUniqueViolation(error)) {
         setInviteError('To zaproszenie juz istnieje.');
-      } else {
-        setInviteError(message);
+        return;
       }
+      const message = error instanceof Error ? error.message : 'Nieznany blad';
+      setInviteError(message);
     }
+  }
+
+  function isUniqueViolation(error: unknown): error is PostgrestError {
+    return (
+      typeof error === 'object' &&
+      error !== null &&
+      'code' in error &&
+      (error as { code: unknown }).code === '23505'
+    );
   }
 
   function handleRevoke(invitation: PendingInvitation) {
@@ -170,9 +182,32 @@ export default function ProfileScreen() {
               ) : null}
             </>
           ) : (
-            <Text className="mt-2 text-sm text-purple">
-              Brak rodziny. Skontaktuj sie z supportem.
-            </Text>
+            <View className="mt-3">
+              <Text className="text-sm text-purple">
+                Nie nalezysz do zadnej rodziny. To moze sie zdarzyc gdy auto-tworzenie
+                nie powiodlo sie przy rejestracji.
+              </Text>
+              <Pressable
+                accessibilityRole="button"
+                disabled={ensureFamily.isPending}
+                onPress={() => ensureFamily.mutate()}
+                className={`mt-3 items-center justify-center rounded-2xl px-4 py-3 ${
+                  ensureFamily.isPending ? 'bg-navy/40' : 'bg-navy'
+                }`}>
+                {ensureFamily.isPending ? (
+                  <ActivityIndicator color="#F5F0E8" />
+                ) : (
+                  <Text className="text-sm font-semibold text-cream">Stworz rodzine</Text>
+                )}
+              </Pressable>
+              {ensureFamily.error ? (
+                <Text className="mt-2 text-xs text-orange">
+                  {ensureFamily.error instanceof Error
+                    ? ensureFamily.error.message
+                    : 'Nie udalo sie stworzyc rodziny.'}
+                </Text>
+              ) : null}
+            </View>
           )}
         </View>
 

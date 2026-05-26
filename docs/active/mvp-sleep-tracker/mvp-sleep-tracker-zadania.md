@@ -3,7 +3,7 @@
 **Branch:** `feature/mvp-sleep-tracker`
 **Ostatnia aktualizacja:** 2026-05-26
 
-Postęp: 1 / 7 faz ukończone
+Postęp: 1 / 7 faz ukończone (Faza 1: kod gotowy, mobile-manual verification pending)
 
 ---
 
@@ -27,19 +27,48 @@ Postęp: 1 / 7 faz ukończone
 
 ## Faza 1 — Auth + model rodziny (Effort: M)
 
-- [ ] Migracja `supabase/migrations/0001_families.sql`: tabele `families`, `family_members`, `family_invitations`
-- [ ] Migracja `supabase/migrations/0003_rls.sql`: RLS policies dla `families`, `family_members` (czytać/modyfikować tylko gdy `user_id = auth.uid()` w `family_members`)
-- [ ] Migracja `supabase/migrations/0004_triggers.sql`: trigger po INSERT do `auth.users` → tworzy `families` + `family_members(role='owner')`
-- [ ] Trigger: po INSERT do `auth.users`, sprawdza `family_invitations` matching email → dodaje user do tej rodziny zamiast tworzyć nową
-- [ ] Wygenerować typy: `supabase gen types typescript --project-id=... > src/lib/database.types.ts`
-- [ ] `src/features/auth/AuthProvider.tsx` — context nasłuchujący `supabase.auth.onAuthStateChange`
-- [ ] `app/(auth)/sign-in.tsx` — formularz email/password
-- [ ] `app/(auth)/sign-up.tsx` — formularz + walidacja
-- [ ] `app/(auth)/_layout.tsx` — redirect do `(app)` gdy zalogowany
-- [ ] `app/(app)/_layout.tsx` — redirect do `(auth)/sign-in` gdy niezalogowany
-- [ ] Sekcja „Rodzina" w `app/(app)/profile.tsx` — lista członków + input email + przycisk „Zaproś"
-- [ ] Weryfikacja: sign-up dwóch userów + invite → oboje widzą tę samą rodzinę w `family_members` (query w Supabase Studio)
-- [ ] Weryfikacja RLS: user A NIE widzi family usera B (test ręczny — wylogować się, zalogować jako B, sprawdzić query)
+- [x] Migracja `supabase/migrations/0001_families.sql`: tabele `families`, `family_members`, `family_invitations`
+- [x] Migracja `supabase/migrations/0003_rls.sql`: RLS policies dla `families`, `family_members` (czytać/modyfikować tylko gdy `user_id = auth.uid()` w `family_members`)
+- [x] Migracja `supabase/migrations/0004_triggers.sql`: trigger po INSERT do `auth.users` → tworzy `families` + `family_members(role='owner')`
+- [x] Trigger: po INSERT do `auth.users`, sprawdza `family_invitations` matching email → dodaje user do tej rodziny zamiast tworzyć nową
+- [x] Wygenerować typy: `supabase gen types typescript --project-id=... > src/lib/database.types.ts`
+- [x] `src/features/auth/AuthProvider.tsx` — context nasłuchujący `supabase.auth.onAuthStateChange`
+- [x] `app/(auth)/sign-in.tsx` — formularz email/password
+- [x] `app/(auth)/sign-up.tsx` — formularz + walidacja
+- [x] `app/(auth)/_layout.tsx` — redirect do `(app)` gdy zalogowany
+- [x] `app/(app)/_layout.tsx` — redirect do `(auth)/sign-in` gdy niezalogowany
+- [x] Sekcja „Rodzina" w `app/(app)/profile.tsx` — lista członków + input email + przycisk „Zaproś"
+- [ ] Weryfikacja: sign-up dwóch userów + invite → oboje widzą tę samą rodzinę w `family_members` (query w Supabase Studio) — manual test (patrz `manual-test-faza-1.md`)
+- [ ] Weryfikacja RLS: user A NIE widzi family usera B (test ręczny — wylogować się, zalogować jako B, sprawdzić query) — manual test (patrz `manual-test-faza-1.md`)
+
+### Do poprawy po review fazy 1
+
+Severity gate: ⛔ **BLOKUJE** (3 × P1, 14 × P2). Pełny raport: `review-faza-1.md`.
+
+**P1 — Blocking (wymagane przed Fazą 2):**
+
+- [ ] 🔴 [P1-security] **migrations/0004_triggers.sql + 0003_rls.sql** — Pre-claim invitation exploit: atakujący zaprasza cudzy email, ofiara po sign-up auto-acceptuje. Wymaga **explicit consent flow**: RPC `accept_invitation(invitation_id)` SECURITY DEFINER + UI ekran pending invitations po sign-in. Trigger przestaje auto-acceptować.
+- [ ] 🔴 [P1-scenario] **migrations/0004_triggers.sql + features/family/api.ts** — Partner z istniejącym kontem nigdy nie dołączy (trigger fires tylko on INSERT auth.users). Naprawiane tą samą zmianą co P1.1 — `accept_invitation` RPC + post-sign-in invitation check.
+- [ ] 🔴 [P1-scenario] **src/app/(app)/profile.tsx:171-174** — Ślepy zaułek "Skontaktuj sie z supportem" gdy trigger zfailuje. Wymaga RPC `ensure_family()` lub przycisku "Stwórz rodzinę" w fallbacku.
+
+**P2 — Important (rekomendowane przed mergem):**
+
+- [ ] 🟠 [P2-security] **migrations/0001_families.sql:21** — Brak globalnego unique na pending invitations (likwidowane przez P1 consent flow)
+- [ ] 🟠 [P2-security] **migrations/0004_triggers.sql:5** — Trigger fires niezależnie od `email_confirmed_at` (account squatting)
+- [ ] 🟠 [P2-security] **migrations/0003_rls.sql:16-36** — UPDATE policy na families bez column-level restriction (owner może zmienić PK)
+- [ ] 🟠 [P2-perf] **src/features/auth/AuthProvider.tsx:45-51** — `useMemo` na context `value` (kaskadowe re-rendery przy refresh tokena)
+- [ ] 🟠 [P2-perf] **src/app/(auth)/sign-in.tsx + sign-up.tsx** — handleSubmit bez cancel guard (race przy szybkiej nawigacji) — fix przez `useMutation`
+- [ ] 🟠 [P2-perf] **src/features/family/api.ts:37-79** — 3-query waterfall w `useCurrentFamily` → PostgREST embed (1 query)
+- [ ] 🟠 [P2-arch] **src/features/family/api.ts** — rename `api.ts` → `hooks.ts` (zawiera wyłącznie hooki)
+- [ ] 🟠 [P2-arch] **src/features/auth/AuthProvider.tsx:27-31** — `.catch()` na `getSession()` (deadlock UI na splash)
+- [ ] 🟠 [P2-arch] **src/features/auth/AuthProvider.tsx:10-15** — `AuthContextValue` jako discriminated union (eliminuje `?.` w consumerach)
+- [ ] 🟠 [P2-arch] **src/app/(app)/profile.tsx:53** — `error.code === '23505'` zamiast `.includes('duplicate')`
+- [ ] 🟠 [P2-arch] **src/app/(app)/profile.tsx (211 LOC)** — ekstrakcja `FamilyMembersList` / `InviteMemberForm` / `PendingInvitationsList`
+- [ ] 🟠 [P2-scenario] **migrations/0004_triggers.sql** — race dwóch ownerów zapraszających ten sam email (likwidowane przez P1 consent flow)
+- [ ] 🟠 [P2-scenario] **src/app/(app)/profile.tsx:79-81 + AuthProvider** — `queryClient.clear()` na SIGNED_OUT
+- [ ] 🟠 [P2-scenario] **src/app/(auth)/sign-up.tsx** — sign-up redirect przed triggerem (flash "Brak rodziny") — refetch po SIGNED_IN
+
+**P3:** ~15 drobnych — patrz `review-faza-1.md` sekcja P3.
 
 ---
 
