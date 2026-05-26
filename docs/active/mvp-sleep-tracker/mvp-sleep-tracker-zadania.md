@@ -3,23 +3,23 @@
 **Branch:** `feature/mvp-sleep-tracker`
 **Ostatnia aktualizacja:** 2026-05-26
 
-Postęp: 0 / 7 faz ukończone
+Postęp: 0 / 7 faz ukończone (Faza 0 w toku — czeka na klucze Supabase od usera)
 
 ---
 
 ## Faza 0 — Setup projektu (Effort: M)
 
-- [ ] `npx create-expo-app@latest sleeper-app -t default` (template TS, Expo Router)
-- [ ] Skonfigurować TypeScript strict mode w `tsconfig.json`
-- [ ] Dodać path alias `@/*` w `tsconfig.json` i `babel.config.js`
-- [ ] Zainstalować i skonfigurować NativeWind v4 (`tailwind.config.js`, `metro.config.js`, `global.css`)
-- [ ] Stworzyć paletę kolorów w `tailwind.config.js` (z mockupów: kremowy `#F5F0E8`, granatowy `#1E1B4B`, pomarańczowy `#E08B6F`, fiolet `#7C6BAD`)
+- [x] `npx create-expo-app@latest sleeper-app -t default` (template TS, Expo Router)
+- [x] Skonfigurować TypeScript strict mode w `tsconfig.json`
+- [x] Dodać path alias `@/*` w `tsconfig.json` i `babel.config.js`
+- [x] Zainstalować i skonfigurować NativeWind v4 (`tailwind.config.js`, `metro.config.js`, `global.css`)
+- [x] Stworzyć paletę kolorów w `tailwind.config.js` (z mockupów: kremowy `#F5F0E8`, granatowy `#1E1B4B`, pomarańczowy `#E08B6F`, fiolet `#7C6BAD`)
 - [ ] Stworzyć Supabase project (cloud) — zapisać URL i anon key
-- [ ] Dodać `.env`, `.env.example`, zaktualizować `.gitignore`
-- [ ] Zainstalować `@supabase/supabase-js`, `@tanstack/react-query`, `zustand`, `date-fns`, `date-fns-tz`
-- [ ] Stworzyć `src/lib/supabase.ts` — klient
-- [ ] Dodać QueryClient provider w `app/_layout.tsx`
-- [ ] Stworzyć bottom tabs layout `app/(app)/_layout.tsx` z 4 tabami (Dzisiaj / Historia / Statystyki / Profil) — wszystkie puste
+- [x] Dodać `.env`, `.env.example`, zaktualizować `.gitignore`
+- [x] Zainstalować `@supabase/supabase-js`, `@tanstack/react-query`, `zustand`, `date-fns`, `date-fns-tz`
+- [x] Stworzyć `src/lib/supabase.ts` — klient
+- [x] Dodać QueryClient provider w `app/_layout.tsx`
+- [x] Stworzyć bottom tabs layout `app/(app)/_layout.tsx` z 4 tabami (Dzisiaj / Historia / Statystyki / Profil) — wszystkie puste
 - [ ] Weryfikacja: `npx expo start` → zeskanować QR → app się otwiera, tabs działają
 - [ ] Weryfikacja: `supabase.from('_health').select()` w `index.tsx` — zwraca odpowiedź bez 401
 

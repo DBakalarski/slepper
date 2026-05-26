@@ -119,3 +119,38 @@
 2. **`end_at = null` partial unique** — bez tego można stworzyć dwie aktywne sesje równolegle
 3. **Notyfikacje na iOS w background** — najbardziej kapryśna część stacku, test wcześnie
 4. **Strefa czasowa przy „dziś"** — agregat „dziś" o północy łatwo zwariować, jeśli używasz UTC dla cut-off
+
+## Log fazy 0 (2026-05-26)
+
+### Wykonane
+- Scaffold: `create-expo-app@latest` -> Expo SDK 56 (RN 0.85, React 19.2, TS 6)
+- TS strict ON (juz w template), path alias `@/*` -> `./src/*` (juz w template)
+- NativeWind v4.2 + Tailwind v3.4 (NIE v4 — peer dep nativewind oczekuje v3.x)
+  - `tailwind.config.js` z paleta MVP (cream/navy/orange/purple)
+  - `babel.config.js` z preset `babel-preset-expo` (jsxImportSource: nativewind) + `nativewind/babel`
+  - `metro.config.js` z `withNativeWind(config, { input: './src/global.css' })`
+  - `src/global.css` z `@tailwind base/components/utilities` + zachowane font CSS vars
+  - `nativewind-env.d.ts` z `/// <reference types="nativewind/types" />` + ambient `*.css`
+- Supabase: `src/lib/supabase.ts` (AsyncStorage persistence, `detectSessionInUrl: false`, polyfill URL)
+- TanStack Query: `src/lib/query-client.ts` + provider w `src/app/_layout.tsx`
+- Routing: usunieto `src/app/index.tsx` + `src/app/explore.tsx` (template), utworzono grupe `(app)` z 4 tabami:
+  - `index.tsx` (Dzisiaj), `history.tsx`, `stats.tsx`, `profile.tsx` — placeholdery z paleta MVP
+  - `(app)/_layout.tsx` uzywa `Tabs` z `expo-router` (nie `NativeTabs`, ktore wymaga PNG icons per tab)
+- `.env` (puste wartosci) + `.env.example` (placeholdery) + `.gitignore` (dodano `.env`, `!.env.example`)
+
+### Odchylenia od planu
+- Plan zaklada `app/_layout.tsx` i `app/(app)/_layout.tsx`. Template SDK 56 trzyma routes w `src/app/` (alias `@/*` -> `./src/*`), wiec pliki sa w `src/app/_layout.tsx` i `src/app/(app)/_layout.tsx`. Funkcjonalnie identyczne.
+- Tailwind v3.4 zamiast v4 — `nativewind@4.2.4` peer dep `tailwindcss: >3.3.0` ale praktyka community to v3.x (Tailwind v4 ma inny config style). Zgodne z planem ("NativeWind v4").
+- Tabs: zamiast `NativeTabs` z `expo-router/unstable-native-tabs` (template default, ale wymaga PNG ikon per tab — mamy tylko 2: home/explore) uzyto `Tabs` z `expo-router` (bez ikon w MVP, polish ikon = Faza 6).
+
+### Pozostalo w Fazie 0 (blocked — wymaga akcji usera)
+- [ ] Stworzyc Supabase project (cloud) -> zapisac URL i anon key w `.env`
+- [ ] Weryfikacja: `npx expo start` -> QR -> tabs dzialaja na fizycznym urzadzeniu
+- [ ] Weryfikacja: `supabase.from('_health').select()` -> odpowiedz bez 401
+
+### Walidacja
+- `npx tsc --noEmit` -> PASS (0 bledow)
+- Brak testow jednostkowych w tej fazie (Faza 0 to setup, plan nie zaklada testow)
+
+### Commit
+- `9de7387` — feat(setup): scaffold Expo app with TS strict, NativeWind, TanStack Query
