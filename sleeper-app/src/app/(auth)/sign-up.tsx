@@ -1,3 +1,4 @@
+import { useMutation } from '@tanstack/react-query';
 import { Link, useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
@@ -12,9 +13,10 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { translateAuthError } from '@/features/auth/translate-auth-error';
+import { isValidEmail } from '@/lib/email';
 import { supabase } from '@/lib/supabase';
 
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MIN_PASSWORD = 6;
 
 interface FormErrors {
@@ -22,17 +24,33 @@ interface FormErrors {
   password?: string;
 }
 
+interface SignUpInput {
+  email: string;
+  password: string;
+}
+
 export default function SignUpScreen() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [submitting, setSubmitting] = useState(false);
   const [formErrors, setFormErrors] = useState<FormErrors>({});
-  const [serverError, setServerError] = useState<string | null>(null);
+
+  const signUp = useMutation({
+    mutationFn: async ({ email: e, password: p }: SignUpInput) => {
+      const { error } = await supabase.auth.signUp({
+        email: e.trim(),
+        password: p,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      router.replace('/');
+    },
+  });
 
   function validate(): FormErrors {
     const errors: FormErrors = {};
-    if (!EMAIL_REGEX.test(email.trim())) {
+    if (!isValidEmail(email)) {
       errors.email = 'Wpisz poprawny adres email.';
     }
     if (password.length < MIN_PASSWORD) {
@@ -41,25 +59,16 @@ export default function SignUpScreen() {
     return errors;
   }
 
-  async function handleSubmit() {
+  function handleSubmit() {
     const errors = validate();
     setFormErrors(errors);
     if (Object.keys(errors).length > 0) return;
 
-    setSubmitting(true);
-    setServerError(null);
-    const { error } = await supabase.auth.signUp({
-      email: email.trim(),
-      password,
-    });
-    setSubmitting(false);
-
-    if (error) {
-      setServerError(translateAuthError(error.message));
-      return;
-    }
-    router.replace('/');
+    signUp.mutate({ email, password });
   }
+
+  const canSubmit = email.trim().length > 0 && password.length > 0 && !signUp.isPending;
+  const serverError = signUp.error instanceof Error ? translateAuthError(signUp.error.message) : null;
 
   return (
     <SafeAreaView className="flex-1 bg-cream">
@@ -101,7 +110,7 @@ export default function SignUpScreen() {
                 secureTextEntry
                 autoComplete="new-password"
                 textContentType="newPassword"
-                placeholder="min. 6 znakow"
+                placeholder={`min. ${MIN_PASSWORD} znakow`}
                 placeholderTextColor="#9d97b5"
                 className="rounded-2xl border border-purple/30 bg-white px-4 py-3 text-base text-navy"
               />
@@ -118,12 +127,12 @@ export default function SignUpScreen() {
 
             <Pressable
               accessibilityRole="button"
-              disabled={submitting}
+              disabled={!canSubmit}
               onPress={handleSubmit}
               className={`mt-2 items-center justify-center rounded-2xl px-4 py-4 ${
-                submitting ? 'bg-navy/40' : 'bg-navy'
+                canSubmit ? 'bg-navy' : 'bg-navy/40'
               }`}>
-              {submitting ? (
+              {signUp.isPending ? (
                 <ActivityIndicator color="#F5F0E8" />
               ) : (
                 <Text className="text-base font-semibold text-cream">Zaloz konto</Text>
@@ -141,18 +150,4 @@ export default function SignUpScreen() {
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
-}
-
-function translateAuthError(message: string): string {
-  const lower = message.toLowerCase();
-  if (lower.includes('already registered') || lower.includes('user already')) {
-    return 'Konto z tym emailem juz istnieje. Zaloguj sie.';
-  }
-  if (lower.includes('password')) {
-    return 'Haslo nie spelnia wymagan. Sprobuj dluzsze.';
-  }
-  if (lower.includes('network')) {
-    return 'Blad polaczenia. Sprawdz internet.';
-  }
-  return message;
 }

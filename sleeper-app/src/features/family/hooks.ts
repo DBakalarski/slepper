@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient, type UseQueryResult } from '@tanstack/react-query';
 
 import { useAuth } from '@/features/auth/AuthProvider';
+import { translateFamilyError } from '@/features/family/translate-family-error';
 import { supabase } from '@/lib/supabase';
 
 export interface FamilyMember {
@@ -24,7 +25,7 @@ export interface PendingInvitation {
   created_at: string;
 }
 
-export interface PendingInvitationForMe {
+export interface IncomingInvitation {
   id: string;
   family_id: string;
   family_name: string;
@@ -34,7 +35,13 @@ export interface PendingInvitationForMe {
 
 const familyQueryKey = (userId: string) => ['family', userId] as const;
 const invitationsQueryKey = (familyId: string) => ['family-invitations', familyId] as const;
-const myPendingInvitationsQueryKey = (userId: string) => ['my-pending-invitations', userId] as const;
+const incomingInvitationsQueryKey = (userId: string) =>
+  ['incoming-invitations', userId] as const;
+
+// Pending invitations to nie hot path — invitations zmieniaja sie rzadko.
+// Pelne 5 min staleTime: po accept jest manual invalidate, po revoke
+// focusManager refetch zalatwi sprawe.
+const INCOMING_INVITATIONS_STALE_MS = 5 * 60 * 1000;
 
 export function useCurrentFamily(): UseQueryResult<FamilyWithMembers | null> {
   const { user } = useAuth();
@@ -46,53 +53,52 @@ export function useCurrentFamily(): UseQueryResult<FamilyWithMembers | null> {
     queryFn: async (): Promise<FamilyWithMembers | null> => {
       if (!userId) return null;
 
-      const { data: ownMembership, error: ownError } = await supabase
+      // Jeden round-trip: relational embed family + wszyscy czlonkowie.
+      const { data, error } = await supabase
         .from('family_members')
-        .select('id, family_id, role')
+        .select(
+          `
+          id,
+          role,
+          family:families!inner(
+            id,
+            name,
+            members:family_members(id, user_id, role, created_at)
+          )
+        `,
+        )
         .eq('user_id', userId)
         .maybeSingle();
 
-      if (ownError) throw ownError;
-      if (!ownMembership) return null;
+      if (error) throw error;
+      if (!data || !data.family) return null;
 
-      const { data: family, error: familyError } = await supabase
-        .from('families')
-        .select('id, name')
-        .eq('id', ownMembership.family_id)
-        .single();
-
-      if (familyError) throw familyError;
-
-      const { data: membersData, error: membersError } = await supabase
-        .from('family_members')
-        .select('id, user_id, role, created_at')
-        .eq('family_id', ownMembership.family_id)
-        .order('created_at', { ascending: true });
-
-      if (membersError) throw membersError;
-
-      const members: FamilyMember[] = membersData.map((m) => ({
-        id: m.id,
-        user_id: m.user_id,
-        role: parseRole(m.role),
-        created_at: m.created_at,
-        isCurrentUser: m.user_id === userId,
-      }));
+      const family = data.family;
+      const members: FamilyMember[] = family.members
+        .map((m) => ({
+          id: m.id,
+          user_id: m.user_id,
+          role: parseRole(m.role),
+          created_at: m.created_at,
+          isCurrentUser: m.user_id === userId,
+        }))
+        .sort((a, b) => a.created_at.localeCompare(b.created_at));
 
       return {
         id: family.id,
         name: family.name,
-        myRole: parseRole(ownMembership.role),
+        myRole: parseRole(data.role),
         members,
       };
     },
   });
 }
 
-// Supabase generuje role jako `string` (CHECK constraint nie tworzy enuma).
-// Zawezamy do unii zgodnej z migracja 0001_families.sql.
+// Zawezenie role z bazy do unii. Fail-loud — nieoczekiwane wartosci sygnaluja
+// niespojnosc migracji (np. nowa rola dodana w bazie bez aktualizacji typow).
 function parseRole(role: string): 'owner' | 'member' {
-  return role === 'owner' ? 'owner' : 'member';
+  if (role === 'owner' || role === 'member') return role;
+  throw new Error(`Unexpected family_members.role from DB: ${role}`);
 }
 
 export function useFamilyInvitations(familyId: string | null): UseQueryResult<PendingInvitation[]> {
@@ -167,16 +173,17 @@ export function useRevokeInvitation() {
   });
 }
 
-// Lista zaproszen czekajacych na biezacego usera (matching jego email).
+// Lista zaproszen czekajacych na biezacego usera (matching auth.email()).
 // Wymaga zalogowanego usera. RPC SECURITY DEFINER czyta z auth.jwt().
-export function useMyPendingInvitations(): UseQueryResult<PendingInvitationForMe[]> {
+export function useMyIncomingInvitations(): UseQueryResult<IncomingInvitation[]> {
   const { user } = useAuth();
   const userId = user?.id;
 
   return useQuery({
-    queryKey: myPendingInvitationsQueryKey(userId ?? 'anonymous'),
+    queryKey: incomingInvitationsQueryKey(userId ?? 'anonymous'),
     enabled: Boolean(userId),
-    queryFn: async (): Promise<PendingInvitationForMe[]> => {
+    staleTime: INCOMING_INVITATIONS_STALE_MS,
+    queryFn: async (): Promise<IncomingInvitation[]> => {
       if (!userId) return [];
 
       const { data, error } = await supabase.rpc('get_my_pending_invitations');
@@ -188,6 +195,8 @@ export function useMyPendingInvitations(): UseQueryResult<PendingInvitationForMe
 
 // Akceptacja zaproszenia przez explicit consent.
 // Przepiena usera ze starej rodziny do nowej (usuwa stara jesli osierocona).
+// onSettled (nie tylko onSuccess) inwaliduje pending list — gdy invitation
+// zostalo revoked w trakcie, banner zsynchronizuje sie z baza.
 export function useAcceptInvitation() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
@@ -198,13 +207,22 @@ export function useAcceptInvitation() {
       const { data, error } = await supabase.rpc('accept_invitation', {
         _invitation_id: invitationId,
       });
-      if (error) throw error;
+      if (error) {
+        // Wzbogac error o PL message — UI moze go pokazac wprost.
+        const translated = translateFamilyError(error);
+        const wrappedError = new Error(translated);
+        // Zachowaj original code dla debug.
+        if ('code' in error) {
+          Object.assign(wrappedError, { code: error.code });
+        }
+        throw wrappedError;
+      }
       return data;
     },
-    onSuccess: () => {
+    onSettled: () => {
       if (!userId) return;
       void queryClient.invalidateQueries({ queryKey: familyQueryKey(userId) });
-      void queryClient.invalidateQueries({ queryKey: myPendingInvitationsQueryKey(userId) });
+      void queryClient.invalidateQueries({ queryKey: incomingInvitationsQueryKey(userId) });
     },
   });
 }
@@ -219,7 +237,10 @@ export function useEnsureFamily() {
   return useMutation({
     mutationFn: async () => {
       const { data, error } = await supabase.rpc('ensure_family');
-      if (error) throw error;
+      if (error) {
+        const translated = translateFamilyError(error);
+        throw new Error(translated);
+      }
       return data;
     },
     onSuccess: () => {

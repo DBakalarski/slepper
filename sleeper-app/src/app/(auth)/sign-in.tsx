@@ -1,3 +1,4 @@
+import { useMutation } from '@tanstack/react-query';
 import { Link, useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
@@ -12,32 +13,34 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { translateAuthError } from '@/features/auth/translate-auth-error';
 import { supabase } from '@/lib/supabase';
+
+interface SignInInput {
+  email: string;
+  password: string;
+}
 
 export default function SignInScreen() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  const canSubmit = email.trim().length > 0 && password.length > 0 && !submitting;
+  const signIn = useMutation({
+    mutationFn: async ({ email: e, password: p }: SignInInput) => {
+      const { error } = await supabase.auth.signInWithPassword({
+        email: e.trim(),
+        password: p,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      router.replace('/');
+    },
+  });
 
-  async function handleSubmit() {
-    if (!canSubmit) return;
-    setSubmitting(true);
-    setError(null);
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-      email: email.trim(),
-      password,
-    });
-    setSubmitting(false);
-    if (signInError) {
-      setError(translateAuthError(signInError.message));
-      return;
-    }
-    router.replace('/');
-  }
+  const canSubmit = email.trim().length > 0 && password.length > 0 && !signIn.isPending;
+  const errorMessage = signIn.error instanceof Error ? translateAuthError(signIn.error.message) : null;
 
   return (
     <SafeAreaView className="flex-1 bg-cream">
@@ -80,20 +83,20 @@ export default function SignInScreen() {
               />
             </View>
 
-            {error ? (
+            {errorMessage ? (
               <View className="rounded-2xl bg-orange/10 px-4 py-3">
-                <Text className="text-sm text-orange">{error}</Text>
+                <Text className="text-sm text-orange">{errorMessage}</Text>
               </View>
             ) : null}
 
             <Pressable
               accessibilityRole="button"
               disabled={!canSubmit}
-              onPress={handleSubmit}
+              onPress={() => signIn.mutate({ email, password })}
               className={`mt-2 items-center justify-center rounded-2xl px-4 py-4 ${
                 canSubmit ? 'bg-navy' : 'bg-navy/40'
               }`}>
-              {submitting ? (
+              {signIn.isPending ? (
                 <ActivityIndicator color="#F5F0E8" />
               ) : (
                 <Text className="text-base font-semibold text-cream">Zaloguj</Text>
@@ -111,18 +114,4 @@ export default function SignInScreen() {
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
-}
-
-function translateAuthError(message: string): string {
-  const lower = message.toLowerCase();
-  if (lower.includes('invalid login') || lower.includes('invalid credentials')) {
-    return 'Niepoprawny email lub haslo.';
-  }
-  if (lower.includes('email not confirmed')) {
-    return 'Email niepotwierdzony. Sprawdz skrzynke.';
-  }
-  if (lower.includes('network')) {
-    return 'Blad polaczenia. Sprawdz internet.';
-  }
-  return message;
 }
