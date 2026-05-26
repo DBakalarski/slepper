@@ -43,7 +43,7 @@ Postęp: 1 / 7 faz ukończone (Faza 1: kod gotowy, mobile-manual verification pe
 
 ### Do poprawy po review fazy 1
 
-Severity gate po cyklu 1: ⚠️ **ZASTRZEZENIA** (0 × P1, 4 × P2 pozostałe). Pełny raport: `review-faza-1.md`. Fix log: `4eb8275`.
+Severity gate po cyklu 2: ✅ **CZYSTE** (0 × P1, 2 × P2 świadomie pominięte, 0 × P2 niepoprawione). Pełny raport: `review-faza-1.md`. Fix logs: `4eb8275` (cykl 1), `553f4af` (cykl 2).
 
 **P1 — Blocking (wszystkie naprawione w cyklu 1):**
 
@@ -51,24 +51,38 @@ Severity gate po cyklu 1: ⚠️ **ZASTRZEZENIA** (0 × P1, 4 × P2 pozostałe).
 - [x] 🔴 [P1-scenario] **migrations/0005_consent_flow.sql + hooks.ts** — Partner-already-exists: RPC `get_my_pending_invitations()` listuje invitations matching auth.email() niezależnie od momentu sign-up; user akceptuje przez `accept_invitation`.
 - [x] 🔴 [P1-scenario] **src/app/(app)/profile.tsx + migrations/0005** — Ślepy zaułek: RPC `ensure_family()` + przycisk "Stwórz rodzinę" w fallbacku zamiast "Skontaktuj sie z supportem".
 
-**P2 — Important (6 naprawionych w cyklu 1, 7 pozostałych):**
+**P2 — Important (13 naprawionych, 2 świadomie pominięte):**
 
-- [x] 🟠 [P2-security] **migrations/0005** — Brak globalnego unique na pending invitations (zlikwidowane przez consent flow — race nie jest już exploitem, druga rodzina nadal czeka, ale user widzi obie w bannerze i wybiera)
-- [ ] 🟠 [P2-security] **migrations/0004_triggers.sql** — Trigger fires niezależnie od `email_confirmed_at` (account squatting nadal możliwe — częściowo zmitygowane bo trigger już nie tworzy invitation acceptance)
-- [ ] 🟠 [P2-security] **migrations/0003_rls.sql:16-36** — UPDATE policy na families bez column-level restriction (owner może zmienić PK) — REVOKE UPDATE (id, created_at)
-- [x] 🟠 [P2-perf] **src/features/auth/AuthProvider.tsx** — `useMemo` na context `value` (zaaplikowane w cyklu 1)
-- [ ] 🟠 [P2-perf] **src/app/(auth)/sign-in.tsx + sign-up.tsx** — handleSubmit bez cancel guard — fix przez `useMutation`
-- [ ] 🟠 [P2-perf] **src/features/family/hooks.ts:37-79** — 3-query waterfall w `useCurrentFamily` → PostgREST embed (1 query)
-- [x] 🟠 [P2-arch] **src/features/family/hooks.ts** — rename z `api.ts` (zaaplikowane w cyklu 1)
-- [x] 🟠 [P2-arch] **src/features/auth/AuthProvider.tsx** — `.catch()` na `getSession()` (zaaplikowane w cyklu 1)
-- [x] 🟠 [P2-arch] **src/features/auth/AuthProvider.tsx** — `AuthContextValue` jako discriminated union (zaaplikowane w cyklu 1)
-- [x] 🟠 [P2-arch] **src/app/(app)/profile.tsx** — `error.code === '23505'` zamiast `.includes('duplicate')` (zaaplikowane w cyklu 1)
-- [ ] 🟠 [P2-arch] **src/app/(app)/profile.tsx** — ekstrakcja `FamilyMembersList` / `InviteMemberForm` / `PendingInvitationsList` (LOC urosło po dodaniu fallbacku — pilniejsze)
-- [x] 🟠 [P2-scenario] **migrations/0005** — race dwóch ownerów zapraszających ten sam email (zlikwidowane przez consent flow)
-- [x] 🟠 [P2-scenario] **AuthProvider** — `queryClient.clear()` na SIGNED_OUT (zaaplikowane w cyklu 1)
-- [ ] 🟠 [P2-scenario] **src/app/(auth)/sign-up.tsx** — sign-up redirect przed triggerem (flash "Brak rodziny") — refetch po SIGNED_IN
+- [x] 🟠 [P2-security] **migrations/0005** — Brak globalnego unique na pending invitations (zlikwidowane przez consent flow)
+- [ ] 🟠 [P2-security] **migrations/0004_triggers.sql** — Trigger fires niezależnie od `email_confirmed_at` — **świadomie pominięte**: email confirm OFF w decyzji MVP, sprawdzanie nie ma sensu
+- [x] 🟠 [P2-security] **migrations/0006** — UPDATE policy na families: REVOKE UPDATE + GRANT UPDATE (name) only
+- [x] 🟠 [P2-perf] **AuthProvider** — `useMemo` na context value (cykl 1)
+- [x] 🟠 [P2-perf] **sign-in/sign-up** — refactor na `useMutation` (cykl 2)
+- [x] 🟠 [P2-perf] **hooks.ts** — 3-query waterfall → 1-query PostgREST embed (cykl 2)
+- [x] 🟠 [P2-arch] **features/family** — rename `api.ts` → `hooks.ts` (cykl 1)
+- [x] 🟠 [P2-arch] **AuthProvider** — `.catch()` na `getSession()` (cykl 1)
+- [x] 🟠 [P2-arch] **AuthProvider** — `AuthContextValue` jako discriminated union (cykl 1)
+- [x] 🟠 [P2-arch] **profile.tsx** — `error.code === '23505'` zamiast `.includes('duplicate')` (cykl 1)
+- [x] 🟠 [P2-arch] **profile.tsx** — ekstrakcja `FamilyMembersList` / `InviteMemberForm` / `PendingInvitationsList` / `NoFamilyFallback` (245 → 70 LOC, cykl 2)
+- [x] 🟠 [P2-scenario] **migrations/0005** — race dwóch ownerów (zlikwidowane przez consent flow, cykl 1)
+- [x] 🟠 [P2-scenario] **AuthProvider** — `queryClient.clear()` na SIGNED_OUT (cykl 1)
+- [ ] 🟠 [P2-scenario] **sign-up.tsx** — refetch po SIGNED_IN — **świadomie pominięte**: cykl 2 zweryfikowało że flash minimalny (trigger synchronous), fallback "Stwórz rodzinę" pokrywa edge case
 
-**P3:** ~15 drobnych — patrz `review-faza-1.md` sekcja P3.
+**P1 cykl 2 (naprawiony):**
+- [x] 🔴 [P1-scenario] **migrations/0006_atomic_accept.sql** — Race condition w `accept_invitation` przy kasowaniu osieroconej rodziny — atomic delete via NOT EXISTS w jednym statement, plus SELECT FOR UPDATE na invitation
+
+**P2 nowe z cyklu 2 (9 naprawionych):**
+- [x] 🟠 [P2-scenario] **hooks.ts** — `accept_invitation` error message mapping PL (`translate-family-error.ts`)
+- [x] 🟠 [P2-scenario] **useAcceptInvitation** — `onSettled` zamiast `onSuccess` (auto-invalidate po revoked race)
+- [x] 🟠 [P2-perf] **query-client.ts + _layout.tsx** — `focusManager` + AppState listener
+- [x] 🟠 [P2-security] **migrations/0006** — Last-owner guard w accept_invitation
+- [x] 🟠 [P2-arch] **index.tsx** — CTA "Przejdź do profilu" gdy brak rodziny
+- [x] 🟠 [P2-arch] **hooks.ts** — Rename `PendingInvitationForMe` → `IncomingInvitation`
+- [x] 🟠 [P2-perf] **hooks.ts** — `useMyIncomingInvitations` staleTime 5 min
+- [x] 🟠 [P2-arch] **hooks.ts** — `parseRole` fail-loud (throw)
+- [x] 🟠 [P2-arch] **lib/postgres-errors.ts** — extract `isUniqueViolation` + `POSTGRES_UNIQUE_VIOLATION` const
+
+**P3:** ~15 drobnych — patrz `review-faza-1.md` sekcja P3. Część zaimplementowana mimochodem (EMAIL_REGEX shared module, translateAuthError extracted). Reszta jako backlog.
 
 **P3:** ~15 drobnych — patrz `review-faza-1.md` sekcja P3.
 
