@@ -255,25 +255,25 @@ opisu problemu w checklist i raporcie review:
 │
 └─ Typ C: WERYFIKACJA E2E (Weryfikacja: / oznaczenie 🌐)
    Sygnaly: finding pochodzi z Agent 5 (E2E browser-verifier),
-            checkbox ma prefix "Weryfikacja:", oznaczenie 🌐,
-            opis wspomina visual regression, responsywnosc,
-            interakcje, nawigacje klawiatura
+            checkbox ma prefix "Weryfikacja:", oznaczenie 📱,
+            opis wspomina visual, responsywnosc, interakcje,
+            VoiceOver/TalkBack, two-device sync
 
-   AKCJA:
+   AKCJA (sleeper = mobile, NIE browser):
    1. Znajdz przyczyne (zwykle w kodzie UI/stylu/a11y/interakcji)
    2. Napraw przyczyne
-   3. Re-uruchom weryfikacje wizualna PRZEZ agent-browser:
-      - Ustal URL aplikacji (zwykle http://localhost:5173 dla Vite)
-      - `agent-browser open <URL>` + `wait --load networkidle`
-      - `agent-browser snapshot -i`
+   3. Re-uruchom manual verification on-device:
+      - `npx expo start` w sleeper-app/
+      - Otworz na fizycznym urzadzeniu w Expo Go (iPhone + Android)
       - Wykonaj scenariusz z opisu checkboxa Weryfikacja:
-      - Ustaw viewport jesli scenariusz tego wymaga (desktop/mobile)
-      - `agent-browser snapshot -i` po akcji
+      - Dla two-device sync: druga instancja Expo Go na drugim urzadzeniu
+      - Dla a11y: wlacz VoiceOver (iOS) / TalkBack (Android)
       - Zweryfikuj ze oczekiwany stan jest widoczny
-      - `agent-browser screenshot` jako dowod (zapisz w $1/)
-   4. Odznacz checkbox Weryfikacja: DOPIERO po wizualnym PASS.
-      NIE odznaczaj na podstawie samego "naprawilem kod" —
-      to jest antywzorzec (test weakening).
+      - Screenshot jako dowod (zapisz w $1/) — manualnie z urzadzenia
+   4. Mobile manual checkbox Weryfikacja: ZOSTAW [ ] z suffixem
+      ` — manual test wykonany YYYY-MM-DD` (user musi to potwierdzic).
+      Automatyczne odznaczanie mobile-manual NIE jest mozliwe (brak browser).
+      Patrz mobile-feature-tester agent po szczegoly.
 
 === KOLEJNOSC NAPRAW ===
 
@@ -474,8 +474,8 @@ Problemy wymagajace uwagi: {lista lub "brak"}
 | Git conflict | STOP. Poinformuj uzytkownika o konflikcie i sciezce do pliku. |
 | Brak faz do wykonania | Przeskocz do Fazy 2 (complete/compound). |
 | Skill tool nie dziala w Agent | FALLBACK: Agent czyta `.claude/skills/{nazwa}/SKILL.md` i wykonuje instrukcje bezposrednio. |
-| E2E Agent 5 zwraca FAIL | Traktuj jako P2. Fix agent musi re-uruchomic agent-browser po naprawie kodu i zweryfikowac wizualnie przed odznaczeniem checkboxa. |
-| E2E Agent 5 SKIP / nie uruchomiony (brak dev server, env error) | Orkiestrator w kroku 1c MUSI wykryc niezaznaczone checkboxy Weryfikacja: i dodac kazdy jako P2. Agent 5 SKIP != brak problemow — to niezweryfikowane wymagania. |
+| Agent 5 (mobile-feature-tester) wygenerowal checklist | Zapisz `$1/manual-test-faza-X.md`. Mobile-manual checkbox Weryfikacja: pozostaje [ ] z suffixem ` — manual test (patrz manual-test-faza-X.md)`. User wykonuje na urzadzeniu i sam odznacza. NIE klasyfikuj jako P2. |
+| Agent 5 nie uruchomiony (brak fizycznego urzadzenia w sesji autonomicznej) | Mobile-manual checkboxy zostaja [ ] z suffixem ` — manual test pending` w `Operator checklist`. NIE blokuj postepu — user wykona po sesji. |
 
 ## Fallback: Jesli Skill tool nie dziala w Agent
 

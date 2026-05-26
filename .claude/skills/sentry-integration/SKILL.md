@@ -1,15 +1,17 @@
 ---
 name: sentry-integration
-description: Sentry error tracking i performance monitoring dla React + Supabase Edge Functions. Aktywuje się przy pracy z błędami, monitoringiem, captureException, error boundary, śledzeniem błędów, diagnostyką, loggerem, Edge Functions, crash, awaria, wydajność, raportowanie błędów, exception, wyjątek.
+description: Sentry error tracking i performance monitoring dla Expo SDK 54 (React Native) + Supabase Edge Functions. Aktywuje się przy pracy z błędami, monitoringiem, captureException, error boundary, śledzeniem błędów, diagnostyką, loggerem, Edge Functions, crash, awaria, native crash reporting, wydajność, raportowanie błędów, exception, wyjątek.
 ---
 
 # Sentry Integration Guidelines
 
-Kompleksowy przewodnik integracji Sentry error tracking i performance monitoring dla projektu React + Supabase Edge Functions.
+Kompleksowy przewodnik integracji Sentry error tracking i performance monitoring dla projektu **Expo SDK 54 / React Native + Supabase Edge Functions**.
 
-> **📅 Ostatnia aktualizacja: Marzec 2026**
+> **📅 Ostatnia aktualizacja: Maj 2026** (Expo SDK 54)
 >
-> - **React SDK:** v10+ (funkcyjne integracje, React 19 error hooks) ✅
+> - **`@sentry/react-native`** v6+ (z `@sentry/expo` lub `@sentry/react-native/expo` config plugin) ✅
+> - **Native crash reporting:** iOS (NSException), Android (Java/Kotlin exception) — wymaga EAS Build (NIE działa w Expo Go!)
+> - **Sourcemap upload:** automatyczne przez EAS Build hooks
 > - **Edge Functions:** Ograniczone wsparcie ⚠️ (wymaga `withScope` + `flush`)
 
 ## Table of Contents
@@ -80,21 +82,63 @@ Szczegóły: [edge-functions-sentry.md](resources/edge-functions-sentry.md)
 
 ## Quick Reference
 
-### Frontend (React)
+### Frontend (Expo / React Native)
 
-**Inicjalizacja w `main.tsx`:**
-```typescript
-import { initSentry } from '@/lib/sentry';
-import * as Sentry from '@sentry/react';
-
-initSentry();
-
-ReactDOM.createRoot(document.getElementById('root')!).render(
-  <Sentry.ErrorBoundary fallback={<ErrorFallback />}>
-    <AppWrapper />
-  </Sentry.ErrorBoundary>
-);
+**Setup (jednorazowy):**
+```bash
+# w sleeper-app/
+npx @sentry/wizard@latest -i reactNative
 ```
+
+Wizard doda:
+- `@sentry/react-native` do `package.json`
+- `@sentry/react-native/expo` config plugin do `app.json` lub `app.config.ts`
+- `sentry.properties` (sourcemap upload config)
+- Patch w `metro.config.js`
+
+**Konfiguracja w `app.config.ts`:**
+```ts
+export default {
+  expo: {
+    plugins: [
+      ['@sentry/react-native/expo', {
+        organization: 'sleeper',
+        project: 'sleeper-mobile',
+      }],
+    ],
+  },
+};
+```
+
+**Inicjalizacja w root `_layout.tsx`:**
+```typescript
+import * as Sentry from '@sentry/react-native';
+
+Sentry.init({
+  dsn: process.env.EXPO_PUBLIC_SENTRY_DSN!,
+  enableNative: true,         // native crash reporting (iOS/Android)
+  enableAutoSessionTracking: true,
+  tracesSampleRate: 0.2,      // performance monitoring
+  beforeSend(event) {
+    if (event.user?.email) {
+      event.user.email = event.user.email.replace(/^(.{2}).*(@.*)$/, '$1***$2');
+    }
+    return event;
+  },
+});
+
+function RootLayout() {
+  return (
+    <Sentry.ErrorBoundary fallback={<ErrorFallback />}>
+      <Stack />
+    </Sentry.ErrorBoundary>
+  );
+}
+
+export default Sentry.wrap(RootLayout); // wrap włącza profiling + native error tracking
+```
+
+**Native crash reporting wymaga EAS Build** — `enableNative: true` w Expo Go nie zadziała (Expo Go nie ma natywnego Sentry SDK). Test crashy: dev client (`eas build --profile development`).
 
 **Użycie loggera (preferowane):**
 ```typescript
@@ -104,19 +148,31 @@ try {
   await riskyOperation();
 } catch (error) {
   logger.error('Operacja nie powiodła się', error);
-  toast.error('Wystąpił błąd');
+  // toast/Alert dla użytkownika
 }
 ```
 
 **Bezpośrednie Sentry (gdy potrzeba więcej kontekstu):**
 ```typescript
-import * as Sentry from '@sentry/react';
+import * as Sentry from '@sentry/react-native';
 
 Sentry.withScope((scope) => {
-  scope.setTag('operation', 'payment');
-  scope.setContext('order', { orderId: '123', amount: 100 });
+  scope.setTag('operation', 'session-start');
+  scope.setContext('session', { childId, startAt });
   Sentry.captureException(error);
 });
+```
+
+**Sourcemaps (release builds):**
+EAS Build automatycznie uploaduje sourcemaps z Sentry plugin (skonfigurowane przez wizard). Sprawdź `eas.json` `production` profile:
+```json
+{
+  "production": {
+    "env": {
+      "SENTRY_AUTH_TOKEN": "..."
+    }
+  }
+}
 ```
 
 ### Edge Functions (Deno)
@@ -258,8 +314,21 @@ Sentry.setContext('auth', {
 
 Szczegółowe wzorce znajdują się w:
 
-- **[react-sentry-patterns.md](resources/react-sentry-patterns.md)** - Pełna konfiguracja React + Vite, ErrorBoundary, performance, session replay
-- **[edge-functions-sentry.md](resources/edge-functions-sentry.md)** - Wzorce dla Supabase Edge Functions (Deno), shared helpers, Stripe tracking
+- **[react-sentry-patterns.md](resources/react-sentry-patterns.md)** - Konfiguracja React (treść pod web — adaptuj na `@sentry/react-native`); ErrorBoundary, performance, mobile session replay (premium feature)
+- **[edge-functions-sentry.md](resources/edge-functions-sentry.md)** - Wzorce dla Supabase Edge Functions (Deno), shared helpers — bez zmian (server-side, stack-agnostic)
+
+## RN-specific Sentry features
+
+| Feature | Wsparcie | Wymaga |
+|---------|----------|--------|
+| JS error capture | ✅ Expo Go + EAS | nic |
+| Native crash (iOS NSException) | ⚠️ TYLKO EAS Build | `enableNative: true`, EAS dev client |
+| Native crash (Android Java) | ⚠️ TYLKO EAS Build | jak wyżej |
+| Sourcemaps (release) | ✅ | EAS Build + Sentry wizard config |
+| Profiling | ✅ | `@sentry/react-native/profiling-flag` |
+| Performance / Tracing | ✅ | `tracesSampleRate > 0` |
+| Session Replay mobile | 💰 (premium) | Beta — sprawdź pricing |
+| Release Health | ✅ | auto-tracking sessions |
 
 ---
 

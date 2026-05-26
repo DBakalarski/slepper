@@ -1,6 +1,19 @@
 # Komponenty UX
 
-Wzorce UX dla modali, formularzy, feedbacku i stanów - React 19 + React Hook Form.
+> ⚠️ **Stack projektu:** Expo SDK 54. Mapowania komponentów:
+> - **Modal** (shadcn Dialog) → RN `<Modal>` (proste) lub `@gorhom/bottom-sheet` (snap points, gestures — REKOMENDOWANE)
+> - **Focus trap** (`react-focus-lock`) → wbudowane w `<Modal>` RN i `@gorhom/bottom-sheet`
+> - **Toast** (Sonner) → `react-native-toast-message` lub natywny `Alert.alert(title, message, buttons)`
+> - **Tooltip** → `react-native-popover-view` (rzadko mobile — preferuj inline hint)
+> - **Popover API** → nie ma w RN; bottom-sheet / modal
+> - **Loading button** → `<Pressable>` z `<ActivityIndicator>` + `disabled`
+> - **Skeleton** → `react-native-skeleton-placeholder` lub własny `<View className="animate-pulse bg-muted">`
+> - **Pull-to-refresh** → `<FlatList refreshControl={<RefreshControl refreshing onRefresh />}>`
+> - **Swipe-to-action** → `react-native-gesture-handler` `<Swipeable>` (sleeper: swipe-to-delete w historii sesji)
+> - **Inline validation** w form → RHF + Zod identyczne, tylko `<TextInput>` zamiast `<input>`
+> - **Optimistic updates** (`useOptimistic`, TanStack Query `onMutate`) — identyczne
+
+Wzorce UX mobile dla modali, bottom sheets, formularzy, feedbacku — Expo + React Hook Form.
 
 ---
 

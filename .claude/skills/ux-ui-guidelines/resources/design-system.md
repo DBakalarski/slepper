@@ -1,6 +1,18 @@
 # Design System
 
-Paleta kolorów (OKLCH), typografia, spacing i design tokens - Tailwind v4.
+> ⚠️ **Stack projektu:** Expo SDK 54 + **NativeWind v4 + Tailwind v3.4** (NIE Tailwind v4):
+> - **OKLCH** → niedostępne. Kolory hex/rgb/hsl w `tailwind.config.js` `theme.extend.colors`.
+> - **CSS custom properties** (`--color-primary`) → niedostępne na RN.
+> - **Dark mode** → `darkMode: 'class'` + `useColorScheme()` + `dark:` variants NativeWind.
+> - **Typografia mobile** — iOS body = 17px, Android body = 14sp. Skala 11/13/15/17/20/24/34px (patrz `SKILL.md`).
+> - **Spacing** — 8pt grid, Tailwind klasy działają (`gap-*`, `p-*`).
+> - **Ikony** — `lucide-react-native` (osobny package, NIE `lucide-react`!), `@expo/vector-icons`, `expo-symbols` (SF Symbols iOS).
+> - **Czcionka** — `expo-font` ładuje custom; fallback SF (iOS) / Roboto (Android).
+> - **Tokens** — `tailwind.config.js` jedyne źródło. Brak `@theme` CSS.
+>
+> Patrz `SKILL.md` po przykład `tailwind.config.js` projektu sleeper.
+
+Paleta kolorów, typografia mobile, spacing i design tokens — NativeWind v4 + Tailwind v3.4.
 
 ---
 

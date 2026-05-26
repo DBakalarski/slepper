@@ -1,11 +1,11 @@
 ---
 name: code-review
-description: "Przeprowadza code review dla React 19, TailwindCSS v4, shadcn/ui, Supabase, Sentry. Używaj przy przeglądaniu PR, ocenie implementacji fazy/etapu, weryfikacji zgodności z planem. Generuje raport z klasyfikacją problemów (krytyczne/poważne/drobne/sugestie)."
+description: "Przeprowadza code review dla Expo SDK 54 + React Native + NativeWind v4 + Tailwind v3.4 + Supabase + Sentry. Używaj przy przeglądaniu PR, ocenie implementacji fazy/etapu, weryfikacji zgodności z planem. Generuje raport z klasyfikacją problemów (krytyczne/poważne/drobne/sugestie)."
 ---
 
 # Code Review
 
-Skill do przeprowadzania code review w projekcie React 19 + TailwindCSS v4 + shadcn/ui.
+Skill do przeprowadzania code review w projekcie **Expo SDK 54 + React Native + NativeWind v4 + Tailwind v3.4**.
 
 ## Kiedy używać
 
@@ -30,12 +30,16 @@ Na podstawie zmienionych plików, załaduj odpowiednie sekcje z `references/tech
 
 | Pliki | Sekcje do sprawdzenia |
 |-------|----------------------|
-| `*.tsx`, `*.ts` w `src/` | React 19, TypeScript |
-| `*.tsx` z hooks | React 19 (zbędne useMemo/useCallback jeśli React Compiler, stary forwardRef) |
-| `src/lib/supabase.ts`, `supabase/**` | Supabase (RLS, auth, client) |
-| `*.css` z `@theme` | Tailwind CSS 4 (konfiguracja, zmienne CSS) |
-| Komponenty UI | Tailwind CSS 4, shadcn/ui, Dostępność |
-| `src/lib/sentry.ts`, error handling | Sentry (captureException, Error Boundary) |
+| `sleeper-app/src/**/*.tsx`, `*.ts` | React 19, TypeScript, RN components (View/Text/Pressable) |
+| `*.tsx` z hooks | TanStack Query patterns, Zustand stores, brak `useEffect` do fetch |
+| `sleeper-app/src/app/**` (routes) | expo-router (`_layout.tsx`, file-based routing, deep links) |
+| `sleeper-app/src/lib/supabase.ts`, `supabase/**` (migracje, Edge Functions) | Supabase (RLS, auth, AsyncStorage persistence, URL polyfill) |
+| `tailwind.config.js` | NativeWind v4 + Tailwind v3.4 (NIE v4 — peer dep nativewind@4.2 wymaga ≥3.3) |
+| Komponenty UI | NativeWind className, RN a11y (accessibilityLabel/Role/State), touch targets ≥ 44pt, Safe Area |
+| `app.config.ts`, `app.json` | Expo config, plugins, deep linking schema, orientation |
+| `sleeper-app/src/lib/sentry.ts`, error handling | `@sentry/react-native`, captureException, ErrorBoundary export z route |
+| `package.json` w `sleeper-app/` | Wersje Expo SDK 54 lock, peer deps nativewind/tailwindcss |
+| Formy z `<TextInput>` | RHF + Zod, `KeyboardAvoidingView`, `returnKeyType`, focus management |
 
 ### Krok 3: Analizuj kod
 
@@ -64,18 +68,24 @@ Częste błędy w tym stacku → `references/common-issues.md`
 
 🟠 [important] POWAŻNE — wymaga poprawy
    - Supabase: zapytania bez filtrów (brak .eq(), .match())
-   - Problemy wydajnościowe
-   - Brak WCAG compliance
-   - Niespełnione wymagania
-   - React 19: `useEffect` do fetchowania zamiast React Query
-   - Tailwind 4: nadużywanie arbitrary values (`w-[123px]`) zamiast tokenów
+   - Problemy wydajnościowe (FlatList bez memo renderItem, brak keyExtractor, nieoptymalne re-renders)
+   - Brak a11y RN (`accessibilityLabel`, `accessibilityRole`, touch target < 44pt)
+   - Brak Safe Area na ekranie z bottom content
+   - Niespełnione wymagania z planu
+   - `useEffect` do fetchowania zamiast TanStack Query
+   - NIE używasz `<TextInput>` z `onChangeText` (zmiast `onChange`)
+   - Brak `KeyboardAvoidingView` na ekranie z `<TextInput>`
+   - Nadużywanie arbitrary values (`w-[123px]`) zamiast 8pt grid
 
 🟡 [nit] DROBNE — zalecane
    - Niespójność stylu
    - Lepsze nazewnictwo
    - Brakujące typy
-   - Przestarzałe wzorce (forwardRef, Context.Provider)
-   - Zbędne useMemo/useCallback (jeśli React Compiler włączony)
+   - Przestarzałe wzorce (forwardRef — w React 19 ref jest propem, `Context.Provider` — w 19 `<Context>` bezpośrednio)
+   - Web HTML w RN: `<div>`, `<span>`, `<button>` (powinno być View/Text/Pressable)
+   - Zbędne useMemo/useCallback (mierz przed memoizacją)
+   - Brakujący `tabular-nums` na timerze/liczniku
+   - `lucide-react` zamiast `lucide-react-native` (osobny package!)
 
 🔵 [suggestion] SUGESTIE — opcjonalne
    - Alternatywne podejścia

@@ -1,6 +1,16 @@
 # Stany Ładowania i Błędów
 
-Wzorce dla Vite + React 19 SPA z React Query.
+> ⚠️ **Stack projektu:** Expo SDK 54 + React Native + TanStack Query. Mapowania:
+> - `<Skeleton>` (shadcn `animate-pulse`) → własny `<View className="animate-pulse bg-muted">` lub `react-native-skeleton-placeholder`
+> - `<Spinner>` / `<Loader2 className="animate-spin">` (lucide-react) → `<ActivityIndicator />` z `react-native` (iOS spinner natywny, Android — Material)
+> - `toast.success/error` (Sonner) → `react-native-toast-message` lub natywny `Alert.alert(title, message)`
+> - `window.location.reload()` → w RN: `Updates.reloadAsync()` z `expo-updates` (dev: hard reload przez Expo Go menu)
+> - Error Boundary z `react-error-boundary` — działa też na RN, OK
+> - `useFormStatus` z `react-dom` — NIE używaj (web-only); zamiast tego `formState.isSubmitting` z RHF
+>
+> TanStack Query, `useSuspenseQuery`, `useOptimistic`, `useTransition` — działają identycznie na RN.
+
+Wzorce dla Expo SDK 54 + React Native z TanStack Query.
 
 ---
 

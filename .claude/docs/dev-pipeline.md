@@ -1,7 +1,8 @@
 # Pipeline dev-* — dokumentacja
 
 Data utworzenia: 2026-03-24
-Źródło: compound-engineering-plugin (zaadaptowane do stacku React 19 + TypeScript + Supabase + Tailwind v4 + Vite)
+Ostatnia adaptacja: 2026-05-26 (refactor pod Expo + NativeWind)
+Źródło: compound-engineering-plugin (zaadaptowane do stacku **Expo SDK 54 + TypeScript + Supabase + NativeWind v4 + Tailwind v3.4**)
 
 ---
 
@@ -122,16 +123,33 @@ Każdy skill działa BEZ argumentów (wyciąga kontekst z sesji). Argumenty są 
 ### Review (używane przez `/dev-docs-review`)
 | Agent | Rola |
 |-------|------|
-| `security-sentinel` | Auth, RLS, XSS, Zod validation, API key exposure |
-| `performance-oracle` | N+1, bundle size, lazy loading, memoizacja, useEffect cleanup |
+| `security-sentinel` | Auth, RLS, deep link validation, AsyncStorage/SecureStore, Zod, EXPO_PUBLIC_* leakage |
+| `performance-oracle` | N+1, bundle size, FlatList tuning, lazy, memoizacja, Reanimated worklets |
 | `kieran-typescript-reviewer` | Type safety, brak `any`, modern patterns, naming |
-| `architecture-strategist` | SOLID, component boundaries, coupling, circular deps |
+| `architecture-strategist` | SOLID, sleeper-app/src/{app,features,components,hooks,lib} boundaries, circular deps |
 | `code-simplicity-reviewer` | YAGNI, redundancja, uproszczenia |
 
 ### Workflow (używane przez `/dev-plan`)
 | Agent | Rola |
 |-------|------|
 | `spec-flow-analyzer` | User flow analysis, missing paths, edge cases |
+
+### Implementation (używane przez `/dev-docs-execute`)
+| Agent | Rola |
+|-------|------|
+| `feature-builder-ui` | Warstwa UI (komponenty RN + NativeWind, formy z TextInput, a11y RN) |
+| `feature-builder-data` | Warstwa danych (Supabase queries, RLS, migracje, Edge Functions, Zod) |
+| `feature-builder-fullstack` | Cross-layer feature (data + UI w jednym IU, np. CRUD flow z Realtime) |
+
+### Testing (manual checklist generator)
+| Agent | Rola |
+|-------|------|
+| `mobile-feature-tester` | Generuje structured manual test checklist na Expo Go (replacement za usunięty `feature-tester-e2e` który był dla browser/Playwright) |
+
+### Utility
+| Agent | Rola |
+|-------|------|
+| `auto-error-resolver` | Auto-fix TypeScript errors w `sleeper-app/` |
 
 ---
 

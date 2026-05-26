@@ -73,15 +73,18 @@ Jesteś tester scenariuszy. Dla zmian z fazy $2 w folderze $1, sprawdź:
 Klasyfikuj znalezione problemy: 🔴 [P1-blocking], 🟠 [P2-important], 🟡 [P3-nit]
 ```
 
-**Agent 5: E2E Browser Verification**
+**Agent 5: Mobile Manual Test Checklist Generator**
 ```
-Jesteś testerem E2E. Przeczytaj `.claude/agents/feature-tester-e2e.md` i zastosuj jego metodologię.
-Zbierz niezaznaczone checkboxy `Weryfikacja:` z fazy $2 w pliku zadań $1, które dotyczą scenariuszy w przeglądarce (URL, viewport, kliknięcia, screenshoty, oznaczenie 🌐).
-Pomiń checkboxy CLI (bun run, npm run, grep, tsc itp.) i Manual (operator, symulator, device) — zostaną obsłużone w kroku 4.7.
-Zweryfikuj każdy E2E scenariusz wizualnie przez agent-browser.
+Jesteś specjalistą manual testing aplikacji mobilnej. Przeczytaj `.claude/agents/mobile-feature-tester.md` i zastosuj jego metodologię.
+Zbierz niezaznaczone checkboxy `Weryfikacja:` z fazy $2 w pliku zadań $1, które dotyczą scenariuszy mobile UI / device (oznaczenie 📱, "Expo Go", "manual", "device", "VoiceOver", "TalkBack", "two-device sync").
+Pomiń checkboxy CLI (npm run, npx tsc itp.) — zostaną obsłużone w kroku 4.7.
+Wygeneruj structured manual test checklist do wykonania przez użytkownika na fizycznym urządzeniu (Expo Go).
 Zwróć USTRUKTURYZOWANY wynik per scenariusz w formacie:
-  - {treść checkboxa} → passed | failed | skipped (z powodem dla skipped)
-Klasyfikuj findingi: ✅ passed, 🟠 [P2-important] failed, ⚪ skipped (np. brak dev servera).
+  - {treść checkboxa} → checklist_generated | not_applicable (z powodem)
+Klasyfikuj findingi: ✅ checklist_generated (zapisz w $1/manual-test-faza-$2.md), ⚪ not_applicable.
+
+UWAGA: To NIE jest automated test runner. Mobile w sleeper MVP testujemy MANUALNIE na Expo Go.
+Browser-based E2E (Playwright, agent-browser) NIE MAJĄ SENSU dla aplikacji RN (brak DOM).
 ```
 
 Po zakończeniu wszystkich agentów — **skonsoliduj wyniki:**
@@ -116,12 +119,12 @@ Na podstawie skonsolidowanego raportu:
 - **Jeśli tylko P2 (important):** "⚠️ KONTYNUUJ Z ZASTRZEŻENIAMI — X problemów P2 do naprawy"
 - **Jeśli tylko P3 (nit):** "✅ GOTOWE DO KONTYNUACJI — X sugestii do rozważenia"
 
-### 4.6 Wyniki weryfikacji E2E
-Jeśli Agent 5 wykonał weryfikacje:
-- Dołącz wyniki E2E do skonsolidowanego raportu (sekcja z screenshotami)
-- Nieudane weryfikacje wchodzą do severity gate jako 🟠 [P2-important]
-- Zachowaj wynik per scenariusz E2E w mapie `{treść checkboxa: passed|failed|skipped}` — krok 4.7 wykorzysta to przy klasyfikacji E2E
-- Krok 4.7 fizycznie odznaczy checkboxy `Weryfikacja:` w pliku zadań (nie odznaczaj ich tutaj)
+### 4.6 Wyniki manual test checklist (mobile)
+Jeśli Agent 5 wygenerował checklisty:
+- Zapisz `$1/manual-test-faza-$2.md` z pełną checklistą dla user
+- Te checkboxy `Weryfikacja:` pozostają `[ ]` w pliku zadań (oznaczenie ` — manual test (patrz manual-test-faza-$2.md)`)
+- User wykonuje manual testing on-device i sam odznacza checkboxy po wykonaniu
+- Krok 4.7 NIE odznacza checkboxów mobile-manual automatycznie — tylko dodaje suffix
 
 ### 4.7 Bookkeeping checkboxów `Weryfikacja:`
 
@@ -135,8 +138,8 @@ Jeśli Agent 5 wykonał weryfikacje:
 |---|---|---|
 | **CLI** | `bun run`, `npm run`, `pnpm`, `yarn`, `make`, `tsc`, `vitest`, `bun test`, `cargo`, `pytest`, `ruff`, `eslint` | Uruchom komendę przez Bash. Jeśli exit 0 → odznacz `[x]`. Jeśli != 0 → zostaw `[ ]`, dopisz suffix ` (FAIL: <skrót błędu>)` i dodaj wpis do raportu jako 🟠 [P2-important]. |
 | **Grep / istnienie pliku** | `grep`, `rg`, `test -f`, `ls`, "brak referencji do", "plik istnieje", "import nie istnieje" | Uruchom przez Bash. PASS → `[x]`. FAIL → `[ ]` z suffixem ` (FAIL)` i wpis P2. |
-| **E2E browser** | URL, `agent-browser`, "viewport", "kliknij", "screenshot", oznaczenie 🌐 | Sprawdź wynik Agent 5 z mapy zachowanej w 4.6. PASS → `[x]`. FAIL → `[ ]` (P2 już zarejestrowany w 4.6). SKIP → `[ ]` z suffixem ` (SKIP — Agent 5 niedostępny: <powód>)` i wpis P2. |
-| **Manual** | "ręcznie", "operator", "symulator", "device", "emulator", "QA", "tester człowiek" | Zostaw `[ ]`. Dopisz suffix ` — wymaga operatora (checklist)`. NIE dodawaj do P2 — to oczekiwana ręczna weryfikacja. |
+| **Mobile manual** | "ręcznie", "Expo Go", "device", "symulator", "emulator", "VoiceOver", "TalkBack", "two-device sync", oznaczenie 📱 | Zostaw `[ ]`. Dopisz suffix ` — manual test (patrz manual-test-faza-$2.md)`. Agent 5 wygenerował checklist; user wykonuje na urządzeniu i sam odznacza. NIE dodawaj do P2. |
+| **Manual operator** | "operator", "QA", "tester człowiek" (poza mobile device) | Zostaw `[ ]`. Dopisz suffix ` — wymaga operatora (checklist)`. NIE dodawaj do P2. |
 | **Niejasne** | nic z powyższych nie pasuje | Zostaw `[ ]`. Dopisz suffix ` — klasyfikacja niejasna, wymaga ręcznej decyzji`. Dodaj do raportu jako 🟡 [P3-nit] z notatką dla planisty: "checkbox nieautomatyzowalny — rozważ przeniesienie do Operator checklist (dev-plan §3.4) lub przeformułowanie na CLI/E2E". |
 
 **Krok 3: Zaktualizuj plik zadań.** Edytuj `$1/*-zadania.md` przez Edit tool — dla każdego checkboxa zamień `- [ ]` na `- [x]` jeśli PASS, lub dopisz odpowiedni suffix przy `- [ ]` zgodnie z klasyfikacją. Nie modyfikuj checkboxów spoza fazy $2.

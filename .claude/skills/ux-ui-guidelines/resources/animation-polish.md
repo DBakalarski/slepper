@@ -1,6 +1,15 @@
 # Animation Polish
 
-Micro-detale animacji uzupełniające [animations.md](animations.md) (macro patterns, Motion, View Transitions): interruptibility, subtelne wyjścia, ikony cross-fade, scale on press, skip-on-load.
+> ⚠️ **Stack projektu:** Expo SDK 54 + react-native-reanimated v4. Polish micro-detale RN:
+> - **Interruptible** — Reanimated `withSpring`/`withTiming` są automatycznie interruptible (nowa wartość rozpoczyna płynnie z aktualnej pozycji). To unikalna cecha Reanimated worklets.
+> - **scale(0.96) on press** — `<Pressable className="active:scale-[0.96]">` (snap, nie animacja). Smooth: Reanimated `useSharedValue` + `onPressIn`/`onPressOut` + `withTiming(0.96, {duration: 100})`.
+> - **icon crossfade** — Reanimated `withTiming(opacity)` na nakładających się `<Animated.View>` z ikonami.
+> - **Subtelne wyjścia** — `entering={FadeIn.duration(200)}`, `exiting={FadeOut.duration(150)}` z `react-native-reanimated`.
+> - **Skip-on-load** — gate przez `AccessibilityInfo.isReduceMotionEnabled()` + pomiń animacje przy initial mount jeśli enabled.
+>
+> Reszta zasad (timing, easing, animation chains) — pojęciowo identyczna.
+
+Micro-detale animacji w React Native — interruptible springs, scale on press, crossfade, subtelne wyjścia.
 
 ---
 

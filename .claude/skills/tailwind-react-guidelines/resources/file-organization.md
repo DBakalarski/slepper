@@ -1,6 +1,39 @@
 # Organizacja Plików
 
-Struktura katalogów dla Vite + React SPA.
+> ⚠️ **Stack projektu:** Expo SDK 54 + expo-router. Routing NIE używa React Routera. Mapowania:
+> - `src/pages/` (React Router) → `src/app/` (expo-router, file-based)
+> - `<BrowserRouter>` / `<Routes>` / `<Route>` → struktura plików w `app/`; layouty przez `_layout.tsx`
+> - `<Navigate to="...">` → `<Redirect href="...">` z `expo-router`
+> - `useParams()` → `useLocalSearchParams()` z `expo-router`
+> - `useSearchParams()` → `useLocalSearchParams()` (te same params, expo-router łączy URL params + query)
+> - `useNavigate()` → `useRouter()` (`router.push`, `router.replace`, `router.back`)
+> - `<NavLink>` → `<Link href="..." asChild>` z `expo-router` + state hook
+> - `<Outlet>` → `<Slot>` lub `<Stack>` / `<Tabs>` z `expo-router`
+> - Protected routes: w `_layout.tsx` z `<Redirect>` jeśli `!user`
+> - View Transitions API → `react-native-screens` + `react-native-reanimated` shared element transitions (Faza 6 polish)
+> - `vite.config.ts` alias `@/*` → `sleeper-app/tsconfig.json` paths + `babel.config.js` (jeśli wymaga module-resolver dla aliasów w runtime)
+> - `lib/api.ts` z `import.meta.env.VITE_API_URL` → `lib/supabase.ts` z `Constants.expoConfig?.extra?.supabaseUrl` lub `process.env.EXPO_PUBLIC_SUPABASE_URL`
+> - `setupFiles: ['./src/test/setup.ts']` (Vitest+jsdom) → na razie brak testów; patrz `expo-rn-testing` skill
+>
+> Layout sleeper-app:
+> ```
+> sleeper-app/src/
+>   app/                 # expo-router routes (file-based)
+>     _layout.tsx        # root layout (Provider, fonts, splash)
+>     (tabs)/            # tab group
+>       _layout.tsx
+>       index.tsx        # / route
+>     auth/
+>       login.tsx
+>     +not-found.tsx     # 404
+>   components/          # shared UI
+>   features/            # domain (sessions, children, family)
+>   hooks/               # use* hooks
+>   lib/                 # supabase.ts, query-client.ts
+>   types/
+> ```
+
+Struktura katalogów dla Expo SDK 54 + expo-router.
 
 ---
 

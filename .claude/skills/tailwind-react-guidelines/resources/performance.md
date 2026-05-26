@@ -1,6 +1,18 @@
 # Optymalizacja Wydajności
 
-Wzorce optymalizacji dla React 19 + Vite SPA - lazy loading, memoizacja, data fetching, Web Vitals.
+> ⚠️ **Stack projektu:** Expo SDK 54 + React Native + Hermes JS engine. RN-specific patterns:
+> - **Listy >20 elementów**: ZAWSZE `FlatList` z `keyExtractor`, `getItemLayout` (gdy znamy wysokość), `removeClippedSubviews` na Android, `windowSize`, `maxToRenderPerBatch`. NIE `.map()` w `ScrollView`.
+> - **Virtualizacja**: `FlatList` ma to wbudowane; `@tanstack/react-virtual` to web-only (nie używaj).
+> - **Animacje 60fps**: `react-native-reanimated` worklety (UI thread), NIE `Animated` API ze starszych RN. Worklety w SDK 54 wymagają `react-native-worklets` (już zainstalowane).
+> - **Memoizacja**: `useMemo`/`useCallback` szczególnie ważne dla `renderItem` w `FlatList` — bez memo każdy render listy tworzy nowy callback.
+> - **Lazy loading**: expo-router automatycznie code-splituje per route; nie używaj `React.lazy` ręcznie dla route komponentów. Component-level lazy z `React.lazy` + `Suspense` działa.
+> - **Web Vitals (LCP/INP/CLS)**: NIE DOTYCZY mobile. Zamiast tego monitoruj: cold/warm app launch time (`expo-application` start), Time-to-Interactive na fizycznym urządzeniu (Sentry React Native + profiling), bundle size (`expo export` + analyze).
+> - **Image optimization**: `expo-image` (cache, blurhash, transitions) zamiast `react-native`'s `Image`. Formaty: WebP/AVIF wspierane natywnie przez Expo SDK 54.
+> - **Debouncing** (`useDebounce`) — działa identycznie na RN.
+>
+> React Compiler dla Expo SDK 54 — wstępna obsługa przez babel-plugin-react-compiler (eksperymentalnie). Domyślnie OFF, włączaj świadomie.
+
+Wzorce optymalizacji dla Expo SDK 54 + React Native — FlatList, Reanimated, Hermes, memoizacja, data fetching.
 
 ---
 

@@ -1,6 +1,30 @@
 # Wzorce Autentykacji
 
-Wzorce autentykacji Supabase dla Vite SPA - OAuth, email/hasło, zarządzanie sesją.
+> ⚠️ **Stack projektu:** Expo SDK 54. OAuth flow w mobile JEST INNY niż w SPA:
+> - **NIE** używaj `signInWithOAuth({ provider })` bez `redirectTo` i `skipBrowserRedirect: true` — to web flow
+> - **TAK** wzorzec dla Expo:
+>   ```ts
+>   import * as WebBrowser from 'expo-web-browser';
+>   import * as Linking from 'expo-linking';
+>
+>   const redirectTo = Linking.createURL('/auth/callback'); // np. sleeper://auth/callback
+>   const { data } = await supabase.auth.signInWithOAuth({
+>     provider: 'google',
+>     options: { redirectTo, skipBrowserRedirect: true },
+>   });
+>   const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
+>   if (result.type === 'success') {
+>     const params = Linking.parse(result.url).queryParams;
+>     await supabase.auth.exchangeCodeForSession(params.code);
+>   }
+>   ```
+> - **`detectSessionInUrl: false`** w `createClient` — RN nie ma URL session detection (handle manually)
+> - **Scheme** w `app.json` (`"scheme": "sleeper"`) → deep link `sleeper://auth/callback`
+> - **`<Stack.Screen>`** w `app/auth/callback.tsx` może być pusta lub render `<ActivityIndicator>` — `exchangeCodeForSession` w `useEffect` + `router.replace('/')`
+>
+> Reszta wzorców (email/hasło, PKCE concept, getSession vs getUser, handle_new_user trigger) — identyczne pojęciowo.
+
+Wzorce autentykacji Supabase dla **Expo SDK 54** - OAuth z deep linkami, email/hasło, zarządzanie sesją.
 
 ---
 

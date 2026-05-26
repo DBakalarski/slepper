@@ -1,6 +1,59 @@
 # Przewodnik Stylowania
 
-Wzorce stylowania z TailwindCSS v4, shadcn/ui i kompozycja klas.
+> ⚠️ **Stack projektu:** Expo SDK 54 + **NativeWind v4 + Tailwind v3.4** (NIE Tailwind v4 — peer dep nativewind@4.2 wymaga ≥3.3 ale NIE 4.x). Najważniejsze różnice vs web:
+>
+> **NativeWind v4 (Tailwind v3.4) podstawy:**
+> - Tailwind config w `tailwind.config.js` (NIE `@theme` w CSS — to feature v4 web-only)
+> - `className` na komponentach RN: `<View>`, `<Text>`, `<Pressable>`, `<TextInput>`, `<Image>`, `<ScrollView>`, `<FlatList>`
+> - Kompiluje się do `StyleSheet.create` w runtime (cache'owany)
+> - Dark mode: `darkMode: 'class'` w config + `<View className="dark:bg-slate-900">` — sterowany przez `colorScheme()` z `nativewind` lub `useColorScheme()` z `react-native`
+> - `cva` (class-variance-authority) + `clsx` + `tailwind-merge` działają identycznie
+>
+> **NIE działa na RN (web-only Tailwind features):**
+> - ❌ `@theme` block CSS-first config (v4)
+> - ❌ OKLCH custom properties — RN nie ma CSS variables; użyj `tailwind.config.js` z hex/rgb
+> - ❌ Container queries (`@container`, `@md:`) — brak w RN; użyj `useWindowDimensions()` + conditional className
+> - ❌ Dynamic viewport units (`min-h-dvh`, `min-h-svh`) — brak w RN; użyj `flex-1` + `SafeAreaView` z `react-native-safe-area-context`
+> - ❌ Subgrid — `grid` w ogóle nie istnieje w RN (RN flex tylko). Layout: flex/flex-row/gap-*
+> - ❌ View Transitions API — Web-only. Animacje w RN: `react-native-reanimated` worklety + `Animated` API
+> - ❌ `@apply` w CSS — w NativeWind nie ma globalnych CSS files (poza Tailwind base)
+> - ❌ Mask utilities, text-shadow, `@starting-style`, pointer variants, `motion-safe:` — większość nie działa
+> - ❌ `prefers-reduced-motion` jako CSS — użyj `AccessibilityInfo.isReduceMotionEnabled()` w RN
+> - ❌ `focus-visible:`, `hover:` na komponentach NIE-Pressable; `hover:` działa tylko gdy używasz `react-native-web` na webie
+> - ❌ `cursor-not-allowed`, cursor-* — brak myszki na mobile
+>
+> **RN-specific NativeWind utility:**
+> - `gap-*` — działa w flex (RN 0.71+)
+> - Layout: `flex-row`, `flex-col`, `flex-1`, `items-*`, `justify-*`, `gap-*`
+> - Spacing: `p-*`, `m-*`, `space-y-*` (`space-x-*` problematyczne w RN — używaj `gap-*`)
+> - Sizing: `w-*`, `h-*`, `min-h-*`, `max-w-*`
+> - Typography: `text-*`, `font-*`, `leading-*`, `tracking-*` (na `<Text>`)
+> - Borders: `border`, `border-2`, `border-red-500`, `rounded-lg`, `rounded-full`
+> - Backgrounds: `bg-*`, `bg-opacity-*` (lub Tailwind `/50` syntax)
+> - Color: `text-*`, w `<Text>` — kolor MUSI być na `<Text>`, nie dziedziczy z `<View>`
+> - Active state: `active:bg-primary/90` (działa na `<Pressable>`)
+> - Disabled: `disabled:opacity-50` (manualnie + `disabled={true}` na Pressable; w RN nie ma natywnego `disabled` propsu na View)
+>
+> **Tematy/kolory** w projekcie sleeper:
+> ```js
+> // tailwind.config.js
+> module.exports = {
+>   content: ['./src/**/*.{ts,tsx}'],
+>   presets: [require('nativewind/preset')],
+>   theme: {
+>     extend: {
+>       colors: {
+>         background: '#FFFFFF',
+>         foreground: '#0A0A0A',
+>         primary: '#0EA5E9',
+>         muted: '#F4F4F5',
+>       },
+>     },
+>   },
+> };
+> ```
+
+Wzorce stylowania z **NativeWind v4 + Tailwind v3.4** i kompozycja klas.
 
 ---
 

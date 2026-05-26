@@ -1,8 +1,19 @@
 # React Sentry Patterns
 
-Szczegółowe wzorce integracji Sentry z React 19 + Vite + TypeScript.
+> ⚠️ **Stack projektu:** Expo SDK 54 / React Native. Plik zawiera wzorce **z `@sentry/react` (web)**. Mapuj na `@sentry/react-native`:
+> - `import * as Sentry from '@sentry/react'` → `from '@sentry/react-native'`
+> - `Sentry.browserTracingIntegration()` → automatic w `@sentry/react-native` (nic do dodania)
+> - `Sentry.replayIntegration()` → `Sentry.mobileReplayIntegration()` (Beta, premium)
+> - `Sentry.feedbackIntegration()` → nie dotyczy w MVP
+> - `BrowserRouter` integration → `Sentry.reactNavigationIntegration()` lub `Sentry.reactNavigationV5Integration()` zależnie od wersji nav (sleeper używa expo-router → użyj `Sentry.reactNavigationIntegration()`)
+> - Source maps via Vite plugin → automat przez EAS Build + Sentry wizard config
+> - `window.location` w breadcrumbs → `expo-router` nawigacja jest auto-tracked przez integration
+>
+> Reszta wzorców (ErrorBoundary, withScope, beforeSend, performance monitoring) — identyczne pojęciowo, tylko import z `@sentry/react-native`.
 
-> **✅ SDK v10 Ready (Stan: Marzec 2026)**
+Szczegółowe wzorce integracji Sentry z **Expo SDK 54 + React Native + TypeScript**.
+
+> **✅ `@sentry/react-native` v6+ (Stan: Maj 2026)**
 >
 > Te wzorce są zgodne z Sentry SDK v10+, który używa:
 > - Funkcyjnych integracji (`browserTracingIntegration()` zamiast `new BrowserTracing()`)

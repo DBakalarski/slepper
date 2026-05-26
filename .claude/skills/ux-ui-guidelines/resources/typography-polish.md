@@ -1,6 +1,19 @@
 # Typography Polish
 
-Micro-detale typografii sprawiające, że interfejs wygląda dopracowany — uzupełnia [design-system.md](design-system.md) (skala rozmiarów, weights, fluid) o detale renderingu.
+> ⚠️ **Stack projektu:** Expo SDK 54. Mapowania:
+> - **`text-wrap: balance/pretty`** — NIE w RN. Alternatywa: `numberOfLines={n}` + `ellipsizeMode="tail|middle"` (ucina, nie balansuje).
+> - **Font smoothing** (`-webkit-font-smoothing`) — natywne w RN (SF Pro iOS, Roboto Android).
+> - **Tabular numbers** — `<Text style={{fontVariant: ['tabular-nums']}}>` — NIE NativeWind utility. Krytyczne na timerze sleeper.
+> - **Font scaling honor** — RN respektuje system (Dynamic Type iOS); `<Text maxFontSizeMultiplier={1.5}>` aby limit (timer z 200% scaling rozwala layout).
+> - **Custom fonts** — `expo-font` `useFonts({Inter: require(...)})` w root layout.
+> - **`numberOfLines={1}` + `ellipsizeMode="tail"`** — najczęstszy pattern (nazwa dziecka, czas).
+> - **Hyphens** — `<Text style={{textBreakStrategy: 'highQuality'}}>` (Android only).
+> - **letterSpacing** — `<Text style={{letterSpacing: -0.4}}>` (iOS-like display style).
+> - **Fluid typography** (`clamp()`) — NIE w RN; manual breakpointy z `useWindowDimensions`.
+>
+> Reszta (skala, weights) — koncepty identyczne.
+
+Micro-detale typografii w React Native — fontVariant, maxFontSizeMultiplier, expo-font, numberOfLines.
 
 ---
 

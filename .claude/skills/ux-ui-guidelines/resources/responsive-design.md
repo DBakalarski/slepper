@@ -1,6 +1,38 @@
 # Responsive Design
 
-Mobile-first, container queries, dynamic viewport units - standardy 2026.
+> ⚠️ **Stack projektu:** Expo SDK 54. W RN NIE MA media queries, container queries, viewport units:
+> - `@media (min-width: 768px)` → `useWindowDimensions()` hook + conditional className
+> - `@container` queries → `onLayout` z `View` + warunkowy render
+> - `min-h-dvh/svh/lvh` → `flex-1` + `SafeAreaView` z `react-native-safe-area-context`
+> - `vw`/`vh` → `Dimensions.get('window')` lub `useWindowDimensions()`
+>
+> **Breakpointy** — per-device, NIE container:
+> - iPhone SE: 320-375pt
+> - iPhone standard: 390-414pt
+> - iPhone Pro Max: 430pt
+> - iPad mini portrait: 768pt
+> - iPad pro portrait: 1024pt
+> - landscape: `width > height`
+>
+> **Orientacja** — `useWindowDimensions()` zwraca aktualne; sleeper: portrait only (`app.json`).
+> **Tablet detection** — `Device.deviceType === DeviceType.TABLET` (`expo-device`) lub `width >= 768`.
+> **NativeWind v4 responsywne klasy** (`sm:`, `md:`, `lg:`) — NIE wspierane dla RN (web only). Użyj JS hooks.
+>
+> Wzorzec:
+> ```tsx
+> import { useWindowDimensions } from 'react-native';
+>
+> function useBreakpoint() {
+>   const { width, height } = useWindowDimensions();
+>   return {
+>     isSmall: width < 375,
+>     isTablet: width >= 768,
+>     isLandscape: width > height,
+>   };
+> }
+> ```
+
+Per-device responsywność React Native — useWindowDimensions, Safe Area, orientacja.
 
 ---
 

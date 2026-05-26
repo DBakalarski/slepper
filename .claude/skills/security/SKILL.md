@@ -1,11 +1,11 @@
 ---
 name: security
-description: "Systematyczny audyt bezpieczeństwa dla React 19 + Supabase + Edge Functions. Używaj przy review bezpieczeństwa, przed deployem, przy pracy z auth/authz, walidacją inputów, RLS policies, XSS, OWASP Top 10."
+description: "Systematyczny audyt bezpieczeństwa dla Expo SDK 54 (React Native) + Supabase + Edge Functions. Używaj przy review bezpieczeństwa, przed deployem, przy pracy z auth/authz, walidacją inputów, RLS policies, deep linkami, AsyncStorage vs SecureStore, WebView injection, OWASP Mobile Top 10."
 ---
 
 # Security Audit
 
-Skill do przeprowadzania systematycznego audytu bezpieczenstwa w projekcie React 19 + Supabase + Edge Functions.
+Skill do przeprowadzania systematycznego audytu bezpieczenstwa w projekcie **Expo SDK 54 / React Native + Supabase + Edge Functions**.
 
 ## Kiedy Uzywac
 
@@ -26,10 +26,12 @@ Skill do przeprowadzania systematycznego audytu bezpieczenstwa w projekcie React
 Znajdz wszystkie punkty wejscia danych od uzytkownika i zweryfikuj walidacje.
 
 1. **Zmapuj punkty wejscia:**
-   - Form actions (React Hook Form + Zod)
+   - Form actions (React Hook Form + Zod) — z `<TextInput>`
    - API routes / Edge Functions (`req.json()`, `req.text()`, query params)
-   - URL parameters (React Router `useParams`, `useSearchParams`)
-   - File uploads
+   - URL parameters (`expo-router` `useLocalSearchParams`, dynamic route segments)
+   - Deep linki (`Linking.parse(url)`, scheme `sleeper://...`) — KRYTYCZNE: walidacja schema + host
+   - File uploads (`expo-image-picker`, `expo-document-picker`)
+   - QR code (jeśli używamy) — `expo-barcode-scanner` payload validation
 2. **Sprawdz walidacje Zod** na kazdym punkcie wejscia:
    - Czy schemat Zod istnieje?
    - Czy walidacja jest na granicy systemu (nie glebiej)?
@@ -49,17 +51,20 @@ Supabase query builder jest domyslnie parametryzowany, ale sa pulapki.
 3. **Sprawdz filtry** -- czy zapytania `.from()` maja odpowiednie `.eq()`, `.match()`
 4. **Sprawdz `.rpc()` z raw SQL** -- szukaj konkatenacji stringow wewnatrz funkcji PostgreSQL
 
-### Krok 3: XSS Detection
+### Krok 3: XSS / Injection (RN context)
 
-React domyslnie escapuje output, ale istnieja wyjatki.
+**Uwaga:** React Native NIE MA DOM, więc klasyczne XSS NIE DOTYCZY większości aplikacji. XSS dotyczy TYLKO:
 
-1. **Szukaj niebezpiecznego renderowania HTML** -- kazde uzycie raw HTML injection to potencjalny XSS
-2. **Sprawdz user-generated URLs:**
-   - `href={userInput}` -- czy jest walidacja protokolu? (`javascript:` protocol attack)
-   - `src={userInput}` -- czy jest whitelist domen?
-3. **Content Security Policy** -- czy istnieje i czy jest restrykcyjna?
-4. **Third-party content** -- czy jest sandboxowany (iframe sandbox)?
-5. **Szukaj renderowania raw HTML** z zewnetrznych zrodel (markdown, CMS)
+1. **WebView** (`react-native-webview`, `expo-web-browser`):
+   - Czy wyswietlamy user-generated content w WebView? Jeśli tak → walidacja HTML, sandbox, `originWhitelist`
+   - `injectedJavaScript` z user input → NIE; tylko statyczny JS
+2. **Deep linki** (`Linking.openURL(url)` z user input):
+   - Walidacja `scheme` (`https://` only, lub explicit whitelist)
+   - Blokowanie `javascript:`, `file:`, `data:` schemas
+3. **Markdown/Rich text rendering** (`react-native-markdown-display`, `react-native-render-html`):
+   - Czy sanityzacja jest aktywna? (`react-native-render-html` ma `defaultTextProps`, sanitize)
+   - Linki w markdown → walidacja URL przed `Linking.openURL`
+4. **Sleeper MVP**: brak WebView, brak markdown — **XSS NIE DOTYCZY**. Sprawdzaj tylko gdy dojdzie deep link handling lub WebView.
 
 ### Krok 4: Auth/Authz Audit
 
@@ -90,20 +95,53 @@ Szukaj wyciekow danych wrazliwych.
    - `console.log` / `console.error` z obiektami user/session/error
    - Struktury bledow Supabase wyciekaja info o schemacie DB
 3. **Service role key:**
-   - Czy `SUPABASE_SERVICE_ROLE_KEY` jest TYLKO w Edge Functions?
-   - Czy nie jest w zmiennych `VITE_*`?
+   - Czy `SUPABASE_SERVICE_ROLE_KEY` jest TYLKO w Edge Functions (Supabase Dashboard secrets)?
+   - Czy NIE jest w `EXPO_PUBLIC_*` env vars? (EXPO_PUBLIC_* jest **publiczne** — bundle'owane do app!)
+   - Czy NIE jest w `Constants.expoConfig.extra` jeśli ma być sekretny?
+4. **Token storage (Mobile-specific):**
+   - Supabase session token w AsyncStorage — OK dla MVP (iOS Keychain backing dla AsyncStorage)
+   - Biometric secret / PIN → MUSI być w `expo-secure-store` (Keychain iOS, Keystore Android — hardware-backed)
+   - Encryption keys → ZAWSZE `expo-secure-store`
+5. **Screenshot blur (wrażliwe ekrany):**
+   - `expo-screen-capture` — `preventScreenCaptureAsync()` na ekranach z hasłem/2FA
+   - W background app preview: `expo-screen-capture` `addScreenshotListener` lub flag `<View pointerEvents="none">` na background
 4. **PII w Sentry:**
    - Czy `captureException` nie wysyla danych osobowych?
    - Czy `beforeSend` filtruje wrazliwe dane?
 5. **Odpowiedzi API:**
    - Czy endpointy nie zwracaja wiecej danych niz potrzeba? (`select('*')` vs `select('id, name')`)
 
-### Krok 6: OWASP Top 10 Compliance
+### Krok 6: OWASP Top 10 + Mobile Top 10 Compliance
 
-Przejdz kazda kategorie OWASP Top 10 (2021) pod katem naszego stacku.
+Przejdz kazda kategorie OWASP Top 10 (2021) **i OWASP Mobile Top 10 (M1-M10)** pod katem naszego stacku.
 
-Pelne mapowanie kategorii na stack React + Supabase + Edge Functions:
+**Mobile-specific OWASP (M-kategorie):**
+- **M1: Improper Credential Usage** — token storage (AsyncStorage vs SecureStore)
+- **M2: Inadequate Supply Chain Security** — `npm audit`, `expo doctor`, dependency pinning
+- **M3: Insecure Authentication** — OAuth flow walidacja, session timeout
+- **M4: Insufficient Input/Output Validation** — deep link params, file picker results
+- **M5: Insecure Communication** — `fetch` z `https://` only, certificate pinning (rzadko w MVP)
+- **M6: Inadequate Privacy Controls** — Sentry email masking, breadcrumbs review
+- **M7: Insufficient Binary Protections** — release builds (`eas build --profile production`) z code obfuscation; jailbreak detection (rzadko w MVP)
+- **M8: Security Misconfiguration** — `app.config.ts` review (uprawnienia, plugin config)
+- **M9: Insecure Data Storage** — patrz Krok 5 punkt 4
+- **M10: Insufficient Cryptography** — używamy Supabase + standard JWT (OK)
+
+Pelne mapowanie kategorii:
 **[Przewodnik: resources/owasp-react-supabase.md](resources/owasp-react-supabase.md)**
+
+### Krok 7: Deep Link & WebView Validation (mobile-specific)
+
+1. **Deep link scheme** (`app.json` `scheme: "sleeper"`):
+   - Czy walidujemy `host` i `path` przed actionem? (`Linking.parse(url)` zwraca `hostname`, `path`, `queryParams`)
+   - Czy fallback jest bezpieczny (`/` zamiast crash) gdy `host` jest unexpected?
+   - Universal Links / App Links (iOS apple-app-site-association, Android assetlinks.json) — jeśli używamy: walidacja domeny po stronie OS, bezpieczne
+2. **WebView** (jeśli używamy):
+   - `originWhitelist={['https://*.our-domain.com']}` — restrykcja origin
+   - `javaScriptEnabled={true}` tylko gdy wymagane
+   - `injectedJavaScript` TYLKO statyczny — nigdy z user input
+   - `onShouldStartLoadWithRequest` — walidacja URL przed nawigacją w WebView
+3. **Sleeper MVP**: brak WebView, deep linki tylko dla OAuth callback (`sleeper://auth/callback`) — walidacja w `app/auth/callback.tsx` przed `exchangeCodeForSession`.
 
 ---
 

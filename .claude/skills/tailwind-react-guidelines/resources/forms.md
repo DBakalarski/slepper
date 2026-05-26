@@ -1,6 +1,17 @@
 # Formularze
 
-React Hook Form + Zod - walidacja, dostępność, integracja z React Query.
+> ⚠️ **Stack projektu:** Expo SDK 54 + React Native. Konwersja przykładów na RN:
+> - `<input>` / `<Input>` (shadcn) → `<TextInput>` z propsami `onChangeText={value => ...}` (nie `onChange`)
+> - `<button>` / `<Button>` (shadcn) → `<Pressable>` lub `<Button>` z `react-native`
+> - `<form>` + `handleSubmit` → wrapper `<View>` + `handleSubmit` na onPress submitu
+> - A11y: zamiast `aria-invalid`/`aria-describedby` użyj `accessibilityLabel`, `accessibilityHint`, `accessibilityState={{invalid: true}}`
+> - Wszystkie formy z inputami: opakuj w `<KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>`
+> - Upload plików → `expo-image-picker` lub `expo-document-picker`, nie `<input type="file">`
+> - DevTools (`@hookform/devtools`) działają TYLKO na web (`expo-router` z web preview); w RN użyj `console.log` z `watch()`
+>
+> Główne wzorce (Zod schemas, RHF Controller, walidacja warunkowa, multi-step) są w pełni aktualne.
+
+React Hook Form + Zod — walidacja, dostępność, integracja z TanStack Query.
 
 ---
 

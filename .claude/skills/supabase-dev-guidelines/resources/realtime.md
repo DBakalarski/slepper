@@ -1,6 +1,48 @@
 # Realtime Subscriptions
 
-Wzorce dla Supabase Realtime - subscriptions, presence, broadcast.
+> ⚠️ **Stack projektu:** Expo SDK 54. Realtime w sleeper jest **KLUCZOWY** — sync między dwoma telefonami w czasie rzeczywistym (rodzic 1 + rodzic 2 widzą tę samą aktywną sesję).
+>
+> **RN-specific gotchas:**
+> - **Background/foreground**: WebSocket może się rozłączyć w background. Dodaj `AppState` listener:
+>   ```ts
+>   AppState.addEventListener('change', (state) => {
+>     if (state === 'active') queryClient.invalidateQueries(); // re-fetch on resume
+>   });
+>   ```
+> - **Network change** (WiFi → 4G) — Supabase SDK reconnect'uje automatycznie, ale Realtime sub może mieć missing events between disconnect/reconnect — preferuj re-fetch pełnego stanu zamiast polegać na incremental events
+> - **Cleanup**: ZAWSZE w `useEffect` return: `supabase.removeChannel(channel)` — bez tego memory leak + duplicate handlers po remount
+> - **iOS Background Modes**: Niepotrzebne dla sleeper MVP (nie odbieramy push w tle); ale gdyby było potrzebne → `expo-background-fetch` + Supabase nie działa w tle (WebSocket suspended)
+>
+> **Wzorzec dla sleeper (sessions sync):**
+> ```ts
+> import { useEffect } from 'react';
+> import { useQueryClient } from '@tanstack/react-query';
+> import { supabase } from '@/lib/supabase';
+>
+> export function useSessionsSync(familyId: string) {
+>   const queryClient = useQueryClient();
+>
+>   useEffect(() => {
+>     const channel = supabase
+>       .channel(`sessions:${familyId}`)
+>       .on('postgres_changes', {
+>         event: '*',
+>         schema: 'public',
+>         table: 'sessions',
+>         filter: `family_id=eq.${familyId}`,
+>       }, () => {
+>         queryClient.invalidateQueries({ queryKey: ['sessions', familyId] });
+>       })
+>       .subscribe();
+>
+>     return () => { supabase.removeChannel(channel); };
+>   }, [familyId, queryClient]);
+> }
+> ```
+>
+> **NIE** używaj presence/broadcast w sleeper MVP (postgres_changes wystarczy do sync sesji).
+
+Wzorce dla Supabase Realtime — postgres_changes subscriptions, presence, broadcast — z RN gotchas.
 
 ---
 

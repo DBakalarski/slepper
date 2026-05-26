@@ -1,6 +1,20 @@
 # Surfaces
 
-Border radius, optical alignment, shadows, image outlines, hit areas — micro-detale powierzchni które sprawiają, że UI wygląda dopracowany.
+> ⚠️ **Stack projektu:** Expo SDK 54. Mapowania:
+> - **Border radius (concentric)** — identyczne (`rounded-2xl` outer, `rounded-xl` inner)
+> - **Optical alignment** — w RN ikony `<Image>` / `expo-image` / `lucide-react-native` (osobny package!); padding manualnie
+> - **Shadows** — różne API per platform:
+>   - iOS: `shadowColor`, `shadowOffset`, `shadowOpacity`, `shadowRadius`
+>   - Android: `elevation` (Material)
+>   - NativeWind: `shadow-sm/md/lg/xl` mapuje na obie (działa w v4)
+> - **Shadow-as-border** — `borderWidth: 1` + `borderColor: 'rgba(0,0,0,0.05)'` (mniej kosztowne niż shadow)
+> - **Image outlines** — `<View>` wrapper z `borderWidth` wokół `<Image>` (RN `Image` nie ma `outline`)
+> - **Hit areas (≥ 44pt)** — `hitSlop={{top:8,bottom:8,left:8,right:8}}` na `<Pressable>` — rozszerza touch bez zmiany wizualnego rozmiaru
+> - **Overlay** — `<View className="absolute inset-0 bg-black/50">` identyczne
+>
+> Reszta (concentric radius, optical alignment, shadow-as-border) — koncepty uniwersalne, składnia RN.
+
+Border radius, optical alignment, shadows (iOS/Android), image outlines, hit areas — RN.
 
 ---
 

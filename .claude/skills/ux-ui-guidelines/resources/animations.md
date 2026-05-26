@@ -1,6 +1,22 @@
 # Animacje
 
-Motion (dawniej Framer Motion), View Transitions API, CSS animations - standardy 2026.
+> ⚠️ **Stack projektu:** Expo SDK 54 + **react-native-reanimated v4 + worklets**. Mapowania z web:
+> - `<motion.div>` (Framer) → `<Animated.View>` z `react-native-reanimated`. NIE używaj `react-native`'s legacy `Animated` API.
+> - `AnimatePresence` → `<Animated.View entering={FadeIn} exiting={FadeOut}>` (gotowe presety) lub manual unmount + `useSharedValue`.
+> - `document.startViewTransition` → NIE istnieje. Shared element transitions: `react-native-screens` lub `react-native-reanimated` shared transitions (eksperymentalne, expo-router wsparcie).
+> - CSS `@keyframes` / `transition` → NIE w RN. Wszystko przez Reanimated: `withTiming`, `withSpring`, `withSequence`, `withRepeat`, `withDelay`.
+> - `:hover`, `:focus` (CSS) → NIE w RN (brak mouse). Equivalents: `<Pressable>` `({pressed}) => style`.
+> - `prefers-reduced-motion` media query → `AccessibilityInfo.isReduceMotionEnabled()` Promise.
+> - Stagger w lists → `withDelay(index * 50, withTiming(1))` lub `entering={FadeInDown.delay(index*50)}`.
+>
+> NativeWind quick wins:
+> - `<Pressable className="active:opacity-70">` — wbudowane press feedback
+> - `active:scale-[0.96]` — tactile (NIE płynne — applies/removes; dla smooth użyj Reanimated)
+> - Dla complex: `useSharedValue` + `useAnimatedStyle`.
+>
+> Zasady (150-300ms duration, unikaj animacji layoutu, reduced motion gate) — identyczne na mobile.
+
+react-native-reanimated v4 + worklets, gesture-handler — animacje mobilne na UI thread.
 
 ---
 

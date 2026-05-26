@@ -7,15 +7,16 @@ description: Auth (Google/Facebook OAuth, email), Database (PostgreSQL, RLS poli
 
 ## Cel
 
-Kompleksowy przewodnik dla pracy z Supabase w aplikacjach Vite SPA - autentykacja, baza danych, RLS policies, Edge Functions i bezpieczeństwo.
+Kompleksowy przewodnik dla pracy z Supabase w aplikacji **Expo SDK 54 / React Native** - autentykacja, baza danych, RLS policies, Edge Functions, Realtime na mobile i bezpieczeństwo.
 
 ## Kiedy Używać Tego Skilla
 
-- Praca z autentykacją (login, rejestracja, OAuth)
+- Praca z autentykacją (login, rejestracja, OAuth z `expo-web-browser` + deep links)
 - Tworzenie lub modyfikacja tabel bazy danych
 - Pisanie RLS policies
 - Tworzenie Edge Functions
 - Migracje bazy danych
+- Realtime + RN gotchas (AppState, background → foreground)
 - Bezpieczeństwo i audit logging
 
 ---
@@ -55,24 +56,52 @@ Kompleksowy przewodnik dla pracy z Supabase w aplikacjach Vite SPA - autentykacj
 
 ## Klient Supabase
 
-### Typed Client (Standard 2026)
+### Typed Client (Expo SDK 54)
 ```typescript
-// lib/supabase.ts
+// sleeper-app/src/lib/supabase.ts
+import 'react-native-url-polyfill/auto'; // ZAWSZE pierwsza linia
 import { createClient } from '@supabase/supabase-js';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { Database } from '@/types/database';
 
-export const supabase = createClient(
-    import.meta.env.VITE_SUPABASE_URL,
-    import.meta.env.VITE_SUPABASE_ANON_KEY
+export const supabase = createClient<Database>(
+    process.env.EXPO_PUBLIC_SUPABASE_URL!,
+    process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+        auth: {
+            storage: AsyncStorage,
+            autoRefreshToken: true,
+            persistSession: true,
+            detectSessionInUrl: false, // RN nie ma URL session detection
+        },
+    }
 );
 
 // Helper types
-export type Tables =
+export type Tables<T extends keyof Database['public']['Tables']> =
     Database['public']['Tables'][T]['Row'];
-export type InsertTables =
+export type InsertTables<T extends keyof Database['public']['Tables']> =
     Database['public']['Tables'][T]['Insert'];
-export type UpdateTables =
+export type UpdateTables<T extends keyof Database['public']['Tables']> =
     Database['public']['Tables'][T]['Update'];
+```
+
+**Krytyczne dla RN:**
+- `import 'react-native-url-polyfill/auto'` MUSI być pierwsza linia (Supabase SDK używa `URL` API)
+- `storage: AsyncStorage` — token persistence; bez tego user wylogowuje się przy reload
+- `detectSessionInUrl: false` — to feature web SPA z PKCE callback URL; w RN OAuth flow przez `expo-web-browser` + `Linking.parse(url)` manual
+
+**AppState listener (token refresh w tle):**
+```typescript
+import { AppState } from 'react-native';
+
+AppState.addEventListener('change', (state) => {
+    if (state === 'active') {
+        supabase.auth.startAutoRefresh();
+    } else {
+        supabase.auth.stopAutoRefresh();
+    }
+});
 ```
 
 ### Generowanie Typów
@@ -122,15 +151,20 @@ const { data, error } = await supabase.rpc('ensure_user_profile');
 ### Autentykacja
 
 **Dostępne metody:**
-- OAuth (Google, Facebook, GitHub, Discord, etc.)
-- Email/hasło
+- OAuth (Google, Facebook, Apple) — przez `expo-web-browser` + `expo-linking` deep links
+- Email/hasło — direct `supabase.auth.signInWithPassword`
+- Magic link — `supabase.auth.signInWithOtp` + email z deep linkiem
 
-**Kluczowe Koncepcje:**
-- PKCE z jawnym `exchangeCodeForSession(code)` w callback
-- Hook `useAuth()` zarządza sesją
-- Trigger `handle_new_user()` tworzy rekord w `public.profiles`
-- Funkcja `ensure_user_profile()` jako fallback
-- `getSession()` dla UI, `getUser()` lub `getClaims()` dla krytycznych operacji
+**Kluczowe Koncepcje (Expo):**
+- OAuth flow:
+  1. `Linking.createURL('/auth/callback')` — generuje deep link
+  2. `supabase.auth.signInWithOAuth({ provider, options: { redirectTo: deepLink, skipBrowserRedirect: true } })`
+  3. `WebBrowser.openAuthSessionAsync(data.url, deepLink)` — otwiera w in-app browser
+  4. Po callback: `supabase.auth.exchangeCodeForSession(params.code)` (PKCE)
+- Scheme w `app.json`: `"scheme": "sleeper"` → callback URL `sleeper://auth/callback`
+- Hook `useAuth()` w `sleeper-app/src/hooks/useAuth.ts` (subskrybuje `supabase.auth.onAuthStateChange`)
+- Trigger `handle_new_user()` tworzy rekord w `public.profiles` (RLS-friendly, server-side)
+- **`getSession()` dla UI** (cache), **`getUser()` dla krytycznych operacji** (zawsze fresh validate)
 
 **[Pełny Przewodnik: resources/auth-patterns.md](resources/auth-patterns.md)**
 
@@ -187,12 +221,31 @@ const { data, error } = await supabase.rpc('ensure_user_profile');
 
 ---
 
-### Realtime (Opcjonalnie)
+### Realtime (sleeper: KLUCZOWE — sync dwóch telefonów)
 
-**Użycie:**
-- Subscriptions dla zmian w tabelach
-- Presence dla statusu użytkowników
-- Broadcast dla custom events
+**Użycie w sleeper:**
+- Subscriptions dla tabel `sessions`, `children` — Realtime event → `queryClient.invalidateQueries(...)`
+- Presence rzadko (nie potrzebujemy "kto online" w MVP)
+- Broadcast nie używamy
+
+**RN gotchas:**
+- **Background → foreground**: WebSocket może się rozłączyć podczas background; `AppState` listener + `supabase.removeAllChannels()` + re-subscribe przy `'active'`
+- **Reconnection**: Supabase SDK reconnect'uje automatycznie, ale subscription może być stale (nie złapie eventów z czasu offline) — preferuj re-fetch przy reconnect zamiast polegania na sub
+- **Cleanup**: ZAWSZE w `useEffect` return: `channel.unsubscribe()` (memory leak inaczej)
+- **Network change**: na mobile często zmienia się WiFi/4G — Supabase Realtime SDK to handle'uje, ale obserwuj
+
+**Wzorzec dla sleeper:**
+```typescript
+useEffect(() => {
+    const channel = supabase.channel('sessions-sync')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'sessions' }, () => {
+            queryClient.invalidateQueries({ queryKey: ['sessions'] });
+        })
+        .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+}, []);
+```
 
 **[Pełny Przewodnik: resources/realtime.md](resources/realtime.md)**
 
@@ -225,67 +278,119 @@ const { data, error } = await supabase.rpc('ensure_user_profile');
 
 ## Zmienne Środowiskowe
 
-### Frontend (.env.local)
+### Mobile app (sleeper-app/.env)
 ```env
-VITE_SUPABASE_URL=your_supabase_url
-VITE_SUPABASE_ANON_KEY=your_anon_key
+EXPO_PUBLIC_SUPABASE_URL=your_supabase_url
+EXPO_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
 ```
 
-### Edge Functions
-```env
+**Uwaga:** `EXPO_PUBLIC_*` jest **publiczne** (bundle'owane do app) — TYLKO anon key i URL. Service role NIGDY w app code.
+
+Alternatywa przez `app.config.ts` + `Constants.expoConfig?.extra`:
+```ts
+// app.config.ts
+export default {
+    expo: {
+        extra: {
+            supabaseUrl: process.env.SUPABASE_URL,
+            supabaseAnonKey: process.env.SUPABASE_ANON_KEY,
+        }
+    }
+};
+```
+
+### Edge Functions (Supabase Dashboard secrets, NIE .env w repo)
+```
 SUPABASE_URL=...
 SUPABASE_SERVICE_ROLE_KEY=...  # NIGDY nie commituj!
-STRIPE_SECRET_KEY=...          # NIGDY nie commituj!
-STRIPE_WEBHOOK_SECRET=...      # NIGDY nie commituj!
+SENTRY_DSN=...                  # backend Sentry
 ```
+
+Set: `supabase secrets set SUPABASE_SERVICE_ROLE_KEY=...`
 
 ---
 
 ## Częste Błędy
 
-### Unikaj
+### Unikaj (Expo + Supabase)
 ```typescript
-// ❌ Service role na froncie
-const supabase = createClient(url, SERVICE_ROLE_KEY);
+// ❌ Service role w app (EXPO_PUBLIC_* jest publiczne!)
+const supabase = createClient(url, EXPO_PUBLIC_SERVICE_ROLE_KEY);
+
+// ❌ Brak URL polyfill — Supabase SDK będzie crashował
+// (zapomniany `import 'react-native-url-polyfill/auto'`)
+
+// ❌ Brak AsyncStorage w client config — user wylogowuje się przy każdym restart app
+createClient(url, key); // bez { auth: { storage: AsyncStorage } }
 
 // ❌ Email w RLS policy
 USING (user_email = auth.email())  // Email może się zmienić!
 
 // ❌ Brak typów
-const { data } = await supabase.from('posts').select('*');  // data: any
+const { data } = await supabase.from('sessions').select('*');  // data: any
 
 // ❌ console.error w produkcji
-console.error('DB error:', error);  // Wycieka info o strukturze DB
+console.error('DB error:', error);  // Wycieka info o strukturze DB; Sentry capture zamiast tego
 
 // ❌ Stary import w Edge Functions
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 
-// ❌ getSession() do autoryzacji server-side
+// ❌ getSession() do autoryzacji server-side (Edge Function)
 const { data: { session } } = await supabase.auth.getSession();
 if (session) { /* autoryzacja */ }  // Token nie jest zweryfikowany!
+
+// ❌ Realtime channel bez cleanup w useEffect — memory leak
+useEffect(() => {
+    supabase.channel('x').subscribe();
+}, []); // brak return cleanup!
+
+// ❌ detectSessionInUrl: true w RN — to feature SPA, w RN nie działa
 ```
 
 ### Preferuj
 ```typescript
-// ✅ Anon key na froncie
-const supabase = createClient(url, ANON_KEY);
+// ✅ Anon key + AsyncStorage persistence
+import 'react-native-url-polyfill/auto';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+const supabase = createClient(url, ANON_KEY, {
+    auth: { storage: AsyncStorage, autoRefreshToken: true, persistSession: true, detectSessionInUrl: false }
+});
 
 // ✅ UUID w RLS policy
-USING (auth.uid() = user_id)  // UUID jest immutable
+USING ((SELECT auth.uid()) = user_id)  // subquery dla wydajności RLS
 
 // ✅ Typed queries
-const { data } = await supabase.from('posts').select('*');  // data: Tables[]
+const { data } = await supabase.from('sessions').select('*');  // data: Tables[]
 
-// ✅ Production-safe logger
-logger.error('Błąd operacji', error);
+// ✅ Production-safe — Sentry capture w catch + structured logger
+import * as Sentry from '@sentry/react-native';
+catch (error) { Sentry.captureException(error); }
 
 // ✅ Nowy standard Edge Functions
 Deno.serve(async (req) => { ... });
 
-// ✅ getUser() lub getClaims() do autoryzacji
-const { data: { user } } = await supabase.auth.getUser();
+// ✅ getUser() w Edge Functions (server-side validation)
+const { data: { user } } = await supabase.auth.getUser(token);
 if (user) { /* autoryzacja */ }
+
+// ✅ Realtime z cleanup
+useEffect(() => {
+    const channel = supabase.channel('x').subscribe();
+    return () => { supabase.removeChannel(channel); };
+}, []);
 ```
+
+## Sleeper: AsyncStorage vs SecureStore
+
+| Dane | Storage | Powód |
+|------|---------|-------|
+| Supabase session token (JWT) | AsyncStorage | Standard; iOS/Android Keychain hardware-backed dla Supabase JS SDK |
+| Settings UI (theme, layout) | AsyncStorage + zustand persist | Nieczułe |
+| Active child ID (Zustand) | AsyncStorage | UI state |
+| Biometric secret / PIN | `expo-secure-store` | Najwyższa wrażliwość — Keychain (iOS) / Keystore (Android) |
+| Encryption keys | `expo-secure-store` | Zawsze osobne hardware-backed storage |
+
+Sleeper MVP: **wszystko w AsyncStorage** (token, UI state). SecureStore tylko gdy dodamy biometric/PIN (post-MVP).
 
 ---
 

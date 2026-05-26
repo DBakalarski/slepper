@@ -1,6 +1,15 @@
 # Performance Polish
 
-Specyfika transitions i hinty kompozycji GPU — micro-optymalizacje wydajności animacji.
+> ⚠️ **Stack projektu:** Expo SDK 54 + Hermes engine + react-native-reanimated v4. Mapowania:
+> - `transition: all` (anty-pattern) → w RN nie istnieje; ekwiwalent: nie animuj wielu wartości przez Reanimated bez potrzeby (każda animowana wartość = UI thread cost).
+> - `will-change` GPU hint → NIE istnieje w RN. Reanimated worklets domyślnie operują na transform/opacity (GPU-friendly).
+> - **GPU-friendly** — `transform: [{translateX}, {scale}]` i `opacity`. Unikaj `width`/`height` (re-layout drogie w RN flexboxie).
+> - **FlatList tuning** — `keyExtractor`, memo `renderItem`, `getItemLayout` (gdy fixed height), `removeClippedSubviews` (Android), `windowSize`, `maxToRenderPerBatch`.
+> - **Bridge** — minimalizuj prop changes; preferuj Reanimated worklets (operują bez bridge call).
+> - **Image** — `expo-image` (cache, blurhash, native decoding); NIE `react-native`'s `Image` (memory leaks na liście).
+> - **Profiling** — React DevTools Profiler + Hermes Inspector + Reanimated FPS monitor (`Animated.useFPSMonitor`).
+
+Wydajność animacji RN — Hermes, Reanimated worklets, FlatList tuning, image cache.
 
 ---
 

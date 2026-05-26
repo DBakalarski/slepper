@@ -1,6 +1,21 @@
 # UI Patterns
 
-Nawigacja, wyświetlanie danych, wyszukiwanie i onboarding.
+> ⚠️ **Stack projektu:** Expo SDK 54 + expo-router. Mapowania:
+> - **Tabs (URL-synced)** → `expo-router/Tabs` (`<Tabs>` z `_layout.tsx`); URL sync wbudowany (tab = route).
+> - **Breadcrumbs** → rzadko mobile; jeśli potrzeba — `useSegments()` + flex-row z separatorami.
+> - **Pagination** → typowo infinite scroll z `FlatList` `onEndReached`.
+> - **Tables (web)** → NIE używaj na mobile — listy `FlatList` z kartami.
+> - **Empty states** → identyczne pojęciowo, tylko RN komponenty.
+> - **Skeleton** → `<View className="animate-pulse bg-muted">` lub `react-native-skeleton-placeholder`.
+> - **Debounced search** → `useDebounce` + TanStack Query; `<TextInput clearButtonMode="while-editing">` (iOS).
+> - **Filter chips** → `<ScrollView horizontal>` + `<Pressable>` per chip.
+> - **URL state sync** → `useLocalSearchParams()` + `router.setParams({...})` (expo-router).
+> - **Multi-step wizard** → stan w Zustand, krok per `<View>`, przejścia przez Reanimated lub `react-native-pager-view`.
+> - **Progress save** (localStorage) → `AsyncStorage` + `zustand/middleware` persist.
+>
+> Sleeper specyfika: dwa telefony (Realtime sync), bottom tab bar 4 zakładki, portrait only (`app.json` `orientation: "portrait"`).
+
+Nawigacja (Stack/Tabs expo-router), listy FlatList, search, onboarding mobile.
 
 ---
 

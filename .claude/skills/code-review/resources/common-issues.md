@@ -1,6 +1,35 @@
 # Common Issues
 
-Częste błędy w projekcie React 19 + TailwindCSS v4 + Supabase z przykładami.
+> ⚠️ **Stack projektu:** Expo SDK 54 + RN + NativeWind v4 + Tailwind v3.4 + Supabase. Częste błędy specyficzne dla mobile (dorzucaj do listy poniżej gdy poznajesz):
+>
+> **Metro / bundler:**
+> - "Unable to resolve module" — cache stale; fix: `npx expo start -c` lub usuń `.expo/`, `node_modules/.cache/`
+> - "Tried to register two views with the same name" — duplikat native module (np. po dodaniu/usunięciu plugin); fix: rebuild dev client (`eas build --profile development`)
+>
+> **NativeWind:**
+> - "ExperimentalNativeWind not configured" — brakuje `presets: [require('nativewind/preset')]` w `tailwind.config.js`
+> - Klasy nie aplikują się — sprawdź czy `content` w `tailwind.config.js` pokrywa pliki (`./src/**/*.{ts,tsx}`)
+> - Tailwind v4 składnia (`@theme {...}`) używana zamiast v3.4 — to NIE działa
+>
+> **expo-router:**
+> - 404 na route → sprawdź `_layout.tsx` parent group czy istnieje
+> - Deep link nie otwiera ekranu → `scheme` w `app.json`, `<Stack.Screen options={{deepLinkPath}}>` lub `Linking.parse`
+>
+> **Supabase + Expo:**
+> - "auth-storage" not configured — brak AsyncStorage w `createClient({ auth: { storage: AsyncStorage } })`
+> - "URL.protocol unsupported" — brak `import 'react-native-url-polyfill/auto'` na początku `lib/supabase.ts`
+> - Realtime subscription zostaje po unmount → cleanup w `useEffect` return (`channel.unsubscribe()`)
+> - Token expired po background → AppState listener + `supabase.auth.refreshSession()`
+>
+> **RN-specific:**
+> - `useEffect` z async funkcją + brak cleanup → memory leak; użyj `AbortController` lub `isMounted` flag
+> - `<Text>` poza `<View>` (bezpośrednio w array.map bez wrappera) → na Android error "Text strings must be rendered within a <Text> component"
+> - `<TextInput>` z `onChange` zamiast `onChangeText` → e.target undefined, błąd
+> - `<Pressable>` bez `accessibilityLabel` na ikonie — VoiceOver przeczyta "button" zamiast funkcji
+>
+> Reszta poniżej (web-stack errors) — pojęciowo podobne ale w innym tooling; ignoruj jeśli dotyczy Vite/RTL/MSW.
+
+Częste błędy w projekcie Expo SDK 54 + RN + Supabase z przykładami.
 
 ---
 

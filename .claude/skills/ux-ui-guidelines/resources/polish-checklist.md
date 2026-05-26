@@ -1,6 +1,26 @@
 # Polish Checklist
 
-Pryncypia, częste błędy i checklista review do dopracowywania interfejsu — synteza zasad z pozostałych plików polish.
+> ⚠️ **Stack projektu:** Expo SDK 54 / React Native. Pryncypia polish mobile:
+> 1. **Concentric radius** — outer `rounded-2xl` (16px) + padding 4px → inner `rounded-xl` (12px)
+> 2. **Tabular numbers** na timerze → `style={{fontVariant: ['tabular-nums']}}` (NIE NativeWind klasa — RN nie wspiera tabular-nums utility)
+> 3. **Touch feedback** — KAŻDY interaktywny `<Pressable>` z `active:opacity-70` lub `active:scale-[0.98]` + `android_ripple`
+> 4. **Safe Area** — bottom buttons `paddingBottom: insets.bottom + 16`
+> 5. **Keyboard handling** — `<KeyboardAvoidingView>` na każdym ekranie z `<TextInput>`
+> 6. **Loading skeleton** matching content size — unikaj layout shift
+> 7. **List separators** — `ItemSeparatorComponent`, NIE `border-b` na items (mniej re-renders)
+> 8. **Image transitions** — `expo-image` `transition={300}` lub `placeholder={blurhash}`
+> 9. **Pull-to-refresh** wszystkie listy z server data (`refreshControl`)
+> 10. **Empty states** — ikona + tekst + CTA na każdej liście
+> 11. **Error toasts** zamiast `console.error` — `react-native-toast-message` lub `Alert`
+> 12. **Focus management** — `useRef<TextInput>` + `.focus()` + `returnKeyType="next"`
+> 13. **Reduced motion gate** — `AccessibilityInfo.isReduceMotionEnabled()` przed animacjami
+> 14. **A11y label** na każdym ikonowym przycisku — `accessibilityLabel="..."`
+> 15. **44pt touch target** — `padding` lub `hitSlop`
+> 16. **Platform parity** — testuj iOS i Android osobno każdy dev session
+>
+> Reszta dokumentu (synteza zasad) — pojęciowo identyczna na mobile.
+
+16 pryncypiów polish dla Expo + RN + checklista review.
 
 ---
 

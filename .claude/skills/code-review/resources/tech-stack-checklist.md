@@ -1,6 +1,19 @@
 # Tech Stack Checklist
 
-Checklisty do code review dla każdej technologii w projekcie.
+> ⚠️ **Stack projektu:** Expo SDK 54 + React Native 0.81 + NativeWind v4 + Tailwind v3.4 + Supabase + TanStack Query + Zustand + expo-router. Adaptacje względem zawartości poniżej:
+>
+> - **Vite / Vite SPA** → NIE używamy; Metro bundler (Expo). Konfiguracja w `metro.config.js`.
+> - **React Router** → expo-router (file-based, `sleeper-app/src/app/`). `_layout.tsx`, `(group)`, dynamic `[id].tsx`.
+> - **Tailwind v4 + `@theme`** → NIE; Tailwind v3.4 + `tailwind.config.js`.
+> - **shadcn/ui** → NIE (DOM only); wbudowane RN + `@expo/ui` + własne komponenty.
+> - **Vitest + RTL + MSW** → NIE setup'owane (planowane: Jest + jest-expo + RNTL).
+> - **`VITE_*` env vars** → `EXPO_PUBLIC_*` lub `Constants.expoConfig?.extra?.*` (przez `app.config.ts`).
+> - **`window.location`, `document`** → niedostępne; użyj `Linking.openURL`, `Linking.canOpenURL`, deep linking schema.
+> - **DOM HTML (`<div>`, `<button>`, `<input>`, `<form>`)** → komponenty RN: `<View>`, `<Pressable>`, `<TextInput>`.
+>
+> Sekcje "React 19 / TypeScript / TanStack Query / Supabase / Sentry" pozostają — większość dotyczy idei (typing, RLS, captureException). Sekcje "Vite / React Router / shadcn / Vitest+RTL+MSW" — zignoruj.
+
+Checklisty do code review dla Expo SDK 54 + RN + NativeWind + Tailwind v3.4 + Supabase + Sentry React Native.
 
 ---
 

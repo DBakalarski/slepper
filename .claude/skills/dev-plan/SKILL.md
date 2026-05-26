@@ -380,11 +380,11 @@ Dla każdego unitu dołącz:
 - **Podejście** — kluczowe decyzje, przepływ danych, granice komponentów lub notatki integracyjne
 - **Notatka wykonawcza** — opcjonalna, tylko gdy unit korzysta z niestandardowej postawy wykonawczej jak test-first lub characterization-first
 - **Wzorce do naśladowania** — istniejący kod lub konwencje do odwzorowania
-- **Scenariusze testowe** — konkretne zachowania, edge cases i ścieżki awarii do pokrycia. Rozróżniaj typy: `[Unit]` dla testów kodu, `[E2E]` dla scenariuszy do weryfikacji w przeglądarce przez `/agent-browser`, `[Manual]` dla pojedynczych testów wymagających człowieka (np. weryfikacja na fizycznym urządzeniu)
-- **Weryfikacja** — wyłącznie **automatyzowalne** kryteria PASS/FAIL: komenda CLI (typecheck/test/lint/grep) **lub** scenariusz E2E weryfikowalny przez `/agent-browser`. Każdy checkbox `Weryfikacja:` musi być możliwy do domknięcia bez udziału człowieka, wyrażony jako oczekiwany wynik a nie literalny skrypt komend shellowych. Powód: `/dev-docs-review` automatycznie odznacza `Weryfikacja:` po PASS — checkbox nieautomatyzowalny pozostanie wiecznie `[ ]` i zafałszuje raport postępu. Jeśli kryterium wymaga człowieka — przenieś do `Operator checklist` lub do `Scenariusze testowe` jako `[Manual]`
+- **Scenariusze testowe** — konkretne zachowania, edge cases i ścieżki awarii do pokrycia. Rozróżniaj typy: `[Unit]` dla testów kodu, `[Manual-mobile]` dla scenariuszy weryfikacji na Expo Go on-device (sleeper = aplikacja mobilna, brak browser; `mobile-feature-tester` generuje structured checklist), `[Manual]` dla testów ad-hoc poza standardowym flow mobile
+- **Weryfikacja** — CLI-automatyzowalne kryteria PASS/FAIL (typecheck/test/lint/grep) **lub** mobile-manual scenariusze do wykonania na Expo Go. Każdy checkbox CLI musi być możliwy do domknięcia bez udziału człowieka. Mobile-manual checkboxy pozostają `[ ]` z suffixem ` — manual test (patrz manual-test-faza-X.md)`; user wykonuje na urządzeniu i sam odznacza. Powód: w mobile app brak browser automation — manual testing on-device jest standardową ścieżką. Operator/QA poza mobile flow → `Operator checklist`
 - **Operator checklist** *(opcjonalne)* — kroki wymagające człowieka (manual test na urządzeniu, weryfikacja przez QA, akceptacja designera). Są celowo poza automatyzacją autopilota — operator zaznacza je ręcznie po wykonaniu. Pomiń sekcję jeśli IU nie ma takich kroków
 
-Każdy feature-bearing unit powinien zawierać ścieżkę pliku testowego w `**Pliki:**`. Dla unitów modyfikujących komponenty UI lub ścieżki użytkownika — dołącz scenariusze `[E2E]` opisujące flow do przetestowania przez `/agent-browser` (otwórz URL, zrób snapshot, kliknij X, sprawdź Y, zrób screenshot).
+Każdy feature-bearing unit powinien zawierać ścieżkę pliku testowego w `**Pliki:**` (gdy istnieje Jest setup). Dla unitów modyfikujących komponenty UI lub ścieżki użytkownika — dołącz scenariusze `[Manual-mobile]` opisujące flow do przetestowania na Expo Go (`npx expo start`, otwórz na urządzeniu, wykonaj scenariusz, screenshot manualny). `mobile-feature-tester` agent wygeneruje structured checklist do wykonania przez user.
 
 Używaj `Notatka wykonawcza` oszczędnie. Dobre użycia:
 - `Notatka wykonawcza: Zacznij od failing integration testu dla kontraktu request/response.`
@@ -534,7 +534,7 @@ figma_screens:                       # {} jeśli brak mockupów; mapa name → �
 - Stwórz: `ścieżka/do/nowego_pliku`
 - Modyfikuj: `ścieżka/do/istniejącego_pliku`
 - Test (unit): `ścieżka/do/pliku_testowego`
-- Test (e2e): `Scenariusz: [opis flow do weryfikacji przez /agent-browser]`
+- Test (mobile-manual): `Scenariusz: [opis flow do weryfikacji na Expo Go on-device — sleeper-app/]`
 
 **Delegate to:** feature-builder-ui | feature-builder-data | feature-builder-fullstack
 
@@ -551,12 +551,12 @@ figma_screens:                       # {} jeśli brak mockupów; mapa name → �
 **Scenariusze testowe:**
 - [Unit] [Konkretny scenariusz z oczekiwanym zachowaniem]
 - [Unit] [Edge case lub ścieżka awarii]
-- [E2E] [Flow do weryfikacji przez /agent-browser: otwórz URL, kliknij X, sprawdź Y]
-- [Manual] [Krok wymagający człowieka, np. weryfikacja na fizycznym urządzeniu] *(opcjonalne — używaj gdy automatyzacja jest niemożliwa)*
+- [Manual-mobile] [Flow do weryfikacji na Expo Go: otwórz ekran, tap X, sprawdź Y na fizycznym urządzeniu — generuje `mobile-feature-tester` agent]
+- [Manual] [Krok ad-hoc poza standardowym mobile flow, np. weryfikacja two-device sync, sprawdzenie EAS preview build] *(opcjonalne)*
 
-**Weryfikacja:** *(wyłącznie automatyzowalne — CLI lub E2E przez /agent-browser; rzeczy ręczne idą do Operator checklist niżej)*
-- [Komenda CLI z oczekiwanym wynikiem, np. "bun run typecheck przechodzi bez błędów"]
-- [Scenariusz E2E z oczekiwanym stanem widocznym w przeglądarce]
+**Weryfikacja:** *(CLI-automatyzowalne — typecheck/test/lint/grep — lub mobile-manual scenariusze; Operator/QA poza mobile flow → niżej)*
+- [Komenda CLI z oczekiwanym wynikiem, np. "npx tsc --noEmit przechodzi bez błędów"]
+- [Mobile-manual scenariusz: "Otwórz Expo Go → ekran X → tap Y → widoczne Z" — user wykonuje, sam odznacza]
 
 **Operator checklist:** *(opcjonalne — kroki wymagające człowieka, NIE odznaczane przez autopilot)*
 - [ ] [Krok wymagający operatora, np. "QA weryfikuje animację na realnym urządzeniu iOS"]
@@ -644,10 +644,10 @@ Przed finalizacją sprawdź:
 - Pole `Skills in play:` w każdym IU jest spójne z frontmatter `skills:` wybranego subagenta
 - Frontmatter planu ma wypełnione pola `design_md`, `figma_spec`, `figma_screens` (zgodnie z 1.6) — jako konkretne ścieżki LUB explicite `null`/`{}`. Nigdy nie pomijaj tych pól.
 - Jeśli `figma_spec` ≠ null — plik istnieje na dysku (`Read` go zwraca treść), a każdy ekran z `figma_screens` ma fizycznie zapisany PNG
-- Każdy IU delegowany do `feature-builder-ui` lub `feature-builder-fullstack` ma w `Skills in play:` figma skille (mirror per sekcja 3.5), niezależnie od tego czy ten konkretny IU korzysta z mockupu — bo skille są w frontmaterze agenta
+- Każdy IU delegowany do `feature-builder-ui` lub `feature-builder-fullstack` ma w `Skills in play:` aktualne skille z frontmatter agenta (tailwind-react-guidelines, ux-ui-guidelines, supabase-dev-guidelines itp.)
 - Jeśli postawa test-first lub characterization-first była explicite lub silnie implikowana, relevantne unity niosą ją dalej z lekką `Notatką wykonawczą`
 - Scenariusze testowe są konkretne bez stawania się kodem testowym
-- Każdy checkbox `Weryfikacja:` jest automatyzowalny (CLI lub E2E przez agent-browser). Kroki wymagające człowieka są w `Operator checklist` lub jako `[Manual]` w `Scenariusze testowe` — nigdy w `Weryfikacja:`
+- Każdy checkbox `Weryfikacja:` jest CLI-automatyzowalny LUB mobile-manual (do wykonania przez user na Expo Go). Mobile-manual checkbox pozostaje `[ ]` z suffixem ` — manual test`. Kroki QA / operatora poza mobile flow → `Operator checklist`
 - Odroczone elementy są explicite i nie ukryte jako fałszywa pewność
 
 Jeśli plan pochodzi z requirements doc, przeczytaj ponownie ten dokument i zweryfikuj:

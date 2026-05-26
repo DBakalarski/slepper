@@ -169,6 +169,51 @@ Pliki w katalogu `techniki/` — czytaj gdy potrzebne:
 - **`condition-based-waiting.md`** — zamien sleep()/setTimeout() na polling warunku (flaky testy)
 - **`find-polluter.sh`** — skrypt bisection: ktory test zanieczyszcza stan
 
+## RN / Expo debugging — specyficzne techniki
+
+### Metro bundler errors
+
+- **"Unable to resolve module X"** — cache stale; `npx expo start -c` (clear cache); jak nie pomaga: `rm -rf node_modules/.cache .expo && npm install`
+- **"Module not registered"** — duplikat / brakuje peer dep; `npx expo install --check` (auto-fix)
+- **"Tried to register two views with the same name"** — duplikat native module (po dodaniu/usunięciu plugin); rebuild dev client (`eas build --profile development`)
+- **"Cannot find native module 'X'"** — używasz native module którego brakuje w Expo Go; potrzebujesz EAS dev client albo `expo prebuild`
+
+### Hermes runtime errors
+
+- **`Property 'X' doesn't exist`** w runtime (TypeScript build OK) — przykład: użycie web API (`window`, `document`, `localStorage`) na RN — sprawdź czy importujesz właściwy package (`lucide-react` vs `lucide-react-native`)
+- **Stack traces** są w minified release build — fix: sourcemap upload przez Sentry (EAS Build robi to automatycznie z Sentry plugin)
+- **`undefined is not an object`** w hot reload — Fast Refresh confused o module state; full reload: shake → "Reload" lub `Cmd+R` w iOS Simulator
+
+### Native module crashes
+
+- iOS: sprawdź EAS Build logs (`eas build:list` → log link) — zawiera native stack trace
+- Android: `adb logcat | grep -E "FATAL|AndroidRuntime"` (dla EAS dev client)
+- Sentry Native crash reports — `enableNative: true` (wymaga EAS Build, NIE Expo Go)
+
+### Network / Supabase debugging
+
+- **Realtime nie działa po background** — sprawdź `AppState` listener, `supabase.removeAllChannels()` + re-subscribe
+- **`fetch failed`** w RN — często to certificate issue albo brak `react-native-url-polyfill/auto` import w `lib/supabase.ts`
+- **CORS** — NIE występuje w RN (request leci natywnym HTTP client, bez Origin header z domeny)
+
+### LogBox & warnings
+
+- **`LogBox.ignoreLogs(['Warning: ...'])`** to **anty-pattern** — to ignoruje WARNING zamiast naprawić
+- Naprawiaj root cause warning; `ignoreLogs` tylko dla third-party (np. legacy warning z dependency)
+- Yellow box / red box w dev: shake → "Disable LogBox" jeśli zasłania UI, ale NAPRAW przed merge
+
+### Expo Go vs EAS Build
+
+| Problem | Expo Go | EAS dev client | EAS production |
+|---------|---------|----------------|----------------|
+| JS hot reload | ✅ | ✅ | ❌ |
+| Native modules (camera, biometric, custom) | ❌ | ✅ | ✅ |
+| Sentry native crash | ❌ | ✅ | ✅ |
+| Deep links z custom scheme | ⚠️ (z `expo://`) | ✅ | ✅ |
+| Build time | seconds | 5-15 min | 5-15 min |
+
+Jeśli bug pojawia się w Expo Go ale nie w EAS build (lub vice versa) — to często native module issue.
+
 ## Racjonalizacje vs rzeczywistosc
 
 | Wymowka | Rzeczywistosc |

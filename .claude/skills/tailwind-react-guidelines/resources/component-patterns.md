@@ -1,6 +1,8 @@
 # Wzorce Komponentów
 
-Architektura komponentów React 19 - TypeScript, lazy loading, Suspense, Error Boundaries.
+> ⚠️ **Stack projektu:** Expo SDK 54 + React Native + NativeWind v4. Część przykładów poniżej używa web HTML (`<div>`, `<input>`, `<button>`, `forwardRef` na DOM). Mapuj na RN: `<View>`, `<TextInput>`, `<Pressable>`. Główne idee (React 19 ref jako prop, lazy, Error Boundaries) są nadal aktualne, ale `Error Boundary` w expo-router robi się przez `export const ErrorBoundary` z route module. Patrz `SKILL.md` dla aktualnych konwencji.
+
+Architektura komponentów React 19 — TypeScript, lazy loading, Suspense, Error Boundaries.
 
 ---
 

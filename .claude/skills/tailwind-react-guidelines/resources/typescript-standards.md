@@ -1,6 +1,16 @@
 # Standardy TypeScript
 
-Wytyczne TypeScript 5.7+ (aktualna: 5.9) i React 19 - konfiguracja, typy, nowoczesne wzorce.
+> ⚠️ **Stack projektu:** Expo SDK 54. Drobne adaptacje wzgl. web:
+> - `tsconfig.json` `lib` w Expo: `["ES2022", "dom"]` (dom jest tam dla `react-native-web` interop) — NIE używaj `DOM.Iterable` jako rule "DOM features available"
+> - `moduleResolution: "bundler"` — OK dla Metro (SDK 54 wspiera)
+> - React 19 ref jako prop — `React.Ref<TextInput>`, `React.Ref<View>` (NIE `HTMLInputElement`)
+> - React events: w RN ZUPEŁNIE INNE (`GestureResponderEvent`, `NativeSyntheticEvent`, `TextInputChangeEventData`). NIE używaj `React.MouseEvent` ani `React.ChangeEvent<HTMLInputElement>`
+> - Server Components / async components — NIE w Expo (SPA-like RN runtime)
+> - Zod, satisfies, NoInfer, const type params — działają identycznie
+>
+> Reszta wzorców (utility types, type guards, runtime validation, generic components, unikaj `any`/`!`) pozostaje aktualna.
+
+Wytyczne TypeScript 5.7+ i React 19 dla Expo SDK 54 — konfiguracja, typy, nowoczesne wzorce.
 
 ---
 

@@ -1,6 +1,27 @@
 # Dostępność (Accessibility)
 
-WCAG 2.2 AA (ISO/IEC 40500:2025), ARIA, nawigacja klawiaturą - standardy 2026.
+> ⚠️ **Stack projektu:** Expo SDK 54 / React Native. WCAG 2.2 parytet, ale realizacja przez RN propsy NIE ARIA:
+>
+> | Web (ARIA / DOM)                  | React Native (sleeper)                                           |
+> |-----------------------------------|------------------------------------------------------------------|
+> | `aria-label="..."`                | `accessibilityLabel="..."`                                       |
+> | `aria-describedby`                | `accessibilityHint="..."` (lub `accessibilityValue`)             |
+> | `role="button"` / `<button>`      | `accessibilityRole="button"` na `<Pressable>`                    |
+> | `role="alert"` / `aria-live`      | `accessibilityLiveRegion` (Android) / `AccessibilityInfo.announceForAccessibility` (iOS) |
+> | `aria-invalid="true"`             | `accessibilityState={{invalid: true}}` lub dorzuć do label       |
+> | `aria-disabled` / `aria-expanded` | `accessibilityState={{disabled, expanded, selected, checked}}`   |
+> | `tabIndex` / focus visible        | NIE DOTYCZY mobile (brak keyboard tabbing w typowym flow)        |
+> | `<label htmlFor>`                 | brak — `accessibilityLabel` na `<TextInput>` zastępuje           |
+> | Skip links                        | NIE DOTYCZY mobile                                               |
+> | Focus trap (modal)                | `react-native-bottom-sheet` / `<Modal>` mają wbudowane           |
+>
+> Touch target ≥ 44pt: `hitSlop={{top:8,bottom:8,left:8,right:8}}` na Pressable.
+> Reduced motion: `AccessibilityInfo.isReduceMotionEnabled()` (Promise).
+> Screen reader: `AccessibilityInfo.isScreenReaderEnabled()`.
+> Focus management: `AccessibilityInfo.setAccessibilityFocus(findNodeHandle(ref))`.
+> Kontrast 4.5:1 — sprawdź narzędziem (axe DevTools w `react-native-web` preview, lub contrast-cli).
+
+WCAG 2.2 AA (ISO/IEC 40500:2025), accessibility props w RN, screen readers (VoiceOver/TalkBack).
 
 ---
 

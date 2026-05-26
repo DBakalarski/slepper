@@ -1,286 +1,312 @@
 ---
 name: ux-ui-guidelines
-description: Wytyczne UX/UI dla React 19 + Tailwind v4. Design system (OKLCH colors), dostępność (WCAG 2.2, ARIA), responsive design (mobile-first, container queries), animacje (Motion, View Transitions, prefers-reduced-motion), UI patterns (navigation, tables, search, onboarding), interface polish (concentric radius, optical alignment, tabular numbers, scale 0.96 on press, font smoothing, image outlines, interruptible animations, shadow-as-border). Używaj przy projektowaniu UI, dostępności, animacjach, mobile UX oraz micro-detalach polish — "feels off", "interface polish", "border radius polish", "stagger animations", "tabular numbers", "scale on press".
+description: Wytyczne UX/UI dla Expo SDK 54 + React Native + NativeWind v4. Design system mobile, dostępność (VoiceOver/TalkBack), responsive (useWindowDimensions, Safe Area), animacje (react-native-reanimated, worklets), UI patterns (Stack/Tabs navigation, FlatList, search, onboarding), interface polish (concentric radius, optical alignment, tabular numbers, scale 0.96 on press, opacity feedback). Używaj przy projektowaniu UI mobilnego, dostępności, animacjach, micro-detalach.
 ---
 
-# UX/UI Guidelines
+# UX/UI Guidelines (Expo/RN)
 
 ## Cel
 
-Przewodnik dla projektowania interfejsu użytkownika - design system, dostępność, responsywność, animacje, wzorce UI zgodne ze standardami Marzec 2026.
+Przewodnik UI/UX dla **aplikacji mobilnej Expo SDK 54** — design system, dostępność RN, responsywność per-device, animacje przez Reanimated, wzorce mobile UX, polish micro-detali.
 
-## Kiedy Używać Tego Skilla
+## Kiedy używać tego skilla
 
-- Projektowanie nowych komponentów UI
-- Implementacja dostępności (WCAG 2.2, ARIA)
-- Responsive design i container queries
-- Animacje i przejścia
-- Formularze i modale
-- Mobile UX
-- Nawigacja, tabele, wyszukiwanie, onboarding
+- Projektowanie ekranów i komponentów RN
+- Implementacja dostępności (VoiceOver / TalkBack)
+- Responsywność per-device (iPhone SE → tablet, orientacja)
+- Animacje (`react-native-reanimated`, gesture-handler)
+- Formy mobilne (keyboard handling, focus management)
+- Wzorce: Stack/Tabs nawigacja, listy (FlatList), search, onboarding
+- Polish: micro-interakcje, scale on press, tabular nums, concentric radius
 
 ---
 
 ## Quick Start
 
-### Checklist Nowego Komponentu UI
+### Checklist nowego komponentu UI
 
-- [ ] Mobile-first styling (zaczynaj od mobile)
-- [ ] Container queries dla komponentów (`@container`)
-- [ ] Focus visible dla nawigacji klawiaturą
-- [ ] ARIA labels dla elementów interaktywnych
-- [ ] Touch targets min 24x24px (WCAG 2.2 AA), rekomendowane 44x44px (AAA)
-- [ ] `prefers-reduced-motion` dla animacji
-- [ ] Contrast ratio min 4.5:1 (WCAG AA)
-- [ ] Dynamic viewport units (`min-h-dvh`)
-- [ ] `<search>` element dla obszarów wyszukiwania
-- [ ] Concentric border radius na zagnieżdżonych elementach (outer = inner + padding)
-- [ ] `tabular-nums` na dynamicznych liczbach (licznik, timer, cena)
-- [ ] `active:scale-[0.96]` na klikalnych przyciskach (gdzie sensowne)
-- [ ] Konkretne `transition-property`, nigdy `transition: all`
+- [ ] Komponenty RN: `<View>`, `<Text>`, `<Pressable>`, `<TextInput>`, `<ScrollView>`, `<FlatList>` — NIE web HTML
+- [ ] `<SafeAreaView>` lub `useSafeAreaInsets()` wokół rootu ekranu (notch/dynamic island)
+- [ ] Touch targets ≥ **44pt × 44pt** (iOS HIG) / 48dp (Android Material) — `accessibilityState`+padding
+- [ ] `accessibilityLabel`, `accessibilityRole`, `accessibilityHint` na każdym interaktywnym elemencie
+- [ ] Dark mode: `useColorScheme()` + `dark:` className w NativeWind
+- [ ] Touch feedback: `<Pressable>` z `active:opacity-70` (iOS-like) lub `android_ripple={{color: '...'}}` (Material)
+- [ ] `tabular-nums` na liczbach dynamicznych: `<Text style={{fontVariant: ['tabular-nums']}}>` (timer, czas trwania)
+- [ ] Reduced motion: `AccessibilityInfo.isReduceMotionEnabled()` (gate animacje)
+- [ ] Platform-specific tweaks: `Platform.select({ ios: ..., android: ... })`
+- [ ] Image: `expo-image` (cache, blurhash, transitions) zamiast `react-native`'s `Image`
 
-### Checklist Formularza
+### Checklist formy mobilnej
 
-- [ ] Labels powiązane z inputami (`htmlFor`)
-- [ ] Komunikaty błędów z `role="alert"`
-- [ ] Walidacja inline (nie tylko po submit)
-- [ ] Loading state z `useTransition` lub mutation
-- [ ] Success/error feedback (Sonner toast)
-- [ ] Focus na pierwszym błędzie
-- [ ] `aria-describedby` dla error messages
+- [ ] `<KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>` wokół form
+- [ ] `<TextInput>` z `onChangeText` (NIE `onChange`)
+- [ ] `autoCapitalize="none"`, `autoCorrect={false}`, `keyboardType="email-address"` itp.
+- [ ] `returnKeyType` ("next" / "done") + `onSubmitEditing` dla nawigacji między polami
+- [ ] `useRef<TextInput>` + `.focus()` dla focus management
+- [ ] Inline błędy pod polem (czerwony tekst, `<Text className="text-destructive text-sm">`)
+- [ ] Submit button DISABLED gdy `isSubmitting` lub `!isValid`
+- [ ] Toast / `Alert.alert()` po sukcesie/błędzie
+- [ ] `accessibilityState={{disabled: !isValid}}` na submit
 
 ---
 
-## Design System
+## Design System (mobile)
 
-### Paleta Kolorów (OKLCH)
+### Paleta kolorów (NativeWind / Tailwind v3.4)
 
-OKLCH zapewnia lepszą percepcję jasności niż HSL:
-```css
-/* globals.css - Tailwind v4 */
-@theme {
-    /* Brand */
-    --color-primary: oklch(0.55 0.25 264);        /* Niebieski CTA */
-    --color-primary-foreground: oklch(1 0 0);     /* Biały tekst */
-    --color-accent: oklch(0.65 0.2 160);          /* Zielony accent */
-    --color-destructive: oklch(0.55 0.25 27);     /* Czerwony błędy */
+NativeWind NIE wspiera OKLCH ani CSS variables. Definiuj kolory w `tailwind.config.js`:
 
-    /* Neutral */
-    --color-background: oklch(1 0 0);             /* Białe tło */
-    --color-foreground: oklch(0.2 0.02 260);      /* Główny tekst */
-    --color-muted: oklch(0.96 0.01 260);          /* Drugie tła */
-    --color-muted-foreground: oklch(0.55 0.02 260); /* Drugie teksty */
-    --color-border: oklch(0.9 0.01 260);          /* Obramowania */
+```js
+// sleeper-app/tailwind.config.js
+module.exports = {
+  content: ['./src/**/*.{ts,tsx}'],
+  presets: [require('nativewind/preset')],
+  darkMode: 'class',
+  theme: {
+    extend: {
+      colors: {
+        background: { DEFAULT: '#FFFFFF', dark: '#0A0A0A' },
+        foreground: { DEFAULT: '#0A0A0A', dark: '#FAFAFA' },
+        primary: { DEFAULT: '#0EA5E9', dark: '#38BDF8' },
+        muted: { DEFAULT: '#F4F4F5', dark: '#27272A' },
+        'muted-foreground': { DEFAULT: '#71717A', dark: '#A1A1AA' },
+        destructive: { DEFAULT: '#DC2626', dark: '#EF4444' },
+        border: { DEFAULT: '#E4E4E7', dark: '#3F3F46' },
+      },
+    },
+  },
+};
+```
+
+Dark mode toggle przez NativeWind: `colorScheme.set('light' | 'dark' | 'system')`. Auto-follow systemu: `useColorScheme()` z `react-native`.
+
+### Skala typografii (mobile-optimized)
+
+| Rozmiar | Użycie | Klasa NativeWind |
+|---------|--------|------------------|
+| 11px | Caption, badge | `text-[11px]` |
+| 13px | Metadata, secondary label | `text-[13px]` |
+| 15px | Body text (iOS standard) | `text-[15px]` |
+| 17px | Body emphasis, default button text | `text-[17px]` |
+| 20px | Section header | `text-xl` |
+| 24px+ | Screen title (large title) | `text-2xl` |
+| 34px | Hero / onboarding header | `text-[34px] font-bold` |
+
+iOS native body = 17px, Android Material body = 14sp. NativeWind klasy są w `px` (mapowane do `dp` przez Metro/Expo).
+
+### Spacing (8pt grid)
+
+```
+4px  = p-1, gap-1     ← inline tight
+8px  = p-2, gap-2     ← items spacing
+12px = p-3, gap-3     ← card padding inner
+16px = p-4, gap-4     ← standard screen padding
+24px = p-6, gap-6     ← section gap
+32px = p-8, gap-8     ← hero spacing
+```
+
+Większość ekranów w Expo: `<View className="flex-1 px-4 py-6 gap-4">`.
+
+### Safe Area
+
+KAŻDY ekran musi uwzględniać notch/dynamic island/home indicator:
+
+```tsx
+import { SafeAreaView } from 'react-native-safe-area-context';
+
+export default function Screen() {
+  return (
+    <SafeAreaView className="flex-1 bg-background" edges={['top', 'bottom']}>
+      <View className="flex-1 px-4">{/* content */}</View>
+    </SafeAreaView>
+  );
 }
 ```
 
-### Skala Typografii
+Alternatywa dla zaawansowanej kontroli: `useSafeAreaInsets()` → manual padding.
 
-| Rozmiar | Użycie | Klasa |
-|---------|--------|-------|
-| 12px | Metadata, caption | `text-xs` |
-| 14px | Body text | `text-sm` |
-| 16px | Body emphasis | `text-base` |
-| 18px | Card titles | `text-lg` |
-| 20px | Section headers | `text-xl` |
-| 24px+ | Page titles | `text-2xl` |
-
-### Spacing
-```
-4px  = p-1, gap-1
-8px  = p-2, gap-2
-12px = p-3, gap-3
-16px = p-4, gap-4
-24px = p-6, gap-6
-32px = p-8, gap-8
-```
-
-**[Pełny Przewodnik: resources/design-system.md](resources/design-system.md)**
+**[Pełny przewodnik: resources/design-system.md](resources/design-system.md)**
 
 ---
 
 ## Topic Guides
 
-### Dostępność (WCAG 2.2)
+### Dostępność (RN — VoiceOver / TalkBack)
 
-**Wymagania:**
-- Contrast ratio min 4.5:1 dla tekstu
-- Focus visible i nie zasłonięty (2.4.11 Focus Not Obscured)
-- Touch targets min 44x44px (2.5.8 Target Size)
-- ARIA labels dla ikon/przycisków
-- Nagłówki w poprawnej hierarchii
+**Wymagania (parytet WCAG):**
+- Kontrast tekst ≥ 4.5:1 (sprawdź `contrast-cli` lub axe DevTools w `react-native-web` preview)
+- Touch target ≥ 44×44pt (iOS), 48×48dp (Android)
+- Wszystkie interaktywne elementy mają `accessibilityLabel` (zamiast `aria-label`)
+- Stany dostępne: `accessibilityState={{disabled, selected, checked, expanded, busy}}`
 
-**Kluczowe Wzorce:**
-- `aria-label` dla przycisków z ikonami
-- `role="alert"` + `aria-live="polite"` dla błędów
-- `sr-only` dla tekstu screen reader only
-- Focus trap w modalach (react-focus-lock)
+**Kluczowe propsy RN (zamiast ARIA):**
+- `accessibilityLabel="Start timer"` — zamiast `aria-label`
+- `accessibilityHint="Rozpoczyna nową sesję snu"` — pomocniczy opis
+- `accessibilityRole="button" | "link" | "header" | "image" | "alert" | "menu"`
+- `accessibilityLiveRegion="polite" | "assertive"` (Android) / `accessibilityAnnouncement` (iOS via `AccessibilityInfo.announceForAccessibility`)
+- `importantForAccessibility="yes" | "no" | "no-hide-descendants"` (Android-only)
+- Focus management: `findNodeHandle` + `AccessibilityInfo.setAccessibilityFocus`
 
-**[Pełny Przewodnik: resources/accessibility.md](resources/accessibility.md)**
+**[Pełny przewodnik: resources/accessibility.md](resources/accessibility.md)**
 
----
+### Responsywność (per-device, orientacja)
 
-### Responsive Design
+Brak container queries / media queries w RN. Alternatywy:
 
-**Mobile-First + Container Queries:**
-```typescript
-// Tailwind v4 - container queries
-<div className="@container">
-    <div className="flex flex-col @md:flex-row @lg:gap-6">
-        {/* Reaguje na rozmiar kontenera, nie viewportu */}
-    </div>
-</div>
-```
+```tsx
+import { useWindowDimensions } from 'react-native';
 
-**Breakpointy (viewport):**
-- `sm: 640px` - Małe tablety
-- `md: 768px` - Tablety
-- `lg: 1024px` - Desktop
+function Screen() {
+  const { width, height } = useWindowDimensions();
+  const isTablet = width >= 768;
+  const isLandscape = width > height;
 
-**Container queries (komponent):**
-- `@sm: 320px`
-- `@md: 448px`
-- `@lg: 512px`
-
-**Dynamic Viewport Units:**
-```css
-/* Uwzględnia mobile browser chrome */
-min-h-dvh  /* dynamic viewport height */
-min-h-svh  /* small viewport height */
-min-h-lvh  /* large viewport height */
-```
-
-**[Pełny Przewodnik: resources/responsive-design.md](resources/responsive-design.md)**
-
----
-
-### Animacje
-
-**Motion (dawniej Framer Motion) Wzorce:**
-- Fade in dla wchodzących elementów
-- Staggered lists dla grup
-- AnimatePresence dla mount/unmount
-
-**View Transitions API (Baseline 2025):**
-```typescript
-function handleNavigation() {
-    if (!document.startViewTransition) {
-        navigate(path);
-        return;
-    }
-    document.startViewTransition(() => navigate(path));
+  return (
+    <View className={isTablet ? 'flex-row gap-6' : 'flex-col gap-4'}>
+      {/* ... */}
+    </View>
+  );
 }
 ```
 
-**Kluczowe Zasady:**
-- `prefers-reduced-motion` - wymagane
+Breakpointy mobile (per-screen, NIE container):
+- **iPhone SE / mały**: 320-375pt
+- **iPhone standard**: 390-414pt
+- **iPhone Pro Max**: 430pt
+- **Tablet**: ≥ 768pt
+- **Landscape (telefon)**: height < 500
+
+**[Pełny przewodnik: resources/responsive-design.md](resources/responsive-design.md)**
+
+### Animacje (react-native-reanimated v4)
+
+Worklety na UI thread → 60fps niezależnie od JS thread:
+
+```tsx
+import Animated, { useSharedValue, useAnimatedStyle, withTiming, withSpring } from 'react-native-reanimated';
+
+function FadeIn({ children }) {
+  const opacity = useSharedValue(0);
+
+  useEffect(() => {
+    opacity.value = withTiming(1, { duration: 300 });
+  }, []);
+
+  const style = useAnimatedStyle(() => ({ opacity: opacity.value }));
+
+  return <Animated.View style={style}>{children}</Animated.View>;
+}
+```
+
+**Kluczowe zasady:**
+- Reduced motion: gate przez `AccessibilityInfo.isReduceMotionEnabled()` (nie ma CSS `prefers-reduced-motion` w RN)
 - Krótkie animacje (150-300ms)
-- Unikaj animacji layoutu (CLS)
-- CSS animations > JS gdy możliwe
+- Unikaj animacji `width`/`height` (layout w RN drogi); preferuj `transform`/`opacity`
+- Stagger przez `withDelay()` lub `LayoutAnimation` (legacy, nie wymieszać z Reanimated)
+- Gesture-driven: `react-native-gesture-handler` + Reanimated `useAnimatedGestureHandler`
 
-**[Pełny Przewodnik: resources/animations.md](resources/animations.md)**
+**View Transitions API / `document.startViewTransition`** — NIE istnieje w RN. Shared element transitions: `react-native-screens` `enterStyle`/`exitStyle` lub `react-native-reanimated` shared transitions (eksperymentalne).
 
----
+**[Pełny przewodnik: resources/animations.md](resources/animations.md)**
 
-### Komponenty UX
+### Komponenty UX (mobile)
 
 **Wzorce:**
-- Modale z focus trap (react-focus-lock)
-- Formularze z inline validation
-- Toast notifications (Sonner)
-- Loading states (useTransition)
-- Optimistic updates (useOptimistic)
+- Modal / BottomSheet: `react-native-bottom-sheet` (Gorhom) — natywny gesture, snap points
+- Toast: `react-native-toast-message` lub natywny `Alert.alert()`
+- Pull-to-refresh: `<FlatList refreshControl={<RefreshControl />}>`
+- Swipe-to-action: `react-native-gesture-handler` `Swipeable`
+- Loading: `<ActivityIndicator size="large" color="#0EA5E9" />`
+- Skeleton: `react-native-skeleton-placeholder` lub własny `<View className="animate-pulse bg-muted h-4 rounded">`
 
-**[Pełny Przewodnik: resources/component-ux.md](resources/component-ux.md)**
+**Optimistic updates:** `useOptimistic` (React 19) lub TanStack Query `onMutate` — działa identycznie jak na web.
 
----
+**[Pełny przewodnik: resources/component-ux.md](resources/component-ux.md)**
 
-### UI Patterns
+### UI Patterns (mobile-first)
 
-**Nawigacja:**
-- Tabs (URL-synced)
-- Breadcrumbs z aria-label
-- Pagination (number + cursor-based)
+**Nawigacja (expo-router):**
+- **Stack** — przejścia push/pop z animacją (typowe iOS slide, Android fade)
+- **Tabs** — bottom tab bar (sleeper: dom, historia, dziecko, ustawienia)
+- **Modal** — `presentation: 'modal'` (slide-up) lub `'transparentModal'`
+- **Drawer** — `expo-router/drawer` (rzadziej w sleeper)
 
-**Wyświetlanie danych:**
-- Responsive tables (cards na mobile)
-- Empty states
-- Skeleton loading
+**Listy:**
+- `<FlatList>` z `keyExtractor`, `renderItem` (memo), `ItemSeparatorComponent`, `ListEmptyComponent`
+- Sekcje: `<SectionList>` z `sections={[{title, data: []}]}`
+- Pull-to-refresh: `refreshControl`
+- Infinite scroll: `onEndReached` + `onEndReachedThreshold`
 
-**Wyszukiwanie i filtrowanie:**
-- Debounced search input
-- Filter chips
-- URL state sync
+**Search:**
+- `<TextInput>` z `clearButtonMode="while-editing"` (iOS)
+- Debounced query (300ms) → TanStack Query
+- Empty state z ikoną + CTA
 
 **Onboarding:**
-- Multi-step wizard ze StepIndicator
-- Feature spotlight/tooltip
-- Progress save (localStorage)
+- Multi-step `<View>` ze stanem Zustand `currentStep`
+- `react-native-pager-view` lub własna animowana przejście
+- StepIndicator z dots
+- Skip / Next / Done buttons
 
-**[Pełny Przewodnik: resources/patterns.md](resources/patterns.md)**
+**[Pełny przewodnik: resources/patterns.md](resources/patterns.md)**
 
----
-
-### Interface Polish
-
-Micro-detale, które sprawiają, że interfejs wygląda dopracowany — uzupełnia macro UX patterns o szczegóły renderingu i micro-interakcje.
+### Interface Polish (mobile micro-detale)
 
 **Główne kategorie:**
-- **Typography polish** — text-wrap balance/pretty, font-smoothing macOS, tabular-nums dla dynamicznych liczb
-- **Surfaces** — concentric border radius, optical alignment ikon, shadow-as-border, image outlines, minimum hit area 40×40px
-- **Animation polish** — interruptible CSS transitions vs keyframes, subtelne wyjścia, contextual icon crossfade, `scale(0.96)` on press
-- **Performance** — nigdy `transition: all`, `will-change` oszczędnie i tylko dla transform/opacity/filter
+- **Typography polish** — tabular-nums dla timerów (`style={{fontVariant: ['tabular-nums']}}`), `numberOfLines` z `ellipsizeMode="tail"`, font scaling honor (`maxFontSizeMultiplier`)
+- **Surfaces** — concentric border radius (outer = inner + padding), opacity feedback na press (iOS), ripple na Android (`android_ripple`)
+- **Animation polish** — interruptible spring animations (Reanimated `withSpring`), `scale(0.96)` on press przez `pressed && {transform: [{scale: 0.96}]}`
+- **Performance** — `removeClippedSubviews` na FlatList Android, `getItemLayout` gdy znamy wysokość, `useMemo` na `renderItem` referencji
 
 **Quick wins:**
-- `tabular-nums` na każdym liczniku/timerze/cenie → zero layout shift
-- `text-wrap: balance` na h1-h3 → zero osieroconych słów w nagłówkach
-- `active:scale-[0.96]` na przyciskach → tactile feedback
-- Concentric radius na zagnieżdżonych kartach → eliminuje "off" feel
+- `tabular-nums` na timer/czas trwania → zero layout shift
+- `<Pressable>` z `({pressed}) => [styles.btn, pressed && {opacity: 0.7, transform: [{scale: 0.96}]}]` → tactile feedback
+- Concentric radius w kartach: outer card `rounded-2xl` + inner padding 12px → inner element `rounded-xl` (16-4=12... użyj `rounded-[12px]`)
+- `expo-image` z `transition={300}` → smooth load
+- Bottom safe area na ekranach z bottom button (`paddingBottom: insets.bottom + 16`)
 
-**[Pełne Pryncypia: resources/polish-checklist.md](resources/polish-checklist.md)**
+**[Pełne pryncypia: resources/polish-checklist.md](resources/polish-checklist.md)**
 
 ---
 
-## Przykład: Komponent Button (2026)
-```typescript
-import { useTransition } from 'react';
-import { Button } from '@/components/ui/button';
-import { Loader2 } from 'lucide-react';
+## Przykład: Komponent Button (mobile, 2026)
+
+```tsx
+import { Pressable, Text, ActivityIndicator } from 'react-native';
 import { cn } from '@/lib/utils';
 
 interface ActionButtonProps {
-    onClick: () => Promise<void>;
-    children: React.ReactNode;
-    disabled?: boolean;
+  onPress: () => Promise<void> | void;
+  children: string;
+  disabled?: boolean;
+  isLoading?: boolean;
 }
 
-export function ActionButton({ onClick, children, disabled }: ActionButtonProps) {
-    const [isPending, startTransition] = useTransition();
+export function ActionButton({ onPress, children, disabled, isLoading }: ActionButtonProps) {
+  const handlePress = async () => {
+    if (disabled || isLoading) return;
+    await onPress();
+  };
 
-    const handleClick = () => {
-        startTransition(async () => {
-            await onClick();
-        });
-    };
-
-    return (
-        <Button
-            onClick={handleClick}
-            disabled={disabled || isPending}
-            className={cn(
-                "inline-flex items-center justify-center gap-2",
-                "min-h-11 px-4",  // 44px touch target
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                "transition-colors duration-200"
-            )}
-            aria-busy={isPending}
-        >
-            {isPending && (
-                <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-            )}
-            {children}
-        </Button>
-    );
+  return (
+    <Pressable
+      onPress={handlePress}
+      disabled={disabled || isLoading}
+      accessibilityRole="button"
+      accessibilityLabel={children}
+      accessibilityState={{ disabled: !!disabled, busy: !!isLoading }}
+      className={cn(
+        'min-h-[44px] px-4 py-3 rounded-2xl bg-primary',
+        'flex-row items-center justify-center gap-2',
+        'active:opacity-80 active:scale-[0.98]',
+        (disabled || isLoading) && 'opacity-50'
+      )}
+      android_ripple={{ color: 'rgba(255,255,255,0.2)' }}
+    >
+      {isLoading && <ActivityIndicator size="small" color="#fff" />}
+      <Text className="text-primary-foreground font-semibold text-[15px]">{children}</Text>
+    </Pressable>
+  );
 }
 ```
 
@@ -290,40 +316,54 @@ export function ActionButton({ onClick, children, disabled }: ActionButtonProps)
 
 | Potrzebujesz... | Przeczytaj |
 |-----------------|------------|
-| Kolory, typografia, spacing, ikony | [design-system.md](resources/design-system.md) |
-| WCAG 2.2, ARIA, dostępność | [accessibility.md](resources/accessibility.md) |
-| Mobile-first, container queries, mobile patterns | [responsive-design.md](resources/responsive-design.md) |
-| Motion, View Transitions | [animations.md](resources/animations.md) |
-| Modale, formularze, feedback | [component-ux.md](resources/component-ux.md) |
-| Tabs, breadcrumbs, tables, search, onboarding | [patterns.md](resources/patterns.md) |
-| Concentric radius, optical alignment, shadow-as-border, image outlines, hit area | [surfaces.md](resources/surfaces.md) |
-| Interruptible animations, subtelne wyjścia, icon crossfade, scale on press | [animation-polish.md](resources/animation-polish.md) |
-| text-wrap balance/pretty, font smoothing, tabular nums | [typography-polish.md](resources/typography-polish.md) |
-| Transition specificity, `will-change` usage | [performance.md](resources/performance.md) |
-| 16 pryncypiów polish + checklista review | [polish-checklist.md](resources/polish-checklist.md) |
+| Kolory, typografia, spacing, Safe Area | [design-system.md](resources/design-system.md) |
+| A11y (VoiceOver/TalkBack), accessibilityLabel | [accessibility.md](resources/accessibility.md) |
+| Responsywność (per-device, orientacja) | [responsive-design.md](resources/responsive-design.md) |
+| Reanimated, gesture-handler, worklets | [animations.md](resources/animations.md) |
+| Modal, BottomSheet, toast, pull-to-refresh | [component-ux.md](resources/component-ux.md) |
+| Stack/Tabs nawigacja, FlatList, search, onboarding | [patterns.md](resources/patterns.md) |
+| Concentric radius, opacity/ripple feedback, hit area | [surfaces.md](resources/surfaces.md) |
+| Spring animations, scale on press, interruptible | [animation-polish.md](resources/animation-polish.md) |
+| Tabular nums, numberOfLines, font scaling | [typography-polish.md](resources/typography-polish.md) |
+| FlatList tuning, transform vs layout | [performance.md](resources/performance.md) |
+| Polish checklista (16 pryncypiów) | [polish-checklist.md](resources/polish-checklist.md) |
 
 ---
 
-## Główne Zasady 2026
+## Główne zasady (Expo SDK 54, 2026)
 
-1. **Mobile-First** + Container Queries
-2. **WCAG 2.2** jako minimum (nowe: focus-not-obscured, target size)
-3. **OKLCH colors** zamiast HSL
-4. **Dynamic viewport** (`dvh`) zamiast `vh`
-5. **Focus States** widoczne i nie zasłonięte
-6. **Touch Targets** min 44x44px
-7. **prefers-reduced-motion** obowiązkowo
-8. **useTransition** dla loading states (nie useState)
-9. **View Transitions** dla nawigacji (z fallbackiem)
-10. **Popover API** dla tooltipów i non-modal popovers (natywny)
-11. **`<search>` element** zamiast `role="search"`
-12. **Concentric radius** — outer = inner + padding na zagnieżdżonych powierzchniach
-13. **Tabular numbers** — `font-variant-numeric: tabular-nums` na dynamicznych liczbach
-14. **Specyficzne transitions** — nigdy `transition: all`, zawsze konkretne properties
-15. **Scale on press** — `0.96` (nigdy poniżej `0.95`) dla tactile feedback
+1. **Mobile-first** — myśl `flex-col` domyślnie, breakpointy dla tabletu/landscape
+2. **Touch target ≥ 44pt** (iOS HIG) — KAŻDY przycisk/checkbox/link
+3. **Safe Area** na każdym rootu ekranu
+4. **A11y RN** — `accessibilityLabel/Role/State/Hint`, NIE ARIA
+5. **NativeWind v4 + Tailwind v3.4** — `className` w komponentach RN, NIE inline styles
+6. **Dark mode** — `useColorScheme()` + `dark:` variants
+7. **Reduced motion** — `AccessibilityInfo.isReduceMotionEnabled()` gate
+8. **Touch feedback** — `<Pressable>` z opacity/scale/ripple
+9. **Tabular numbers** — `fontVariant: ['tabular-nums']` na timerach/cenach
+10. **Concentric radius** — outer = inner + padding
+11. **Konkretne animacje** — `transform`/`opacity` przez Reanimated worklety; unikaj `width`/`height` animations
+12. **Scale on press** — `0.96` lub `0.98` (subtelne tactile)
+13. **Keyboard handling** — `<KeyboardAvoidingView>` + `returnKeyType` + focus management
+14. **FlatList dla list >20** — `keyExtractor`, memo `renderItem`, `getItemLayout`
+15. **Platform-specific tweaks** — `Platform.select({ios, android})` gdy iOS HIG ≠ Material
 
 ---
 
-## Powiązane Skills
+## Czego NIE używać (web-only)
 
-- **tailwind-react-guidelines**: Komponenty React, Tailwind v4
+- ❌ Container queries, `@container`, `min-h-dvh/svh/lvh`, OKLCH custom properties
+- ❌ View Transitions API (`document.startViewTransition`)
+- ❌ `prefers-reduced-motion` jako CSS query — użyj `AccessibilityInfo`
+- ❌ `focus-visible:`, `hover:` (na komponentach NIE-Pressable)
+- ❌ `<search>` element, `role="search"` — w RN: po prostu `<View>` z `<TextInput>` + a11y label
+- ❌ `<a href>`, `<button>`, `<input>`, `<form>` — RN nie ma DOM
+- ❌ shadcn/ui (web Radix DOM) — wbudowane RN + `@expo/ui` + własne
+
+---
+
+## Powiązane skille
+
+- `tailwind-react-guidelines` — komponenty React 19, NativeWind, expo-router
+- `expo-rn-testing` — testowanie UI (manual + Maestro)
+- `supabase-dev-guidelines` — auth, data layer
