@@ -43,30 +43,32 @@ Postęp: 1 / 7 faz ukończone (Faza 1: kod gotowy, mobile-manual verification pe
 
 ### Do poprawy po review fazy 1
 
-Severity gate: ⛔ **BLOKUJE** (3 × P1, 14 × P2). Pełny raport: `review-faza-1.md`.
+Severity gate po cyklu 1: ⚠️ **ZASTRZEZENIA** (0 × P1, 4 × P2 pozostałe). Pełny raport: `review-faza-1.md`. Fix log: `4eb8275`.
 
-**P1 — Blocking (wymagane przed Fazą 2):**
+**P1 — Blocking (wszystkie naprawione w cyklu 1):**
 
-- [ ] 🔴 [P1-security] **migrations/0004_triggers.sql + 0003_rls.sql** — Pre-claim invitation exploit: atakujący zaprasza cudzy email, ofiara po sign-up auto-acceptuje. Wymaga **explicit consent flow**: RPC `accept_invitation(invitation_id)` SECURITY DEFINER + UI ekran pending invitations po sign-in. Trigger przestaje auto-acceptować.
-- [ ] 🔴 [P1-scenario] **migrations/0004_triggers.sql + features/family/api.ts** — Partner z istniejącym kontem nigdy nie dołączy (trigger fires tylko on INSERT auth.users). Naprawiane tą samą zmianą co P1.1 — `accept_invitation` RPC + post-sign-in invitation check.
-- [ ] 🔴 [P1-scenario] **src/app/(app)/profile.tsx:171-174** — Ślepy zaułek "Skontaktuj sie z supportem" gdy trigger zfailuje. Wymaga RPC `ensure_family()` lub przycisku "Stwórz rodzinę" w fallbacku.
+- [x] 🔴 [P1-security] **migrations/0005_consent_flow.sql** — Pre-claim invitation exploit naprawiony przez explicit consent flow: trigger nie auto-acceptuje, nowy RPC `accept_invitation(_id)` SECURITY DEFINER sprawdza `auth.email()` matching, banner pending invitations w `(app)/index.tsx`.
+- [x] 🔴 [P1-scenario] **migrations/0005_consent_flow.sql + hooks.ts** — Partner-already-exists: RPC `get_my_pending_invitations()` listuje invitations matching auth.email() niezależnie od momentu sign-up; user akceptuje przez `accept_invitation`.
+- [x] 🔴 [P1-scenario] **src/app/(app)/profile.tsx + migrations/0005** — Ślepy zaułek: RPC `ensure_family()` + przycisk "Stwórz rodzinę" w fallbacku zamiast "Skontaktuj sie z supportem".
 
-**P2 — Important (rekomendowane przed mergem):**
+**P2 — Important (6 naprawionych w cyklu 1, 7 pozostałych):**
 
-- [ ] 🟠 [P2-security] **migrations/0001_families.sql:21** — Brak globalnego unique na pending invitations (likwidowane przez P1 consent flow)
-- [ ] 🟠 [P2-security] **migrations/0004_triggers.sql:5** — Trigger fires niezależnie od `email_confirmed_at` (account squatting)
-- [ ] 🟠 [P2-security] **migrations/0003_rls.sql:16-36** — UPDATE policy na families bez column-level restriction (owner może zmienić PK)
-- [ ] 🟠 [P2-perf] **src/features/auth/AuthProvider.tsx:45-51** — `useMemo` na context `value` (kaskadowe re-rendery przy refresh tokena)
-- [ ] 🟠 [P2-perf] **src/app/(auth)/sign-in.tsx + sign-up.tsx** — handleSubmit bez cancel guard (race przy szybkiej nawigacji) — fix przez `useMutation`
-- [ ] 🟠 [P2-perf] **src/features/family/api.ts:37-79** — 3-query waterfall w `useCurrentFamily` → PostgREST embed (1 query)
-- [ ] 🟠 [P2-arch] **src/features/family/api.ts** — rename `api.ts` → `hooks.ts` (zawiera wyłącznie hooki)
-- [ ] 🟠 [P2-arch] **src/features/auth/AuthProvider.tsx:27-31** — `.catch()` na `getSession()` (deadlock UI na splash)
-- [ ] 🟠 [P2-arch] **src/features/auth/AuthProvider.tsx:10-15** — `AuthContextValue` jako discriminated union (eliminuje `?.` w consumerach)
-- [ ] 🟠 [P2-arch] **src/app/(app)/profile.tsx:53** — `error.code === '23505'` zamiast `.includes('duplicate')`
-- [ ] 🟠 [P2-arch] **src/app/(app)/profile.tsx (211 LOC)** — ekstrakcja `FamilyMembersList` / `InviteMemberForm` / `PendingInvitationsList`
-- [ ] 🟠 [P2-scenario] **migrations/0004_triggers.sql** — race dwóch ownerów zapraszających ten sam email (likwidowane przez P1 consent flow)
-- [ ] 🟠 [P2-scenario] **src/app/(app)/profile.tsx:79-81 + AuthProvider** — `queryClient.clear()` na SIGNED_OUT
+- [x] 🟠 [P2-security] **migrations/0005** — Brak globalnego unique na pending invitations (zlikwidowane przez consent flow — race nie jest już exploitem, druga rodzina nadal czeka, ale user widzi obie w bannerze i wybiera)
+- [ ] 🟠 [P2-security] **migrations/0004_triggers.sql** — Trigger fires niezależnie od `email_confirmed_at` (account squatting nadal możliwe — częściowo zmitygowane bo trigger już nie tworzy invitation acceptance)
+- [ ] 🟠 [P2-security] **migrations/0003_rls.sql:16-36** — UPDATE policy na families bez column-level restriction (owner może zmienić PK) — REVOKE UPDATE (id, created_at)
+- [x] 🟠 [P2-perf] **src/features/auth/AuthProvider.tsx** — `useMemo` na context `value` (zaaplikowane w cyklu 1)
+- [ ] 🟠 [P2-perf] **src/app/(auth)/sign-in.tsx + sign-up.tsx** — handleSubmit bez cancel guard — fix przez `useMutation`
+- [ ] 🟠 [P2-perf] **src/features/family/hooks.ts:37-79** — 3-query waterfall w `useCurrentFamily` → PostgREST embed (1 query)
+- [x] 🟠 [P2-arch] **src/features/family/hooks.ts** — rename z `api.ts` (zaaplikowane w cyklu 1)
+- [x] 🟠 [P2-arch] **src/features/auth/AuthProvider.tsx** — `.catch()` na `getSession()` (zaaplikowane w cyklu 1)
+- [x] 🟠 [P2-arch] **src/features/auth/AuthProvider.tsx** — `AuthContextValue` jako discriminated union (zaaplikowane w cyklu 1)
+- [x] 🟠 [P2-arch] **src/app/(app)/profile.tsx** — `error.code === '23505'` zamiast `.includes('duplicate')` (zaaplikowane w cyklu 1)
+- [ ] 🟠 [P2-arch] **src/app/(app)/profile.tsx** — ekstrakcja `FamilyMembersList` / `InviteMemberForm` / `PendingInvitationsList` (LOC urosło po dodaniu fallbacku — pilniejsze)
+- [x] 🟠 [P2-scenario] **migrations/0005** — race dwóch ownerów zapraszających ten sam email (zlikwidowane przez consent flow)
+- [x] 🟠 [P2-scenario] **AuthProvider** — `queryClient.clear()` na SIGNED_OUT (zaaplikowane w cyklu 1)
 - [ ] 🟠 [P2-scenario] **src/app/(auth)/sign-up.tsx** — sign-up redirect przed triggerem (flash "Brak rodziny") — refetch po SIGNED_IN
+
+**P3:** ~15 drobnych — patrz `review-faza-1.md` sekcja P3.
 
 **P3:** ~15 drobnych — patrz `review-faza-1.md` sekcja P3.
 
