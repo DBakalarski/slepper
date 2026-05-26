@@ -1,48 +1,12 @@
-import { useEffect, useState } from 'react';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { supabase } from '@/lib/supabase';
-
-type HealthStatus = 'checking' | 'ok' | 'unauthorized' | 'error';
+import { useAuth } from '@/features/auth/AuthProvider';
+import { useCurrentFamily } from '@/features/family/api';
 
 export default function TodayScreen() {
-  const [status, setStatus] = useState<HealthStatus>('checking');
-  const [detail, setDetail] = useState<string>('');
-
-  useEffect(() => {
-    const controller = new AbortController();
-
-    (async () => {
-      const { error } = await supabase.from('_health').select('*').limit(1).abortSignal(controller.signal);
-
-      if (controller.signal.aborted) return;
-
-      if (!error) {
-        setStatus('ok');
-        setDetail('Klient polaczony, _health istnieje.');
-        return;
-      }
-
-      // PGRST205 / 42P01 = "relation does not exist" => klient dziala, brak tabeli to OK na tym etapie
-      if (error.code === 'PGRST205' || error.code === '42P01') {
-        setStatus('ok');
-        setDetail('Klient polaczony (brak tabeli _health to oczekiwane).');
-        return;
-      }
-
-      if (error.message?.toLowerCase().includes('jwt') || error.message?.toLowerCase().includes('unauthorized')) {
-        setStatus('unauthorized');
-        setDetail(error.message);
-        return;
-      }
-
-      setStatus('error');
-      setDetail(`${error.code ?? '?'}: ${error.message}`);
-    })();
-
-    return () => controller.abort();
-  }, []);
+  const { user } = useAuth();
+  const familyQuery = useCurrentFamily();
 
   return (
     <SafeAreaView className="flex-1 bg-cream">
@@ -51,34 +15,18 @@ export default function TodayScreen() {
         <Text className="mt-2 text-base text-purple">Tu pojawi sie widok dnia.</Text>
 
         <View className="mt-8 w-full rounded-2xl bg-white p-4">
-          <Text className="text-sm font-semibold text-navy">Supabase health</Text>
+          <Text className="text-sm font-semibold text-navy">Status</Text>
+          <Text className="mt-1 text-sm text-navy">Zalogowany: {user?.email ?? 'brak'}</Text>
           <Text className="mt-1 text-sm text-navy">
-            Status:{' '}
-            <Text className={statusColor(status)}>
-              {statusLabel(status)}
-            </Text>
+            Rodzina:{' '}
+            {familyQuery.isLoading
+              ? 'ladowanie...'
+              : familyQuery.data
+                ? `${familyQuery.data.name} (${familyQuery.data.members.length})`
+                : 'brak'}
           </Text>
-          {detail ? <Text className="mt-1 text-xs text-purple">{detail}</Text> : null}
         </View>
       </View>
     </SafeAreaView>
   );
-}
-
-function statusLabel(status: HealthStatus): string {
-  switch (status) {
-    case 'checking': return 'sprawdzam...';
-    case 'ok': return 'OK';
-    case 'unauthorized': return '401 (zle klucze)';
-    case 'error': return 'blad';
-  }
-}
-
-function statusColor(status: HealthStatus): string {
-  switch (status) {
-    case 'ok': return 'text-purple font-semibold';
-    case 'unauthorized':
-    case 'error': return 'text-orange font-semibold';
-    case 'checking': return 'text-navy';
-  }
 }

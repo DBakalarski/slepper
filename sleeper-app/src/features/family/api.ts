@@ -65,7 +65,7 @@ export function useCurrentFamily(): UseQueryResult<FamilyWithMembers | null> {
       const members: FamilyMember[] = membersData.map((m) => ({
         id: m.id,
         user_id: m.user_id,
-        role: m.role,
+        role: parseRole(m.role),
         created_at: m.created_at,
         isCurrentUser: m.user_id === userId,
       }));
@@ -73,11 +73,17 @@ export function useCurrentFamily(): UseQueryResult<FamilyWithMembers | null> {
       return {
         id: family.id,
         name: family.name,
-        myRole: ownMembership.role,
+        myRole: parseRole(ownMembership.role),
         members,
       };
     },
   });
+}
+
+// Supabase generuje role jako `string` (CHECK constraint nie tworzy enuma).
+// Zawezamy do unii zgodnej z migracja 0001_families.sql.
+function parseRole(role: string): 'owner' | 'member' {
+  return role === 'owner' ? 'owner' : 'member';
 }
 
 export function useFamilyInvitations(familyId: string | null): UseQueryResult<PendingInvitation[]> {
