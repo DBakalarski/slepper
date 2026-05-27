@@ -166,6 +166,25 @@ Lista pełna w `review-faza-2.md`. Highlights: magic numbers (`1000`, `60*1000`,
 - [ ] Weryfikacja: day picker → wybierz wczoraj → pokazują się sesje z wczoraj — manual test (patrz `manual-test-faza-3.md`)
 - [ ] Weryfikacja: usunięcie sesji wymaga potwierdzenia + znika z listy — manual test (patrz `manual-test-faza-3.md`)
 
+### Do poprawy po review fazy 3
+
+Severity gate: ⚠️ **KONTYNUUJ Z ZASTRZEZENIAMI** (0 × P1, 2 × P2, 7 × P3). Pełny raport: `review-faza-3.md`.
+
+**P2 — Important:**
+
+- [x] 🟠 [P2-arch] **src/app/(app)/session/[id].tsx:1-358** — plik 358 LOC, przekracza limit 300 LOC (coding-rules §1). Ekstrakcja `SessionEditForm` (presentational) + extract wspolnego `Chip` (TypeChip / ModeChip / chips w BackdatedSessionModal). **FIX (cykl 1):** `SessionEditForm` w `features/sessions/components/`, shared `Chip` w `components/Chip.tsx` uzywany przez session edit + BackdatedSessionModal. Plik strony zredukowany ponizej 200 LOC.
+- [x] 🟠 [P2-correctness] **src/app/(app)/session/[id].tsx:30-34** (`combineDateAndTime`) — `setHours()` operuje na device tz, nie app tz. Dla usera spoza Warsaw lub na device z UTC zapisany `start_at` rozjedzie sie z wyborem usera. Wyciagnac `combineDateAndTimeInAppTz` do `lib/time.ts` (pattern z `parseAppTzDateTime`: `fromZonedTime(\`${dayKey}T${timeKey}:00\`, APP_TIMEZONE)`). **FIX (cykl 1):** `combineDateAndTimeInAppTz` dodane do `lib/time.ts` przez `format(toZonedTime(...))` + `fromZonedTime`. `SessionEditForm` uzywa nowego helpera, usunieto lokalny `combineDateAndTime`.
+
+**P3 — Nit (opcjonalne, backlog):**
+
+- [ ] 🟡 [P3-arch] **history.tsx:44-50** — `startBase.setDate(... - 13)` zamienic na `addDays(today, -(ALL_RANGE_DAYS - 1))` z date-fns (DST safety).
+- [ ] 🟡 [P3-arch] **history.tsx:172-176** — `new Date(\`${key}T12:00:00Z\`)` jako trick — zamienic na `new Date(groups[key][0].start_at)`.
+- [ ] 🟡 [P3-perf] **history.tsx:194** — inline `renderItem` (mikro-optymalizacja).
+- [ ] 🟡 [P3-scenario] **session/[id].tsx:59-68** — form nie odswieza sie po refetch (last-write-wins bez ostrzezenia). Po Fazie 4 (realtime) dodac banner "Sesja byla edytowana, odswiez".
+- [ ] 🟡 [P3-arch] **session/[id].tsx:113-146** — `handleSave` walidacje wyciagnac do `validateForm(form): string | null`.
+- [ ] 🟡 [P3-type] **hooks.ts:284, 311** — `useUpdateSession`/`useDeleteSession` bez explicit `UseMutationResult<...>` return type (konsystencja z `useStartSession`/`useEndSession`).
+- [ ] 🟡 [P3-arch] **3 miejsca** — wyciagnac `Chip` (selected/label/onPress) jako shared component (`ModeChip` w history, `TypeChip` w session edit, chips w BackdatedSessionModal — 3 uzycia spelniaja regule "abstrakcja od 2+ uzyc").
+
 ### Notatki implementacyjne Fazy 3
 
 - Nowe komponenty `DatePickerField` i `TimePickerField` w `src/components/` jako wrappery `@react-native-community/datetimepicker` — natywny picker (iOS inline, Android modal), wartosci kontrolowane przez rodzica. Reuse w history (day picker) i session/[id] (start/end).

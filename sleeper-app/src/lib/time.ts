@@ -118,3 +118,16 @@ export function parseAppTzDateTime(dateStr: string, timeStr: string): Date | nul
 export function todayDateInAppTz(now: Date = new Date()): string {
   return format(toZonedTime(now, APP_TIMEZONE), 'yyyy-MM-dd');
 }
+
+// Laczy dzien z `datePart` z godzina i minuta z `timePart` w jednym instant
+// w strefie aplikacji. NIE uzywaj `setHours` na surowym Date — to operuje na
+// device tz i daje zly wynik dla usera spoza Warsaw (patrz review-faza-3 P2-2).
+//
+// Implementacja: wycina dzien (YYYY-MM-DD) z `datePart` w app tz, wycina
+// godzine (HH:mm) z `timePart` w app tz, sklada w ISO i konwertuje przez
+// `fromZonedTime` na UTC instant. Pattern z `parseAppTzDateTime`.
+export function combineDateAndTimeInAppTz(datePart: Date, timePart: Date): Date {
+  const dayKey = format(toZonedTime(datePart, APP_TIMEZONE), 'yyyy-MM-dd');
+  const timeKey = format(toZonedTime(timePart, APP_TIMEZONE), 'HH:mm');
+  return fromZonedTime(`${dayKey}T${timeKey}:00`, APP_TIMEZONE);
+}

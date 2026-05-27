@@ -8,37 +8,16 @@ import {
   Pressable,
   ScrollView,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { DatePickerField } from '@/components/DatePickerField';
-import { TimePickerField } from '@/components/TimePickerField';
 import {
-  useDeleteSession,
-  useSessionById,
-  useUpdateSession,
-  type SessionType,
-} from '@/features/sessions/hooks';
+  SessionEditForm,
+  type SessionFormState,
+} from '@/features/sessions/components/SessionEditForm';
+import { useDeleteSession, useSessionById, useUpdateSession } from '@/features/sessions/hooks';
 import { extractErrorMessage } from '@/lib/extract-error-message';
-
-// Laczy date (z DatePicker) z godzina (z TimePicker) w jeden Date — picker
-// godziny zwraca jakikolwiek dzien (urzadzenie wybiera dzisiaj), wiec
-// przenosimy time-of-day na wybrany dzien aplikacji. Operujemy na local fields
-// urzadzenia, bo picker juz wystawia czas widziany przez usera.
-function combineDateAndTime(datePart: Date, timePart: Date): Date {
-  const next = new Date(datePart);
-  next.setHours(timePart.getHours(), timePart.getMinutes(), 0, 0);
-  return next;
-}
-
-interface SessionFormState {
-  startDate: Date;
-  endDate: Date | null;
-  type: SessionType;
-  notes: string;
-}
 
 // Ekran edycji pojedynczej sesji. Bez optimistic update — formularz wymaga
 // jawnego zapisu i pokazania bledu walidacji. Aktywna sesja (end_at = null)
@@ -184,175 +163,21 @@ export default function SessionEditScreen() {
             </Pressable>
           </View>
 
-          {isActive ? (
-            <View className="rounded-xl bg-orange/15 px-4 py-3">
-              <Text className="text-xs font-semibold text-navy">Sesja w toku</Text>
-              <Text className="mt-1 text-xs text-purple">
-                Mozna zmienic typ, start i notatki. Koniec ustawi sie automatycznie po
-                zakonczeniu sesji.
-              </Text>
-            </View>
-          ) : null}
-
-          <View className="rounded-2xl bg-white p-4 gap-4">
-            <View>
-              <Text className="text-xs font-semibold text-purple">Typ</Text>
-              <View className="mt-2 flex-row gap-2">
-                <TypeChip
-                  label="Drzemka"
-                  selected={form.type === 'nap'}
-                  onPress={() => setForm({ ...form, type: 'nap' })}
-                />
-                <TypeChip
-                  label="Sen nocny"
-                  selected={form.type === 'night_sleep'}
-                  onPress={() => setForm({ ...form, type: 'night_sleep' })}
-                />
-              </View>
-            </View>
-
-            <DatePickerField
-              label="Data startu"
-              value={form.startDate}
-              onChange={(next) =>
-                setForm({
-                  ...form,
-                  startDate: combineDateAndTime(next, form.startDate),
-                })
-              }
-              disabled={isPending}
-              maximumDate={new Date()}
-              accessibilityLabel="Data rozpoczecia sesji"
-            />
-
-            <View className="flex-row gap-3">
-              <TimePickerField
-                label="Godz. start"
-                value={form.startDate}
-                onChange={(next) =>
-                  setForm({
-                    ...form,
-                    startDate: combineDateAndTime(form.startDate, next),
-                  })
-                }
-                disabled={isPending}
-                accessibilityLabel="Godzina rozpoczecia"
-              />
-              {!isActive && form.endDate ? (
-                <TimePickerField
-                  label="Godz. koniec"
-                  value={form.endDate}
-                  onChange={(next) =>
-                    setForm({
-                      ...form,
-                      // Bezpieczne: form.endDate juz nie null w tej galezi.
-                      endDate: combineDateAndTime(form.endDate ?? next, next),
-                    })
-                  }
-                  disabled={isPending}
-                  accessibilityLabel="Godzina zakonczenia"
-                />
-              ) : (
-                <View className="flex-1" />
-              )}
-            </View>
-
-            {!isActive && form.endDate ? (
-              <DatePickerField
-                label="Data konca"
-                value={form.endDate}
-                onChange={(next) =>
-                  setForm({
-                    ...form,
-                    endDate: combineDateAndTime(next, form.endDate ?? next),
-                  })
-                }
-                disabled={isPending}
-                maximumDate={new Date()}
-                accessibilityLabel="Data zakonczenia sesji"
-              />
-            ) : null}
-
-            <View>
-              <Text className="text-xs font-semibold text-purple">Notatki</Text>
-              <TextInput
-                value={form.notes}
-                onChangeText={(text) => setForm({ ...form, notes: text })}
-                placeholder="Opcjonalne notatki"
-                placeholderTextColor="#7C6BAD"
-                multiline
-                numberOfLines={3}
-                className="mt-1 min-h-[80px] rounded-xl border border-purple/30 px-3 py-2 text-base text-navy"
-                editable={!isPending}
-                accessibilityLabel="Notatki do sesji"
-                textAlignVertical="top"
-              />
-            </View>
-
-            {validationError ? (
-              <Text className="text-sm text-orange">{validationError}</Text>
-            ) : null}
-            {updateSession.isError ? (
-              <Text className="text-sm text-orange">
-                Blad zapisu: {extractErrorMessage(updateSession.error)}
-              </Text>
-            ) : null}
-            {deleteSession.isError ? (
-              <Text className="text-sm text-orange">
-                Blad usuwania: {extractErrorMessage(deleteSession.error)}
-              </Text>
-            ) : null}
-
-            <Pressable
-              accessibilityRole="button"
-              onPress={handleSave}
-              disabled={isPending}
-              className={`mt-2 items-center justify-center rounded-xl px-4 py-3 ${
-                isPending ? 'bg-navy/40' : 'bg-navy'
-              }`}>
-              {updateSession.isPending ? (
-                <ActivityIndicator color="#F5F0E8" />
-              ) : (
-                <Text className="text-sm font-semibold text-cream">Zapisz zmiany</Text>
-              )}
-            </Pressable>
-          </View>
-
-          <Pressable
-            accessibilityRole="button"
-            onPress={handleDelete}
-            disabled={isPending}
-            className={`items-center justify-center rounded-xl border border-orange px-4 py-3 ${
-              isPending ? 'opacity-50' : ''
-            }`}>
-            {deleteSession.isPending ? (
-              <ActivityIndicator color="#E08B6F" />
-            ) : (
-              <Text className="text-sm font-semibold text-orange">Usun sesje</Text>
-            )}
-          </Pressable>
+          <SessionEditForm
+            form={form}
+            onChange={setForm}
+            isActive={isActive}
+            isPending={isPending}
+            validationError={validationError}
+            saveError={updateSession.isError ? extractErrorMessage(updateSession.error) : null}
+            deleteError={deleteSession.isError ? extractErrorMessage(deleteSession.error) : null}
+            isSavePending={updateSession.isPending}
+            isDeletePending={deleteSession.isPending}
+            onSave={handleSave}
+            onDelete={handleDelete}
+          />
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
-  );
-}
-
-interface TypeChipProps {
-  label: string;
-  selected: boolean;
-  onPress: () => void;
-}
-
-function TypeChip({ label, selected, onPress }: TypeChipProps) {
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityState={{ selected }}
-      onPress={onPress}
-      className={`rounded-xl px-4 py-2 ${selected ? 'bg-navy' : 'bg-cream'}`}>
-      <Text className={`text-sm font-semibold ${selected ? 'text-cream' : 'text-navy'}`}>
-        {label}
-      </Text>
-    </Pressable>
   );
 }

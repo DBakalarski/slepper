@@ -11,6 +11,7 @@ import {
   View,
 } from 'react-native';
 
+import { Chip } from '@/components/Chip';
 import { useInsertBackdatedSession, type SessionType } from '@/features/sessions/hooks';
 import { extractErrorMessage } from '@/lib/extract-error-message';
 import { parseAppTzDateTime, todayDateInAppTz } from '@/lib/time';
@@ -112,12 +113,12 @@ export function BackdatedSessionModal({
             <View>
               <Text className="text-xs font-semibold text-purple">Typ</Text>
               <View className="mt-2 flex-row gap-2">
-                <TypeChip
+                <Chip
                   label="Drzemka"
                   selected={type === 'nap'}
                   onPress={() => setType('nap')}
                 />
-                <TypeChip
+                <Chip
                   label="Sen nocny"
                   selected={type === 'night_sleep'}
                   onPress={() => setType('night_sleep')}
@@ -203,22 +204,3 @@ export function BackdatedSessionModal({
   );
 }
 
-interface TypeChipProps {
-  label: string;
-  selected: boolean;
-  onPress: () => void;
-}
-
-function TypeChip({ label, selected, onPress }: TypeChipProps) {
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityState={{ selected }}
-      onPress={onPress}
-      className={`rounded-xl px-4 py-2 ${selected ? 'bg-navy' : 'bg-cream'}`}>
-      <Text className={`text-sm font-semibold ${selected ? 'text-cream' : 'text-navy'}`}>
-        {label}
-      </Text>
-    </Pressable>
-  );
-}
