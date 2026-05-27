@@ -80,6 +80,29 @@ export function useSessions(
   });
 }
 
+// Pojedyncza sesja po id — uzywane przez ekran edycji `session/[id]`.
+// Cache key niezalezny od `sessionsByChildKey` aby invalidacja listy nie
+// wymuszala refetcha ekranu edycji (otwarty modal/form), ale `useUpdateSession`
+// i `useDeleteSession` invalidiuja po childId — dlatego dorzucamy szeroki klucz.
+export function useSessionById(
+  sessionId: string | null,
+): UseQueryResult<SleepSession | null> {
+  return useQuery({
+    queryKey: ['session', sessionId ?? 'none'] as const,
+    enabled: Boolean(sessionId),
+    queryFn: async (): Promise<SleepSession | null> => {
+      if (!sessionId) return null;
+      const { data, error } = await supabase
+        .from('sessions')
+        .select('id, child_id, type, start_at, end_at, notes, created_by, created_at')
+        .eq('id', sessionId)
+        .maybeSingle();
+      if (error) throw error;
+      return data ? rowToSession(data) : null;
+    },
+  });
+}
+
 // Aktywna sesja = end_at is null. Max jedna per dziecko (partial unique idx).
 export function useActiveSession(
   childId: string | null,
@@ -272,8 +295,9 @@ export function useUpdateSession() {
       if (error) throw error;
       return rowToSession(data);
     },
-    onSuccess: (_data, { childId }) => {
+    onSuccess: (data, { childId }) => {
       void queryClient.invalidateQueries({ queryKey: activeSessionKey(childId) });
+      void queryClient.invalidateQueries({ queryKey: ['session', data.id] });
       invalidateChildSessions(queryClient, childId);
     },
   });
@@ -292,8 +316,9 @@ export function useDeleteSession() {
       const { error } = await supabase.from('sessions').delete().eq('id', sessionId);
       if (error) throw error;
     },
-    onSuccess: (_data, { childId }) => {
+    onSuccess: (_data, { childId, sessionId }) => {
       void queryClient.invalidateQueries({ queryKey: activeSessionKey(childId) });
+      void queryClient.invalidateQueries({ queryKey: ['session', sessionId] });
       invalidateChildSessions(queryClient, childId);
     },
   });

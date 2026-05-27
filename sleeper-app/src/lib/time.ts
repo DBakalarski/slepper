@@ -47,6 +47,24 @@ export function formatTime(date: Date): string {
   return format(zoned, 'HH:mm');
 }
 
+// "27.05.2026" w strefie aplikacji — krotka forma dla nagłowkow / pickerow.
+export function formatDateShort(date: Date): string {
+  const zoned = toZonedTime(date, APP_TIMEZONE);
+  return format(zoned, 'dd.MM.yyyy');
+}
+
+// "27.05" (bez roku) — dla nagłowkow sekcji w grupowanej liscie historii.
+export function formatDateNoYear(date: Date): string {
+  const zoned = toZonedTime(date, APP_TIMEZONE);
+  return format(zoned, 'dd.MM');
+}
+
+// Klucz dnia w app tz — "YYYY-MM-DD". Uzywane jako stabilny grouping key
+// niezalezny od device tz (vs Date.toDateString ktore uzywa lokalnego tz).
+export function dayKeyInAppTz(date: Date): string {
+  return format(toZonedTime(date, APP_TIMEZONE), 'yyyy-MM-dd');
+}
+
 // "09:30 → 11:13" lub "09:30 → trwa" gdy end_at jest null.
 export function formatRange(start: Date, end: Date | null): string {
   const left = formatTime(start);

@@ -26,6 +26,8 @@ export default function AppTabsLayout() {
       <Tabs.Screen name="profile" options={{ title: 'Profil' }} />
       {/* sleep-fullscreen poza tab barem — dostepny przez router.push */}
       <Tabs.Screen name="sleep-fullscreen" options={{ href: null }} />
+      {/* session/[id] — ekran edycji, dostepny przez Link z listy sesji */}
+      <Tabs.Screen name="session/[id]" options={{ href: null }} />
     </Tabs>
   );
 }

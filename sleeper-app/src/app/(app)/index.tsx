@@ -205,9 +205,14 @@ function ActiveChildSection({ childId }: ActiveChildSectionProps) {
 
       {todaySessions.length > 0 ? (
         <View className="gap-2">
-          <Text className="text-xs font-semibold uppercase tracking-wide text-purple">
-            Sesje dzisiaj
-          </Text>
+          <View className="flex-row items-center justify-between">
+            <Text className="text-xs font-semibold uppercase tracking-wide text-purple">
+              Sesje dzisiaj
+            </Text>
+            <Link href="/history" className="text-xs font-semibold text-navy underline">
+              Pokaz wszystkie
+            </Link>
+          </View>
           {todaySessions.slice(0, 5).map((session) => (
             <SessionListItem key={session.id} session={session} />
           ))}
