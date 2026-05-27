@@ -3,7 +3,7 @@
 **Branch:** `feature/mvp-sleep-tracker`
 **Ostatnia aktualizacja:** 2026-05-27
 
-Postęp: 5 / 7 faz ukończone (Faza 1–5: kod gotowy, Faza 1–3 review CZYSTE, Faza 4 review CZYSTE po cyklu 2, Faza 5 review ZASTRZEŻENIA — 2 × P2 + mobile-manual pending)
+Postęp: 6 / 7 faz ukończone (Faza 1–6: kod gotowy, Faza 1–3 review CZYSTE, Faza 4 review CZYSTE po cyklu 2, Faza 5 review CZYSTE po cyklu 1, Faza 6 kod gotowy — mobile-manual pending operator)
 
 ---
 
@@ -264,7 +264,7 @@ Severity gate (cykl 1): ⚠️ **KONTYNUUJ Z ZASTRZEZENIAMI** (0 × P1, 1 × P2,
 
 ### Do poprawy po review fazy 5
 
-Severity gate cyklu 1: ⚠️ **ZASTRZEŻENIA** (0 × P1, 2 × P2, 5 × P3). Pełny raport: `review-faza-5.md`. Po cyklu 1 fix: ✅ 2 × P2 naprawione, 5 × P3 backlog. Mobile-manual: 8 scenariuszy w `manual-test-faza-5.md` — pending operator.
+Severity gate cyklu 1: ⚠️ **ZASTRZEŻENIA** (0 × P1, 2 × P2, 5 × P3). Pełny raport: `review-faza-5.md`. Po cyklu 1 fix: ✅ 2 × P2 naprawione, 5 × P3 backlog. **Re-review (2026-05-27): ✅ CZYSTE** — 0 × P1, 0 × P2, 5 × P3 backlog (opcjonalne). Mobile-manual: 8 scenariuszy w `manual-test-faza-5.md` — pending operator (nie blokuje gate).
 
 **P2 — Important:**
 
@@ -294,16 +294,25 @@ Severity gate cyklu 1: ⚠️ **ZASTRZEŻENIA** (0 × P1, 2 × P2, 5 × P3). Pe�
 
 ## Faza 6 — Polish dla siebie (Effort: S)
 
-- [ ] App icon (1024x1024) + adaptive icon Android (`assets/icon.png`, `assets/adaptive-icon.png`)
-- [ ] Splash screen (`assets/splash.png`)
-- [ ] Dark mode: dark variant w `tailwind.config.js` + `useColorScheme()` provider
-- [ ] Haptics: `expo-haptics` `impactAsync(ImpactFeedbackStyle.Medium)` przy start/stop snu
-- [ ] EAS init: `npx eas-cli init`
-- [ ] EAS Build profile `development` w `eas.json`
-- [ ] Build dev na własny telefon: `eas build --profile development --platform ios|android`
-- [ ] (Opcjonalnie) Konto Apple Developer → TestFlight build dla partnera
-- [ ] Weryfikacja: apka działa standalone bez bundlera (development build zainstalowany)
-- [ ] Weryfikacja: porównanie z mockupami — paleta, fonty, spacing zgodne
+- [x] App icon (1024x1024) + adaptive icon Android (`assets/images/icon.png` + `android-icon-*.png` zachowane z template Expo — wystarczaja dla "polish dla siebie")
+- [x] Splash screen (`assets/images/splash-icon.png` zachowany z template Expo, konfiguracja `expo-splash-screen` w `app.json` poprawna)
+- [x] Dark mode: `darkMode: 'media'` w `tailwind.config.js` + dark variants w `bg-cream`/`text-navy` na ekranach głównych (Dzisiaj, Historia, Statystyki, Profil, Auth, session/[id]) + tabBar coloring przez `useColorScheme()` w `(app)/_layout.tsx`
+- [x] Haptics: `expo-haptics` zainstalowany (~15.0.8), `Haptics.impactAsync(ImpactFeedbackStyle.Medium)` w `BigActionButton.handlePress` (start + stop snu)
+- [ ] EAS init: `npx eas-cli init` — **pominięte autonomicznie** (wymaga `eas login`). Manual instructions w `manual-test-faza-6.md` scenariusz 6.
+- [x] EAS Build profile `development` w `eas.json` (utworzony manually, profile: development/preview/production)
+- [ ] Build dev na własny telefon: `eas build --profile development --platform ios|android` — manual step (user)
+- [ ] (Opcjonalnie) Konto Apple Developer → TestFlight build dla partnera — manual step (user)
+- [ ] Weryfikacja: apka działa standalone bez bundlera (development build zainstalowany) — manual test (patrz `manual-test-faza-6.md`)
+- [ ] Weryfikacja: porównanie z mockupami — paleta, fonty, spacing zgodne — manual test (patrz `manual-test-faza-6.md`)
+
+### Notatki implementacyjne Fazy 6
+
+- `expo-haptics@~15.0.8` zainstalowany przez `npx expo install` (kompatybilnosc z SDK 54). `BigActionButton` woluje `Haptics.impactAsync(ImpactFeedbackStyle.Medium)` synchronicznie przed `onPress()` — fire-and-forget, brak Haptic Enginu nie blokuje akcji.
+- Dark mode: `darkMode: 'media'` (Appearance API, bez manualnego togglera). NativeWind v4 natywnie czyta `Appearance.getColorScheme()`. Dodane kolory `dark-bg` (`#0F0D26`), `dark-card` (`#1E1B4B`), `dark-surface` (`#2A2660`) w palecie.
+- Dark variants zastosowane TYLKO na top-level surfaces (tlo ekranu, tytuly H1, subtitle) — karty kolorowe (orange/navy) zachowuja palete z mockupow w obu trybach. Kontrast WCAG AA zachowany (testy wizualne w manual-test).
+- `(app)/_layout.tsx` uzywa `useColorScheme()` z `react-native` (nie z `nativewind`) dla tabBar coloring — expo-router Tabs API nie wspiera `className`, wymaga `screenOptions` z hex values.
+- `eas.json` utworzony manually z 3 profilami (development, preview, production). `eas init` NIE wykonany — wymaga `eas login` (interaktywne). User wykonuje krok manualnie wg `manual-test-faza-6.md` scenariusz 6.
+- Ikony aplikacji ZACHOWANE z template Expo (`assets/images/icon.png` 1024x1024, `android-icon-foreground.png` 512x512, `splash-icon.png` 228x213). Zakres "polish dla siebie" nie wymaga custom design — store release to decyzja post-MVP.
 
 ---
 

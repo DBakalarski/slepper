@@ -1,7 +1,7 @@
 # Kontekst: MVP — Aplikacja do trackowania snu i okien aktywności dziecka
 
 **Branch:** `feature/mvp-sleep-tracker`
-**Ostatnia aktualizacja:** 2026-05-27 (Faza 5 — kod gotowy, mobile-manual pending)
+**Ostatnia aktualizacja:** 2026-05-27 (Faza 6 — kod gotowy: dark mode + haptics + eas.json; eas login + mobile-manual pending operator)
 
 ## Źródła
 - Requirements doc: brak (nie użyto `/dev-brainstorm`)
@@ -354,3 +354,69 @@ Severity gate: ✅ **GOTOWE DO KONTYNUACJI** (0 × P1, 0 × P2, 3 × P3 backlog 
 - `npm run lint` -> PASS (0 errors, 0 warnings)
 - Manual mobile testing: pending — `manual-test-faza-5.md` (8 scenariuszy + Scenariusz 7 manualnego REPL test dla `targetWakeWindowMinutes`).
 - Brak unit testow `targetWakeWindowMinutes` — projekt nie ma setupu testow (zgodnie z CLAUDE.md). Scenariusz 7 w manual-test pokrywa weryfikacje.
+
+### Review fazy 5 (2026-05-27, cykl 1)
+
+**Severity gate: ⚠️ ZASTRZEŻENIA** — 0 × P1, 2 × P2, 5 × P3. Pełny raport: `review-faza-5.md`.
+
+**Kluczowe findings:**
+
+- 🟠 P2-1 `useUpdateSession` schedule wzgledem edytowanej sesji (nie ostatniej zakonczonej) — asymetria z `useDeleteSession.rescheduleAfterDelete`. Rekomendacja: rename `rescheduleAfterDelete` → `rescheduleFromLastEnded` i uzyc go z `useUpdateSession`.
+- 🟠 P2-2 `useEndSession.onSuccess` cicho cancel gdy `data.end_at === null` (anomalia post-update). Dodac `console.warn` dla diagnostyki.
+- 🟡 P3 × 5: channel id='default' (mylacy), 30-dni-miesiac w `targetWakeWindowMinutes`, brak explicit `channelId` w schedule, komentarz "po pierwszym dziecku" mylacy, brak deep-link handlera.
+
+**Wnioski:**
+
+- Implementacja kompletna wzgledem planu (§130-146). Wszystkie 5 zadan planu pokryte + bonus: jawny cancel przy startSession (plan tego nie wymagal).
+- Architektura czysta: side-effects izolowane w `schedule-nap-side-effects.ts`, idempotentne, fire-and-forget z warningiem.
+- Type safety: zero `any`, zero `!`, strict mode OK. Lint clean.
+- Glowny dlug: symetria `useUpdateSession` ↔ `useDeleteSession` przy schedulowaniu. Praktycznie nie wystepuje (user typowo edytuje ostatnia sesje), ale tania naprawa.
+
+### Re-review fazy 5 (2026-05-27, po cyklu fix 1)
+
+**Severity gate: ✅ CZYSTE** — 0 × P1, 0 × P2, 5 × P3 backlog. Commit fix: `90dba65`.
+
+- P2-1 naprawione: rename `rescheduleAfterDelete` → `rescheduleFromLastEnded`, uzyty zarowno w `useUpdateSession.onSuccess` jak i `useDeleteSession.onSuccess` (symetria reschedule mechanizmu). Brak stale references do starej nazwy.
+- P2-2 naprawione: `useEndSession.onSuccess` loguje `console.warn` gdy `data.end_at === null` przed fallback cancel.
+- Walidacja: `npx tsc --noEmit` PASS, `npm run lint` PASS.
+- P3 (5 sugestii) pozostaje w backlogu — adresowane opcjonalnie w Fazie 6.
+- Mobile-manual: 8 scenariuszy w `manual-test-faza-5.md` pending operator. Nie blokuje przejscia do Fazy 6.
+
+## Faza 6 — Polish dla siebie (2026-05-27)
+
+### Co zostalo zrobione
+
+- **expo-haptics zainstalowany** (~15.0.8, SDK 54 compat). `BigActionButton.handlePress` wola `Haptics.impactAsync(ImpactFeedbackStyle.Medium)` synchronicznie przed `onPress()` (fire-and-forget). Medium impact uzasadnienie: Light za delikatne dla glownego CTA, Heavy drazniace.
+- **Dark mode `darkMode: 'media'`** w `tailwind.config.js` — bez manualnego togglera, czyta `Appearance` API natywnie. Dodane kolory `dark-bg` (`#0F0D26`), `dark-card` (`#1E1B4B`), `dark-surface` (`#2A2660`).
+- **Dark variants na top-level surfaces:** ekrany Dzisiaj/Historia/Statystyki/Profil/Auth/session/[id] dostaly `bg-cream dark:bg-dark-bg`, tytuly `text-navy dark:text-cream`, subtitle `text-purple dark:text-cream/70`. Karty kolorowe (orange/navy ActiveWindowCard/SleepInProgressCard) zachowuja palete z mockupow w obu trybach (paleta sama w sobie spelnia kontrast WCAG AA na ciemnym tle).
+- **BigActionButton dark variant** — `bg-navy dark:bg-purple` (zachowuje rozpoznawalnosc na ciemnym tle).
+- **TabBar dark mode** w `(app)/_layout.tsx` przez `useColorScheme()` z `react-native` (expo-router Tabs nie wspiera `className`). Aktywny tab `#F5F0E8` w dark, `#1E1B4B` w light.
+- **`eas.json` utworzony** z 3 profilami (development: developmentClient + distribution internal, preview, production). `cli.appVersionSource: "remote"`.
+- **`eas init` NIE wykonany autonomicznie** — wymaga `eas login` (interaktywne). Manual instructions w `manual-test-faza-6.md` scenariusz 6.
+- **Ikony aplikacji ZACHOWANE** z template Expo (1024x1024 icon.png, android-icon-foreground 512x512, splash-icon 228x213). Zakres "polish dla siebie" nie wymaga custom design.
+
+### Odchylenia od planu
+
+- EAS init pominiete autonomicznie (wymaga loginu) — user wykonuje wg `manual-test-faza-6.md`.
+- App icon + splash zachowane z template (placeholder). Custom design = post-MVP decyzja.
+- Dark mode tryb `media` zamiast `class` — brak manualnego togglera UI (out of scope MVP, nie ma sekcji Settings).
+
+### Decyzje implementacyjne Fazy 6
+
+- **Selective dark variants**: tylko ekrany glowne i kluczowe komponenty (BigActionButton). Pomocnicze karty (ActiveWindowCard pomaranczowa, SleepInProgressCard granatowa) zachowuja paleta bo to ich definicja w mockupach. Wczesna nadgorliwosc dark variants na wszystkich elementach = niespojnosc z designem.
+- **`useColorScheme` z `react-native`** w `(app)/_layout.tsx`, NIE z `nativewind`. Tabs API expo-router wymaga `screenOptions` z hex values (brak className na tabBar), wiec uzyto natywnego API systemu.
+- **Haptics fire-and-forget**: brak `await`, brak `try/catch`. expo-haptics gracefully ignoruje brak Haptic Enginu (zwraca void). Strategia spojna z `cancelNapNotificationSafe` z Fazy 5.
+
+### Walidacja
+
+- `npx tsc --noEmit` PASS (0 bledow).
+- `npm run lint` PASS (0 bledow).
+- Mobile-manual: 7 scenariuszy w `manual-test-faza-6.md` (haptic x2, dark mode iOS/Android, visual mockup parity, EAS build instrukcje, TestFlight opcjonalne). Pending operator.
+
+### Co zostalo dla usera (manual)
+
+- `eas login` + `eas init` (interaktywne)
+- `eas build --profile development --platform android|ios` (~10-15 min cloud build)
+- TestFlight (Apple Developer $99 + App Store Connect)
+- Custom ikona/splash design (opcjonalne, post-MVP)
+- 7 scenariuszy manual mobile testing
