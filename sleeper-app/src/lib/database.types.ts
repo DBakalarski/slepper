@@ -39,6 +39,82 @@ export type Database = {
   }
   public: {
     Tables: {
+      children: {
+        Row: {
+          avatar_color: string
+          birth_date: string
+          created_at: string
+          family_id: string
+          id: string
+          name: string
+        }
+        Insert: {
+          avatar_color?: string
+          birth_date: string
+          created_at?: string
+          family_id: string
+          id?: string
+          name: string
+        }
+        Update: {
+          avatar_color?: string
+          birth_date?: string
+          created_at?: string
+          family_id?: string
+          id?: string
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "children_family_id_fkey"
+            columns: ["family_id"]
+            isOneToOne: false
+            referencedRelation: "families"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sessions: {
+        Row: {
+          child_id: string
+          created_at: string
+          created_by: string
+          end_at: string | null
+          id: string
+          notes: string | null
+          start_at: string
+          type: string
+        }
+        Insert: {
+          child_id: string
+          created_at?: string
+          created_by: string
+          end_at?: string | null
+          id?: string
+          notes?: string | null
+          start_at: string
+          type: string
+        }
+        Update: {
+          child_id?: string
+          created_at?: string
+          created_by?: string
+          end_at?: string | null
+          id?: string
+          notes?: string | null
+          start_at?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sessions_child_id_fkey"
+            columns: ["child_id"]
+            isOneToOne: false
+            referencedRelation: "children"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       families: {
         Row: {
           created_at: string

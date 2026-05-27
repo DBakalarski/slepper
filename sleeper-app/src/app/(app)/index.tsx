@@ -1,14 +1,35 @@
 import { Link } from 'expo-router';
+import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { ActiveWindowCard } from '@/components/ActiveWindowCard';
+import { BigActionButton } from '@/components/BigActionButton';
+import { QuickActions } from '@/components/QuickActions';
+import { SessionListItem } from '@/components/SessionListItem';
+import { SleepInProgressCard } from '@/components/SleepInProgressCard';
+import { TodayStatsCard } from '@/components/TodayStatsCard';
 import { useAuth } from '@/features/auth/AuthProvider';
+import { AddChildForm } from '@/features/children/components/AddChildForm';
+import { useChildren } from '@/features/children/hooks';
+import { useActiveChild } from '@/features/children/useActiveChild';
 import {
   useAcceptInvitation,
   useCurrentFamily,
   useMyIncomingInvitations,
   type IncomingInvitation,
 } from '@/features/family/hooks';
+import { BackdatedSessionModal } from '@/features/sessions/components/BackdatedSessionModal';
+import {
+  useActiveSession,
+  useEndSession,
+  useLastEndedSession,
+  useSessions,
+  useStartSession,
+} from '@/features/sessions/hooks';
+import { startOfDayInAppTz } from '@/lib/time';
+
+const TICK_MS = 30 * 1000; // odswiez "now" co 30s dla agregatow / okna
 
 export default function TodayScreen() {
   const { user } = useAuth();
@@ -16,31 +37,46 @@ export default function TodayScreen() {
   const incomingQuery = useMyIncomingInvitations();
   const acceptInvitation = useAcceptInvitation();
 
-  const incoming = incomingQuery.data ?? [];
   const family = familyQuery.data;
+  const familyId = family?.id ?? null;
+
+  const childrenQuery = useChildren(familyId);
+  // useMemo stabilizuje referencje pustej tablicy miedzy renderami —
+  // bez tego useEffect/useMemo nizej widzialyby nowy `children` co render.
+  const children = useMemo(() => childrenQuery.data ?? [], [childrenQuery.data]);
+
+  const { activeChildId, setActiveChildId } = useActiveChild();
+
+  // Jesli wybrane dziecko zniknelo lub nigdy nie bylo wybrane — wybierz pierwsze.
+  useEffect(() => {
+    if (children.length === 0) return;
+    const stillExists = activeChildId && children.some((c) => c.id === activeChildId);
+    if (!stillExists) {
+      setActiveChildId(children[0].id);
+    }
+  }, [children, activeChildId, setActiveChildId]);
+
+  const activeChild = useMemo(
+    () => children.find((c) => c.id === activeChildId) ?? null,
+    [children, activeChildId],
+  );
+
+  const incoming = incomingQuery.data ?? [];
   const hasNoFamily = !familyQuery.isLoading && !family;
 
   return (
     <SafeAreaView className="flex-1 bg-cream">
-      <ScrollView contentContainerClassName="px-6 py-8 gap-4">
+      <ScrollView contentContainerClassName="px-6 py-6 gap-4">
         <View>
           <Text className="text-3xl font-semibold text-navy">Dzisiaj</Text>
-          <Text className="mt-2 text-base text-purple">Tu pojawi sie widok dnia.</Text>
+          {activeChild ? (
+            <Text className="mt-1 text-base text-purple">{activeChild.name}</Text>
+          ) : (
+            <Text className="mt-1 text-base text-purple">Zalogowany: {user?.email ?? 'brak'}</Text>
+          )}
         </View>
 
-        {hasNoFamily ? (
-          <View className="rounded-2xl bg-orange/15 p-4">
-            <Text className="text-sm font-semibold text-navy">Nie nalezysz do rodziny</Text>
-            <Text className="mt-1 text-xs text-purple">
-              Przejdz do profilu zeby stworzyc rodzine lub przyjac zaproszenie.
-            </Text>
-            <Link
-              href="/profile"
-              className="mt-3 text-sm font-semibold text-navy underline">
-              Przejdz do profilu
-            </Link>
-          </View>
-        ) : null}
+        {hasNoFamily ? <NoFamilyBanner /> : null}
 
         {incoming.length > 0 ? (
           <View className="rounded-2xl bg-orange/15 p-4">
@@ -73,20 +109,133 @@ export default function TodayScreen() {
           </View>
         ) : null}
 
-        <View className="rounded-2xl bg-white p-4">
-          <Text className="text-sm font-semibold text-navy">Status</Text>
-          <Text className="mt-1 text-sm text-navy">Zalogowany: {user?.email ?? 'brak'}</Text>
-          <Text className="mt-1 text-sm text-navy">
-            Rodzina:{' '}
-            {familyQuery.isLoading
-              ? 'ladowanie...'
-              : family
-                ? `${family.name} (${family.members.length})`
-                : 'brak'}
-          </Text>
-        </View>
+        {family && children.length === 0 && !childrenQuery.isLoading ? (
+          <AddChildForm familyId={family.id} />
+        ) : null}
+
+        {activeChild ? <ActiveChildSection childId={activeChild.id} /> : null}
       </ScrollView>
     </SafeAreaView>
+  );
+}
+
+interface ActiveChildSectionProps {
+  childId: string;
+}
+
+function ActiveChildSection({ childId }: ActiveChildSectionProps) {
+  const [now, setNow] = useState<Date>(() => new Date());
+  const [isBackdatedOpen, setBackdatedOpen] = useState(false);
+
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), TICK_MS);
+    return () => clearInterval(id);
+  }, []);
+
+  const startOfDay = useMemo(() => startOfDayInAppTz(now), [now]);
+  const endOfDay = useMemo(
+    () => new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000),
+    [startOfDay],
+  );
+
+  const activeSessionQuery = useActiveSession(childId);
+  const lastEndedQuery = useLastEndedSession(childId);
+  const todaySessionsQuery = useSessions(childId, startOfDay, endOfDay);
+
+  const startSession = useStartSession();
+  const endSession = useEndSession();
+
+  const activeSession = activeSessionQuery.data ?? null;
+  const lastEnded = lastEndedQuery.data ?? null;
+  const todaySessions = todaySessionsQuery.data ?? [];
+
+  function handleStart(type: 'nap' | 'night_sleep') {
+    if (activeSession) return;
+    startSession.mutate({ childId, type });
+  }
+
+  function handleStop() {
+    if (!activeSession) return;
+    endSession.mutate({ sessionId: activeSession.id, childId });
+  }
+
+  return (
+    <>
+      {activeSession ? (
+        <SleepInProgressCard
+          startAt={new Date(activeSession.start_at)}
+          type={activeSession.type}
+        />
+      ) : (
+        <ActiveWindowCard
+          lastSleepEndAt={lastEnded?.end_at ? new Date(lastEnded.end_at) : null}
+        />
+      )}
+
+      <TodayStatsCard
+        sessions={todaySessions}
+        activeSession={activeSession}
+        now={now}
+        startOfDay={startOfDay}
+      />
+
+      <BigActionButton
+        mode={activeSession ? 'stop' : 'start'}
+        onPress={activeSession ? handleStop : () => handleStart('nap')}
+        isPending={startSession.isPending || endSession.isPending}
+      />
+
+      <QuickActions
+        onStartNap={() => handleStart('nap')}
+        onStartNight={() => handleStart('night_sleep')}
+        onAddBackdated={() => setBackdatedOpen(true)}
+        disabled={Boolean(activeSession) || startSession.isPending}
+      />
+
+      {startSession.isError ? (
+        <Text className="text-sm text-orange">
+          Blad startu:{' '}
+          {startSession.error instanceof Error ? startSession.error.message : 'unknown'}
+        </Text>
+      ) : null}
+      {endSession.isError ? (
+        <Text className="text-sm text-orange">
+          Blad zakonczenia:{' '}
+          {endSession.error instanceof Error ? endSession.error.message : 'unknown'}
+        </Text>
+      ) : null}
+
+      {todaySessions.length > 0 ? (
+        <View className="gap-2">
+          <Text className="text-xs font-semibold uppercase tracking-wide text-purple">
+            Sesje dzisiaj
+          </Text>
+          {todaySessions.slice(0, 5).map((session) => (
+            <SessionListItem key={session.id} session={session} />
+          ))}
+        </View>
+      ) : null}
+
+      <BackdatedSessionModal
+        visible={isBackdatedOpen}
+        childId={childId}
+        onClose={() => setBackdatedOpen(false)}
+      />
+    </>
+  );
+}
+
+function NoFamilyBanner() {
+  return (
+    <View className="rounded-2xl bg-orange/15 p-4">
+      <Text className="text-sm font-semibold text-navy">Nie nalezysz do rodziny</Text>
+      <Text className="mt-1 text-xs text-purple">
+        Przejdz do profilu zeby stworzyc rodzine lub przyjac zaproszenie.
+      </Text>
+      <Link href="/profile" className="mt-3 text-sm font-semibold text-navy underline">
+        Przejdz do profilu
+      </Link>
+    </View>
   );
 }
 
@@ -119,9 +268,7 @@ function InvitationRow({ invitation, onAccept, isProcessing, errorMessage }: Inv
           )}
         </Pressable>
       </View>
-      {errorMessage ? (
-        <Text className="mt-1 px-1 text-xs text-orange">{errorMessage}</Text>
-      ) : null}
+      {errorMessage ? <Text className="mt-1 px-1 text-xs text-orange">{errorMessage}</Text> : null}
     </View>
   );
 }

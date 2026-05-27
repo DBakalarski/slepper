@@ -24,6 +24,8 @@ export default function AppTabsLayout() {
       <Tabs.Screen name="history" options={{ title: 'Historia' }} />
       <Tabs.Screen name="stats" options={{ title: 'Statystyki' }} />
       <Tabs.Screen name="profile" options={{ title: 'Profil' }} />
+      {/* sleep-fullscreen poza tab barem — dostepny przez router.push */}
+      <Tabs.Screen name="sleep-fullscreen" options={{ href: null }} />
     </Tabs>
   );
 }
