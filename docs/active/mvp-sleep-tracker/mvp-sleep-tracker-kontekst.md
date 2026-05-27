@@ -1,7 +1,7 @@
 # Kontekst: MVP — Aplikacja do trackowania snu i okien aktywności dziecka
 
 **Branch:** `feature/mvp-sleep-tracker`
-**Ostatnia aktualizacja:** 2026-05-27 (Faza 4 zamknieta — kod gotowy, mobile-manual pending)
+**Ostatnia aktualizacja:** 2026-05-27 (Faza 5 — kod gotowy, mobile-manual pending)
 
 ## Źródła
 - Requirements doc: brak (nie użyto `/dev-brainstorm`)
@@ -304,3 +304,53 @@ Re-run `/dev-docs-review docs/active/mvp-sleep-tracker 3` po cyklu napraw. Sever
 - `npx tsc --noEmit` -> PASS (0 błędów)
 - `npm run lint` -> PASS (0 errors, 0 warnings)
 - Manual mobile testing: pending — checklist w `manual-test-faza-4.md` (8 scenariuszy, two-device sync, offline->online).
+
+### Code review (2026-05-27)
+
+Severity gate: ⚠️ **KONTYNUUJ Z ZASTRZEZENIAMI** (0 × P1, 1 × P2, 3 × P3). Pełny raport: `review-faza-4.md`.
+
+Kluczowy finding P2: `useSessionById` queryKey `['session', id]` (singular) nie matchuje invalidacji `['sessions']` (plural) z `useRealtimeSessions`. Konsekwencja: otwarty ekran edycji nie odswieza sie na realtime event → silent overwrite gdy partner edytuje rownolegle. Decyzja przed Fazą 5: (a) double-invalidate `['sessions']` + `['session']`, (b) banner "Sesja byla edytowana" (Faza 3 P3 backlog), albo (c) swiadome odlozenie + komentarz w hooku.
+
+3 × P3 to nity: `queryClient` w dep array (linter wymaga, ale stabilny ref); brak callbacka statusu w `.subscribe()` (observability); brak scenariusza długiego offline w manual checklist (zalezy na refocus refetch z `focusManager`).
+
+Manual mobile checklist (8 scenariuszy + 2 prerequisites): pending operator, wymagane two-device test przed Faza 5.
+
+### Code review cykl 2 (2026-05-27, po fix `67303b1`)
+
+Severity gate: ✅ **GOTOWE DO KONTYNUACJI** (0 × P1, 0 × P2, 3 × P3 backlog opcjonalny). Pelny raport: `review-faza-4.md` sekcja "Cykl 2".
+
+- P2 z cyklu 1 (useSessionById nie inwalidowany) zamkniety w `67303b1`. Dodana `invalidateQueries({ queryKey: ['session'] })` w `useRealtimeSessions:50` obok istniejacej `['sessions']`. Komentarz w hooku wyjasnia rationale, bezpieczenstwo (form === null guard w `session/[id].tsx`) oraz TODO do Fazy 5/6 (banner konfliktow przy dirty form, wymaga kolumny `updated_at`).
+- Brak regresji: analiza multi-perspective (security, performance, architecture, scenario) — fix to additive invalidate. Form overwrite niemozliwy: useState w `session/[id].tsx:33` inicjalizowany RAZ przez useEffect z guardem `form === null` (linia 39).
+- Quality gate cykl 2: `npx tsc --noEmit` PASS, `npm run lint` PASS.
+- Pozostale 3 × P3 nity (queryClient dep array, .subscribe status callback, dluzszy offline scenariusz) zostaja w backlogu — opcjonalne, niepilne.
+- Mobile-manual: 2 × `Weryfikacja:` w zadania.md + 10 scenariuszy (8 + 2 pre) w `manual-test-faza-4.md` pozostaja `[ ]` dla operatora (two-device test).
+
+## Faza 5 — Powiadomienia (2026-05-27)
+
+### Co zostalo zrobione
+
+- `npx expo install expo-notifications` → `~0.32.17` w dependencies, plugin dodany do `app.json`.
+- `src/lib/notifications.ts` — `configureNotificationHandler()`, `requestPermissions()`, `scheduleNapNotification()`, `cancelNapNotification()`. Handler skonfigurowany modulowo w `app/_layout.tsx` (raz przed mount).
+- `src/lib/time.ts` — dodana `targetWakeWindowMinutes(birthDate, now?)` z tabela 75/105/150/180/240 min.
+- `src/features/sessions/schedule-nap-side-effects.ts` — helpery `rescheduleNapNotification`, `cancelNapNotificationSafe`, `rescheduleAfterDelete`. Fire-and-forget z `console.warn` na bledy.
+- `hooks.ts` zintegrowane: `useStartSession.onSuccess` → cancel; `useEndSession.onSuccess` → schedule; `useUpdateSession.onSuccess` → reschedule; `useDeleteSession.onSuccess` → recalculate (query last ended).
+- `AddChildForm.onSuccess` → `requestPermissions()` (idempotent, prompt tylko raz przy pierwszym dziecku).
+- Polski tekst: "Drzemka {imie} za ~15 min" + body z windowem aktywnosci.
+- AsyncStorage klucz `nap-notif-${childId}` persistuje notification ID; `cancelNapNotification` zawsze wolany przed nowym schedule.
+- Android channel "Drzemki" (`default` ID, `AndroidImportance.HIGH`) tworzony przy permission grant.
+
+### Kluczowe decyzje architekturalne
+
+- **Side-effects scentralizowane w hookach (`hooks.ts`)**, nie w UI. Caller (index.tsx, session/[id].tsx) nie wie nic o powiadomieniach. Pozwala dodac nowy caller bez duplikacji logiki.
+- **Fire-and-forget side-effects**: powiadomienia nie blokuja sukcesu mutacji. Jesli brak permissions / sieci / cokolwiek — `console.warn`, mutation kontynuuje. Spojne z pattern z `cancelNapNotificationSafe` / `rescheduleNapNotification` try/catch wewnetrzne.
+- **birth_date + name pobierane przez 1-row query**, nie z TanStack cache (caller nie ma familyId w hooku). Runs tylko po mutacji, nie w render loop. Akceptowalne dla MVP.
+- **Permission request opozniony do "po dodaniu pierwszego dziecka"**, nie przy starcie app. Lepszy UX: user widzi kontekst (apka do snu) gdy system pyta o uprawnienia.
+- **`useUpdateSession` przeplanowuje wzgledem TEJ sesji**, nie wzgledem "ostatniej zakonczonej". Uproszczenie MVP — typowy use case to edycja ostatniej. Edycja starej sesji daje lekko nadgorliwe reschedule; do dopracowania w Fazie 6.
+- **WAKE_WINDOW wartosci to MVP-przyblizenie**: 1 miesiac = 30 dni (kalkulacja age w `targetWakeWindowMinutes`). Dla precyzji kalendarzowej (np. liczenie pelnych miesiecy) — wystarczy w MVP. Wartosci minutowe pochodza z popularnych poradnikow snu.
+
+### Walidacja
+
+- `npx tsc --noEmit` -> PASS (0 błędów)
+- `npm run lint` -> PASS (0 errors, 0 warnings)
+- Manual mobile testing: pending — `manual-test-faza-5.md` (8 scenariuszy + Scenariusz 7 manualnego REPL test dla `targetWakeWindowMinutes`).
+- Brak unit testow `targetWakeWindowMinutes` — projekt nie ma setupu testow (zgodnie z CLAUDE.md). Scenariusz 7 w manual-test pokrywa weryfikacje.

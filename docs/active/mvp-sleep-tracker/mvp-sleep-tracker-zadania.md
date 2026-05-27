@@ -3,7 +3,7 @@
 **Branch:** `feature/mvp-sleep-tracker`
 **Ostatnia aktualizacja:** 2026-05-27
 
-Postęp: 4 / 7 faz ukończone (Faza 1–4: kod gotowy, Faza 1–3 review CZYSTE, Faza 4 review z ZASTRZEZENIAMI (1 × P2), mobile-manual verification pending)
+Postęp: 5 / 7 faz ukończone (Faza 1–5: kod gotowy, Faza 1–3 review CZYSTE, Faza 4 review CZYSTE po cyklu 2, Faza 5 oczekuje review + mobile-manual)
 
 ---
 
@@ -234,20 +234,33 @@ Severity gate (cykl 1): ⚠️ **KONTYNUUJ Z ZASTRZEZENIAMI** (0 × P1, 1 × P2,
 
 ## Faza 5 — Powiadomienia (Effort: M)
 
-- [ ] `npx expo install expo-notifications`
-- [ ] Permissions request przy onboardingu (po dodaniu pierwszego dziecka)
-- [ ] `src/lib/notifications.ts` — `requestPermissions()`, `scheduleNapNotification()`, `cancelNapNotification()`
-- [ ] Tabela w `src/lib/time.ts`: `targetWakeWindowMinutes(birthDate: Date): number` (0–3mc: 75min, 3–6mc: 105min, 6–9mc: 150min, 9–12mc: 180min, 12mc+: 240min — wartości referencyjne, dopracować z literaturą)
-- [ ] Helper: po `useEndSession` success → oblicz `targetEnd = endAt + targetWakeWindow` → schedule notyfikacja na `targetEnd - 15min`
-- [ ] Persist notification ID w AsyncStorage `nap-notif-${childId}`
-- [ ] Helper: anulowanie poprzedniej notyfikacji przed planowaniem nowej
-- [ ] Hook: po `useStartSession` success → cancel notification
-- [ ] Hook: po `useDeleteSession` → recalculate (jeśli usunęliśmy ostatnią sesję)
-- [ ] Polski tekst notyfikacji: „Drzemka {imię} za ~15 min"
-- [ ] Weryfikacja: zakończ drzemkę → sprawdź zaplanowane notyfikacje (`Notifications.getAllScheduledNotificationsAsync`)
-- [ ] Weryfikacja: edycja `end_at` sesji aktualizuje czas notyfikacji
-- [ ] Weryfikacja: start nowej sesji anuluje zaplanowaną notyfikację
-- [ ] Weryfikacja: notyfikacja faktycznie wyświetla się (test z krótkim wake window, np. 5 min)
+- [x] `npx expo install expo-notifications` (~0.32.17, SDK 54 compatible)
+- [x] Permissions request przy onboardingu (po dodaniu pierwszego dziecka) — `AddChildForm.onSuccess` → `requestPermissions()`
+- [x] `src/lib/notifications.ts` — `requestPermissions()`, `scheduleNapNotification()`, `cancelNapNotification()`, `configureNotificationHandler()`
+- [x] Tabela w `src/lib/time.ts`: `targetWakeWindowMinutes(birthDate: Date, now?: Date): number` (0–3mc: 75min, 3–6mc: 105min, 6–9mc: 150min, 9–12mc: 180min, 12mc+: 240min)
+- [x] Helper: po `useEndSession` success → oblicz `targetEnd = endAt + targetWakeWindow` → schedule notyfikacja na `targetEnd - 15min` (`schedule-nap-side-effects.ts:rescheduleNapNotification`)
+- [x] Persist notification ID w AsyncStorage `nap-notif-${childId}`
+- [x] Helper: anulowanie poprzedniej notyfikacji przed planowaniem nowej (wbudowane w `scheduleNapNotification`)
+- [x] Hook: po `useStartSession` success → cancel notification (`cancelNapNotificationSafe`)
+- [x] Hook: po `useDeleteSession` → recalculate (jeśli usunęliśmy ostatnią sesję) — `rescheduleAfterDelete` query last ended
+- [x] Polski tekst notyfikacji: „Drzemka {imię} za ~15 min"
+- [ ] Weryfikacja: zakończ drzemkę → sprawdź zaplanowane notyfikacje (`Notifications.getAllScheduledNotificationsAsync`) — manual test (patrz `manual-test-faza-5.md`)
+- [ ] Weryfikacja: edycja `end_at` sesji aktualizuje czas notyfikacji — manual test (patrz `manual-test-faza-5.md`)
+- [ ] Weryfikacja: start nowej sesji anuluje zaplanowaną notyfikację — manual test (patrz `manual-test-faza-5.md`)
+- [ ] Weryfikacja: notyfikacja faktycznie wyświetla się (test z krótkim wake window, np. 5 min) — manual test (patrz `manual-test-faza-5.md`)
+
+### Notatki implementacyjne Fazy 5
+
+- `expo-notifications@~0.32.17` zainstalowane przez `npx expo install` (nie `npm install`) dla pewnosci kompatybilnosci z SDK 54.
+- Plugin `expo-notifications` dodany do `app.json` `plugins` — wymagany dla iOS background delivery i Android channels.
+- `configureNotificationHandler()` wolane modulowo w `app/_layout.tsx` (raz, przed pierwszym renderem) — handler dla in-app notifications (banner + sound w foreground).
+- Permission request idempotent: `requestPermissions()` najpierw sprawdza `getPermissionsAsync()`, woluje system prompt tylko gdy `canAskAgain && status !== granted`. Po `Don't ask again` zwraca aktualny status bez UI.
+- Scheduling: lokalne `Notifications.scheduleNotificationAsync` z `SchedulableTriggerInputTypes.DATE`. Brak push, brak server. AsyncStorage trzyma notification ID per child (`nap-notif-${childId}`); przed kazdym `scheduleNapNotification` woluje `cancelNapNotification` wewnetrznie.
+- Hooki sesji (`hooks.ts`) deleguja side-effecty do `schedule-nap-side-effects.ts` (fire-and-forget z `console.warn` na blad). Mutacja nie failuje gdy powiadomienia padna (brak permissions / brak siecio do `children`).
+- `useDeleteSession.onSuccess` woluje `rescheduleAfterDelete(childId)` ktore dodatkowo query `sessions ... order by end_at desc limit 1` aby znalezc nowa "ostatnia zakonczona sesje" i przeliczyc target.
+- `useUpdateSession.onSuccess` przeplanowuje wzgledem TEJ edytowanej sesji — nie sprawdza czy to ostatnia. Uproszczenie MVP: typowy use case to edycja ostatniej sesji; edycja starej sesji daje "lekko nadgorliwe" reschedule (notyfikacja moze wskazac stary target), do dopracowania w Fazie 6.
+- Brak setupu testow (zgodnie z CLAUDE.md i pattern z Fazy 2). `targetWakeWindowMinutes` testowane recznie w Scenariuszu 7 manual-test.
+- iOS Settings → Notifications → sleeper-app permits widoczne; Android: channel "Drzemki" (`default` ID) z `AndroidImportance.HIGH`.
 
 ---
 
