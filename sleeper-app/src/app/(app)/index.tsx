@@ -27,6 +27,7 @@ import {
   useSessions,
   useStartSession,
 } from '@/features/sessions/hooks';
+import { extractErrorMessage } from '@/lib/extract-error-message';
 import { endOfDayInAppTz, startOfDayInAppTz } from '@/lib/time';
 
 const TICK_MS = 30 * 1000; // odswiez "now" co 30s dla agregatow / okna
@@ -193,14 +194,12 @@ function ActiveChildSection({ childId }: ActiveChildSectionProps) {
 
       {startSession.isError ? (
         <Text className="text-sm text-orange">
-          Blad startu:{' '}
-          {startSession.error instanceof Error ? startSession.error.message : 'unknown'}
+          Blad startu: {extractErrorMessage(startSession.error)}
         </Text>
       ) : null}
       {endSession.isError ? (
         <Text className="text-sm text-orange">
-          Blad zakonczenia:{' '}
-          {endSession.error instanceof Error ? endSession.error.message : 'unknown'}
+          Blad zakonczenia: {extractErrorMessage(endSession.error)}
         </Text>
       ) : null}
 

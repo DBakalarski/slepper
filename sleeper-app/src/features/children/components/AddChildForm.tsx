@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { ActivityIndicator, Pressable, Text, TextInput, View } from 'react-native';
 
 import { useCreateChild } from '@/features/children/hooks';
+import { extractErrorMessage } from '@/lib/extract-error-message';
 
 const AVATAR_COLORS: string[] = ['#7C6BAD', '#E08B6F', '#1E1B4B', '#5A8B6F', '#B86F8B'];
 const BIRTH_DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
@@ -114,7 +115,7 @@ export function AddChildForm({ familyId }: AddChildFormProps) {
         ) : null}
         {createChild.isError ? (
           <Text className="text-sm text-orange">
-            Blad zapisu: {createChild.error instanceof Error ? createChild.error.message : 'unknown'}
+            Blad zapisu: {extractErrorMessage(createChild.error)}
           </Text>
         ) : null}
 

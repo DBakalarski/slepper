@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 
 import { useInsertBackdatedSession, type SessionType } from '@/features/sessions/hooks';
+import { extractErrorMessage } from '@/lib/extract-error-message';
 import { parseAppTzDateTime, todayDateInAppTz } from '@/lib/time';
 
 interface BackdatedSessionModalProps {
@@ -178,8 +179,7 @@ export function BackdatedSessionModal({
             ) : null}
             {insertSession.isError ? (
               <Text className="text-sm text-orange">
-                Blad zapisu:{' '}
-                {insertSession.error instanceof Error ? insertSession.error.message : 'unknown'}
+                Blad zapisu: {extractErrorMessage(insertSession.error)}
               </Text>
             ) : null}
 
