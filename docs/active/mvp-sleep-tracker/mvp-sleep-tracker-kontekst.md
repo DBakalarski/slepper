@@ -1,7 +1,7 @@
 # Kontekst: MVP — Aplikacja do trackowania snu i okien aktywności dziecka
 
 **Branch:** `feature/mvp-sleep-tracker`
-**Ostatnia aktualizacja:** 2026-05-27 (Faza 3 zamknieta)
+**Ostatnia aktualizacja:** 2026-05-27 (Faza 4 zamknieta — kod gotowy, mobile-manual pending)
 
 ## Źródła
 - Requirements doc: brak (nie użyto `/dev-brainstorm`)
@@ -255,3 +255,52 @@ Re-run `/dev-docs-review docs/active/mvp-sleep-tracker 2` po cyklu napraw. Sever
 - `npx tsc --noEmit` → PASS (0 błędów)
 - `npm run lint` → PASS (0 errors, 0 warnings)
 - Manual mobile testing: pending — checklist w `manual-test-faza-3.md` (11 scenariuszy).
+
+### Code review (2026-05-27)
+
+Przeprowadzony `/dev-docs-review docs/active/mvp-sleep-tracker 3`. Severity gate: ⚠️ **KONTYNUUJ Z ZASTRZEZENIAMI**.
+
+- 0 × P1 (no blockers).
+- 2 × P2: rozmiar `session/[id].tsx` (358 > 300 LOC) oraz `combineDateAndTime` operujacy na device tz (regres wzorca utrwalonego po Fazie 2).
+- 7 × P3 (DST drift w `setDate`, formatowanie naglowka grupy, inline renderItem, brak refresh formularza po refetch, `handleSave` walidacje do ekstrakcji, brak explicit return type na 2 hookach, `Chip` shared component dla 3 uzyc).
+- Manual test checklist: `manual-test-faza-3.md` (11 scenariuszy, pending operator).
+
+**Kluczowy wniosek (TZ correctness, powtorzenie z Fazy 2):** `setHours` na surowym Date traktuje godziny jako device tz. Wzorzec utrwalony juz w `learned-patterns.md` (TZ-safe date math), ale `combineDateAndTime` w `session/[id].tsx` wprowadza regres. Fix: dodac `combineDateAndTimeInAppTz` do `lib/time.ts` i wymusic uzycie helpera w ekranach formularza.
+
+### Code review cykl 2 (2026-05-27, po fix `04622d7`)
+
+Re-run `/dev-docs-review docs/active/mvp-sleep-tracker 3` po cyklu napraw. Severity gate: ✅ **CZYSTE** — gotowe do Fazy 4.
+
+- 2 × P2 z cyklu 1 → naprawione:
+  - **P2-1 (LOC):** `session/[id].tsx` 358 → 183 LOC (-49%). Ekstrakcja `SessionEditForm` (192 LOC, presentational) + shared `Chip` (27 LOC, uzywany w SessionEditForm + BackdatedSessionModal).
+  - **P2-2 (TZ-safety):** `combineDateAndTimeInAppTz` dodane do `lib/time.ts:122-133` (pattern z `parseAppTzDateTime`). Lokalny `combineDateAndTime` z `setHours()` usuniety. SessionEditForm uzywa nowego helpera w 4 callbackach.
+- 5 × P3 przeniesione do backlog (DST drift w `setDate`, formatowanie naglowka grupy, inline renderItem, brak refresh formularza po refetch, `handleSave` walidacje, brak explicit return type na 2 hookach). Lokalny `ModeChip` w history nadal istnieje (inny visual — px-3/bg-white/text-xs), shared `Chip` pokrywa Type chipy.
+- Brak nowych regressionow w cyklu 2.
+- Quality gate cykl 2: typecheck + lint PASS.
+
+**Wzorzec do utrwalenia w `learned-patterns.md`** (do `/dev-compound`):
+- `combineDateAndTimeInAppTz` jako jedyny sposob laczenia date+time z native pickerow w app tz; NIE rob `setHours` recznie.
+
+## Log fazy 4 (2026-05-27)
+
+### Wykonane
+- Migracja `0009_realtime_publication.sql` — `alter publication supabase_realtime add table public.sessions` w bloku `do $$ ... exception when duplicate_object` (idempotent). Alternatywa manualna w Supabase Studio (Database -> Replication -> publication tables).
+- Hook `src/features/sessions/useRealtimeSessions.ts` (45 LOC) — subskrypcja `supabase.channel().on('postgres_changes', { event: '*', schema: 'public', table: 'sessions', filter: 'child_id=eq.X' })`, invalidate `['sessions']` przy kazdym evencie, cleanup przez `supabase.removeChannel` w useEffect return.
+- `src/app/(app)/_layout.tsx` — wywolanie `useRealtimeSessions(activeChildId)` na poziomie tabs layoutu (zyje przez caly sesja zalogowanego usera).
+- `docs/active/mvp-sleep-tracker/manual-test-faza-4.md` — 8 scenariuszy manual: INSERT/UPDATE/DELETE propagacja A->B, offline->online resync, bilateralnosc, cleanup po wylogowaniu, opcjonalny test multi-child filter.
+
+### Odchylenia od planu
+- Plan zakladal "Wlaczyc replication w Supabase Studio" jako manual step. Wybralem alternatywe: migracja SQL (idempotent, reproducible dla local supabase dev), userowi pozostaje zaaplikowanie migracji (lub manualny toggle w Studio jezeli projekt cloud-only bez supabase CLI). Status w `manual-test-faza-4.md` jako wymaganie wstepne.
+- Filter `child_id=eq.X` zawiera tylko aktywne dziecko (z `useActiveChild` w Zustand). Dla multi-child UI (przelaczenie dziecka) hook zostanie re-subskrybowany — pokrywa wymaganie planu bez koniecznosci subskrybowania calej rodziny.
+
+### Decyzje implementacyjne Fazy 4
+- **Channel name `sessions:child=${childId}`** — unikalny per child, bezpieczny dla przyszlego multi-child UI (osobne kanaly nie kolidaja).
+- **Invalidate szerokiego klucza `['sessions']`** zamiast point-fixu (`['sessions', childId, 'active']`) — pokrywa wszystkie observery (useSessions/useActiveSession/useLastEndedSession/useSessionById) jednym wywolaniem. Cena: kilka extra refetchy dla nieobservowanych zapytan; TanStack inviguje tylko aktywne observery, wiec realny koszt = 0.
+- **NIE patchujemy cache recznie** — zgodnie z CLAUDE.md ("Realtime: event z Supabase -> queryClient.invalidateQueries"). Eliminuje cala klase bugow synchronizacji (out-of-order events, brakujace pola w payloadzie postgres_changes).
+- **Hook return `void`** — efekty pchaja inwalidacje do TanStack, nic do konsumpcji w UI.
+- **Subskrypcja w `(app)/_layout.tsx`** — przezywa nawigacje miedzy zakladkami, restart tylko przy zmianie `activeChildId`. Cleanup gwarantowany przez React.useEffect.
+
+### Walidacja
+- `npx tsc --noEmit` -> PASS (0 błędów)
+- `npm run lint` -> PASS (0 errors, 0 warnings)
+- Manual mobile testing: pending — checklist w `manual-test-faza-4.md` (8 scenariuszy, two-device sync, offline->online).

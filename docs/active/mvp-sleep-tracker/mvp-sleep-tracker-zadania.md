@@ -3,7 +3,7 @@
 **Branch:** `feature/mvp-sleep-tracker`
 **Ostatnia aktualizacja:** 2026-05-27
 
-Postęp: 3 / 7 faz ukończone (Faza 1–2: kod gotowy, mobile-manual verification pending; Faza 3: kod gotowy, mobile-manual verification pending)
+Postęp: 4 / 7 faz ukończone (Faza 1–4: kod gotowy, Faza 1–3 review CZYSTE, mobile-manual verification pending)
 
 ---
 
@@ -168,7 +168,8 @@ Lista pełna w `review-faza-2.md`. Highlights: magic numbers (`1000`, `60*1000`,
 
 ### Do poprawy po review fazy 3
 
-Severity gate: ⚠️ **KONTYNUUJ Z ZASTRZEZENIAMI** (0 × P1, 2 × P2, 7 × P3). Pełny raport: `review-faza-3.md`.
+Severity gate (cykl 1): ⚠️ **KONTYNUUJ Z ZASTRZEZENIAMI** (0 × P1, 2 × P2, 7 × P3).
+Severity gate (cykl 2, po fix `04622d7`): ✅ **CZYSTE** (0 × P1, 0 × P2, 5 × P3 backlog). Pełny raport: `review-faza-3.md`.
 
 **P2 — Important:**
 
@@ -183,7 +184,7 @@ Severity gate: ⚠️ **KONTYNUUJ Z ZASTRZEZENIAMI** (0 × P1, 2 × P2, 7 × P3)
 - [ ] 🟡 [P3-scenario] **session/[id].tsx:59-68** — form nie odswieza sie po refetch (last-write-wins bez ostrzezenia). Po Fazie 4 (realtime) dodac banner "Sesja byla edytowana, odswiez".
 - [ ] 🟡 [P3-arch] **session/[id].tsx:113-146** — `handleSave` walidacje wyciagnac do `validateForm(form): string | null`.
 - [ ] 🟡 [P3-type] **hooks.ts:284, 311** — `useUpdateSession`/`useDeleteSession` bez explicit `UseMutationResult<...>` return type (konsystencja z `useStartSession`/`useEndSession`).
-- [ ] 🟡 [P3-arch] **3 miejsca** — wyciagnac `Chip` (selected/label/onPress) jako shared component (`ModeChip` w history, `TypeChip` w session edit, chips w BackdatedSessionModal — 3 uzycia spelniaja regule "abstrakcja od 2+ uzyc").
+- [x] 🟡 [P3-arch] **Chip extract** — wyciagniety `Chip` (selected/label/onPress) do `src/components/Chip.tsx` (cykl 1). Uzywany w `SessionEditForm` (typ sesji) + `BackdatedSessionModal` (typ sesji). Lokalny `ModeChip` w `history.tsx` ma inny styling (px-3/bg-white/text-xs) — pozostaje lokalny, do refactoru z `variant: 'small' | 'medium'` przy 3-cim uzyciu.
 
 ### Notatki implementacyjne Fazy 3
 
@@ -198,13 +199,22 @@ Severity gate: ⚠️ **KONTYNUUJ Z ZASTRZEZENIAMI** (0 × P1, 2 × P2, 7 × P3)
 
 ## Faza 4 — Realtime sync (Effort: S)
 
-- [ ] Włączyć replication na `sessions` w Supabase Studio (Database → Replication)
-- [ ] `src/features/sessions/useRealtimeSessions.ts` — `supabase.channel().on('postgres_changes', { event: '*', schema: 'public', table: 'sessions', filter: 'child_id=eq.X' })`
-- [ ] Wywołanie `queryClient.invalidateQueries({ queryKey: ['sessions'] })` przy każdym evencie
-- [ ] Cleanup subskrypcji przy unmount
-- [ ] Wywołać hook w `app/(app)/_layout.tsx` (na poziomie aktywnego dziecka)
-- [ ] Weryfikacja: telefon A startuje sen → telefon B widzi aktywną sesję w <2s
-- [ ] Weryfikacja: telefon A wyłącza wifi → wykonuje akcję → włącza wifi → telefon B dostaje update w <5s
+- [x] Włączyć replication na `sessions` w Supabase Studio (Database → Replication) — alternatywnie migracja `0009_realtime_publication.sql` (idempotent, `alter publication supabase_realtime add table public.sessions` w bloku exception duplicate_object). User musi zaaplikować migrację lub wykonać krok manualnie w Studio (patrz `manual-test-faza-4.md`).
+- [x] `src/features/sessions/useRealtimeSessions.ts` — `supabase.channel().on('postgres_changes', { event: '*', schema: 'public', table: 'sessions', filter: 'child_id=eq.X' })`
+- [x] Wywołanie `queryClient.invalidateQueries({ queryKey: ['sessions'] })` przy każdym evencie
+- [x] Cleanup subskrypcji przy unmount (`supabase.removeChannel` w useEffect return)
+- [x] Wywołać hook w `app/(app)/_layout.tsx` (na poziomie aktywnego dziecka)
+- [ ] Weryfikacja: telefon A startuje sen → telefon B widzi aktywną sesję w <2s — manual test (patrz `manual-test-faza-4.md`)
+- [ ] Weryfikacja: telefon A wyłącza wifi → wykonuje akcję → włącza wifi → telefon B dostaje update w <5s — manual test (patrz `manual-test-faza-4.md`)
+
+### Notatki implementacyjne Fazy 4
+
+- Migracja `0009_realtime_publication.sql` dodaje tabele do publikacji `supabase_realtime`. Idempotentna przez `do $$ ... exception when duplicate_object` — bezpieczne ponowne apply.
+- Hook `useRealtimeSessions(childId)` zwraca `void` — efekty pchaja inwalidacje do TanStack, nic do konsumpcji w UI. Subskrypcja w `(app)/_layout.tsx` zyje przez caly czas trwania zalogowanej sesji.
+- Channel name `sessions:child=${childId}` unikalny per child — bezpieczne dla przyszlego multi-child UI.
+- Filter `child_id=eq.X` na poziomie Postgres replication slot — eventy innych dzieci nie wlasnej rodziny nie leca w ogole (RLS-friendly dodatkowo).
+- Cleanup `supabase.removeChannel(channel)` w useEffect return jest obowiazkowy (coding-rules §13) — zapobiega wyciekowi WS subskrypcji przy remount/przelaczeniu dziecka.
+- Konwencja `invalidateQueries(['sessions'])` (szeroki klucz) — refetchuje WSZYSTKIE active observery sesji (useSessions/useActiveSession/useLastEndedSession/useSessionById). Nie patchujemy cache recznie.
 
 ---
 

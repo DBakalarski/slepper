@@ -1,9 +1,17 @@
 import { Redirect, Tabs } from 'expo-router';
 
 import { useAuth } from '@/features/auth/AuthProvider';
+import { useActiveChild } from '@/features/children/useActiveChild';
+import { useRealtimeSessions } from '@/features/sessions/useRealtimeSessions';
 
 export default function AppTabsLayout() {
   const { status } = useAuth();
+  const { activeChildId } = useActiveChild();
+
+  // Realtime sync: subskrypcja na poziomie layoutu, zeby zyla niezaleznie od
+  // tego ktora zakladka jest aktywna. Event invaliduje ['sessions'] -> TanStack
+  // refetchuje to co aktualnie observowane.
+  useRealtimeSessions(activeChildId);
 
   if (status === 'loading') {
     return null;
