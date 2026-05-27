@@ -43,15 +43,15 @@ export default function SignInScreen() {
   const errorMessage = signIn.error instanceof Error ? translateAuthError(signIn.error.message) : null;
 
   return (
-    <SafeAreaView className="flex-1 bg-cream">
+    <SafeAreaView className="flex-1 bg-cream dark:bg-dark-bg">
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         className="flex-1">
         <ScrollView
           contentContainerClassName="flex-grow justify-center px-6 py-8"
           keyboardShouldPersistTaps="handled">
-          <Text className="text-3xl font-semibold text-navy">Zaloguj sie</Text>
-          <Text className="mt-2 text-base text-purple">Wroc do swojej rodziny.</Text>
+          <Text className="text-3xl font-semibold text-navy dark:text-cream">Zaloguj sie</Text>
+          <Text className="mt-2 text-base text-purple dark:text-cream/70">Wroc do swojej rodziny.</Text>
 
           <View className="mt-8 gap-4">
             <View>

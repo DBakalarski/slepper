@@ -55,9 +55,9 @@ export default function HistoryScreen() {
   const hasChild = (childrenQuery.data ?? []).length > 0;
 
   return (
-    <SafeAreaView className="flex-1 bg-cream">
+    <SafeAreaView className="flex-1 bg-cream dark:bg-dark-bg">
       <View className="px-6 pt-6">
-        <Text className="text-3xl font-semibold text-navy">Historia</Text>
+        <Text className="text-3xl font-semibold text-navy dark:text-cream">Historia</Text>
         <View className="mt-4 flex-row gap-2">
           <ModeChip label="Wybierz dzien" selected={mode === 'day'} onPress={() => setMode('day')} />
           <ModeChip

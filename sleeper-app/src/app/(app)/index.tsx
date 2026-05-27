@@ -66,14 +66,16 @@ export default function TodayScreen() {
   const hasNoFamily = !familyQuery.isLoading && !family;
 
   return (
-    <SafeAreaView className="flex-1 bg-cream">
+    <SafeAreaView className="flex-1 bg-cream dark:bg-dark-bg">
       <ScrollView contentContainerClassName="px-6 py-6 gap-4">
         <View>
-          <Text className="text-3xl font-semibold text-navy">Dzisiaj</Text>
+          <Text className="text-3xl font-semibold text-navy dark:text-cream">Dzisiaj</Text>
           {activeChild ? (
-            <Text className="mt-1 text-base text-purple">{activeChild.name}</Text>
+            <Text className="mt-1 text-base text-purple dark:text-cream/70">{activeChild.name}</Text>
           ) : (
-            <Text className="mt-1 text-base text-purple">Zalogowany: {user?.email ?? 'brak'}</Text>
+            <Text className="mt-1 text-base text-purple dark:text-cream/70">
+              Zalogowany: {user?.email ?? 'brak'}
+            </Text>
           )}
         </View>
 

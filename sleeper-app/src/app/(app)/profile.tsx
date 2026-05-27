@@ -19,11 +19,11 @@ export default function ProfileScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-cream">
+    <SafeAreaView className="flex-1 bg-cream dark:bg-dark-bg">
       <ScrollView contentContainerClassName="px-6 py-8 gap-6">
         <View>
-          <Text className="text-3xl font-semibold text-navy">Profil</Text>
-          <Text className="mt-1 text-base text-purple">{user?.email}</Text>
+          <Text className="text-3xl font-semibold text-navy dark:text-cream">Profil</Text>
+          <Text className="mt-1 text-base text-purple dark:text-cream/70">{user?.email}</Text>
         </View>
 
         <View className="rounded-2xl bg-white p-4">

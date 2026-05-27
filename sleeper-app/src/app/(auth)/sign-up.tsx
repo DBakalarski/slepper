@@ -71,15 +71,15 @@ export default function SignUpScreen() {
   const serverError = signUp.error instanceof Error ? translateAuthError(signUp.error.message) : null;
 
   return (
-    <SafeAreaView className="flex-1 bg-cream">
+    <SafeAreaView className="flex-1 bg-cream dark:bg-dark-bg">
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         className="flex-1">
         <ScrollView
           contentContainerClassName="flex-grow justify-center px-6 py-8"
           keyboardShouldPersistTaps="handled">
-          <Text className="text-3xl font-semibold text-navy">Zaloz konto</Text>
-          <Text className="mt-2 text-base text-purple">
+          <Text className="text-3xl font-semibold text-navy dark:text-cream">Zaloz konto</Text>
+          <Text className="mt-2 text-base text-purple dark:text-cream/70">
             Dolaczysz do nowej rodziny lub do tej, do ktorej Cie zaproszono.
           </Text>
 

@@ -48,7 +48,7 @@ export default function SessionEditScreen() {
 
   if (!sessionId) {
     return (
-      <SafeAreaView className="flex-1 bg-cream">
+      <SafeAreaView className="flex-1 bg-cream dark:bg-dark-bg">
         <View className="flex-1 items-center justify-center px-6">
           <Text className="text-base text-navy">Brak ID sesji.</Text>
         </View>
@@ -58,7 +58,7 @@ export default function SessionEditScreen() {
 
   if (sessionQuery.isLoading || !form) {
     return (
-      <SafeAreaView className="flex-1 bg-cream">
+      <SafeAreaView className="flex-1 bg-cream dark:bg-dark-bg">
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator color="#1E1B4B" />
         </View>
@@ -68,7 +68,7 @@ export default function SessionEditScreen() {
 
   if (sessionQuery.isError || !sessionQuery.data) {
     return (
-      <SafeAreaView className="flex-1 bg-cream">
+      <SafeAreaView className="flex-1 bg-cream dark:bg-dark-bg">
         <View className="flex-1 items-center justify-center gap-3 px-6">
           <Text className="text-base text-navy">Nie udalo sie zaladowac sesji.</Text>
           {sessionQuery.isError ? (
@@ -148,7 +148,7 @@ export default function SessionEditScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-cream">
+    <SafeAreaView className="flex-1 bg-cream dark:bg-dark-bg">
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         className="flex-1">
