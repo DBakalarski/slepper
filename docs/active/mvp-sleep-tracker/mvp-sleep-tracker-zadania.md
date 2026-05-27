@@ -1,9 +1,9 @@
 # Zadania: MVP — Aplikacja do trackowania snu i okien aktywności dziecka
 
 **Branch:** `feature/mvp-sleep-tracker`
-**Ostatnia aktualizacja:** 2026-05-26
+**Ostatnia aktualizacja:** 2026-05-27
 
-Postęp: 1 / 7 faz ukończone (Faza 1: kod gotowy, mobile-manual verification pending)
+Postęp: 2 / 7 faz ukończone (Faza 1: kod gotowy, mobile-manual verification pending; Faza 2: kod gotowy, mobile-manual verification pending)
 
 ---
 
@@ -90,32 +90,39 @@ Severity gate po cyklu 2: ✅ **CZYSTE** (0 × P1, 2 × P2 świadomie pominięte
 
 ## Faza 2 — Children + sesje (rdzeń MVP) (Effort: XL)
 
-- [ ] Migracja `supabase/migrations/0002_children_sessions.sql`: tabele `children`, `sessions`
-- [ ] Constraint: `create unique index sessions_one_active_per_child on sessions(child_id) where end_at is null`
-- [ ] Index `sessions(child_id, start_at desc)` dla queries historii
-- [ ] RLS dla `children`, `sessions` (członek rodziny przez `family_members`)
-- [ ] Regenerować `database.types.ts`
-- [ ] Onboarding: ekran „dodaj dziecko" (imię, data urodzenia, kolor avatara) — pokazany jeśli `children.length === 0`
-- [ ] `src/features/children/api.ts` — `useChildren()`, `useCreateChild()`
-- [ ] `src/features/children/useActiveChild.ts` — Zustand persisted (AsyncStorage)
-- [ ] `src/features/sessions/api.ts` — `useSessions(childId, date)`, `useActiveSession(childId)`, `useStartSession`, `useEndSession`, `useUpdateSession`, `useDeleteSession`
-- [ ] `src/features/sessions/useSessionTimer.ts` — hook tickujący 1s, format `HH:MM:SS`
-- [ ] `src/lib/time.ts` — `formatDuration(ms): "1g 43m"`, `formatTime(date): "09:30"`, `formatRange(start, end): "09:30 → 11:13"`, `pluralizePL(n, ['drzemka', 'drzemki', 'drzemek'])`
-- [ ] `src/components/ActiveWindowCard.tsx` — pomarańczowa karta (mockup #1): czas od końca ostatniej sesji + planowana drzemka
-- [ ] `src/components/SleepInProgressCard.tsx` — granatowa karta (mockup #2): timer + przycisk „Pełny ekran"
-- [ ] `src/components/TodayStatsCard.tsx` — biała karta z agregatami (sen nocny / drzemki / najdł. aktywność)
-- [ ] `src/components/BigActionButton.tsx` — granatowy duży przycisk „Rozpocznij sen" / „Zakończ sen"
-- [ ] `src/components/QuickActions.tsx` — 3 białe przyciski (Drzemka teraz / Sen nocny / Dodaj wstecz)
-- [ ] `src/components/SessionListItem.tsx` — pojedynczy wpis historii (mockup #2 dół)
-- [ ] `app/(app)/index.tsx` — kompozycja: header + ActiveWindowCard ALBO SleepInProgressCard + TodayStatsCard + BigActionButton + QuickActions + lista sesji dziś
-- [ ] `app/(app)/sleep-fullscreen.tsx` — duży timer + `expo-keep-awake.activateAsync()` w `useEffect`
-- [ ] Modal „Dodaj wstecz" — DateTimePicker dla start/end + dropdown typu
-- [ ] Mutacja `useStartSession` z optimistic update
-- [ ] Mutacja `useEndSession` z optimistic update
-- [ ] Weryfikacja: tap „Rozpocznij sen" → karta zmienia kolor i nagłówek
-- [ ] Weryfikacja: zamknij i otwórz app → timer kontynuuje z poprawnym czasem
-- [ ] Weryfikacja: „Dodaj wstecz" tworzy sesję w przeszłości i pojawia się w agregatach „Dzisiaj"
-- [ ] Weryfikacja: agregat „13g 35m" = suma wszystkich sesji z dziś (sprawdzić manualnie)
+- [x] Migracja `supabase/migrations/0007_children_sessions.sql`: tabele `children`, `sessions` (numer 0007 zamiast 0002 — chronologia migracji po fixach Fazy 1)
+- [x] Constraint: `create unique index sessions_one_active_per_child on sessions(child_id) where end_at is null`
+- [x] Index `sessions(child_id, start_at desc)` dla queries historii
+- [x] RLS dla `children`, `sessions` (członek rodziny przez `is_family_member()`)
+- [x] Regenerować `database.types.ts` (ręczne rozszerzenie — brak dostępu do remote `gen types`)
+- [x] Onboarding: ekran „dodaj dziecko" (imię, data urodzenia, kolor avatara) — pokazany jeśli `children.length === 0`
+- [x] `src/features/children/hooks.ts` — `useChildren()`, `useCreateChild()`
+- [x] `src/features/children/useActiveChild.ts` — Zustand persisted (AsyncStorage)
+- [x] `src/features/sessions/hooks.ts` — `useSessions(childId, range)`, `useActiveSession(childId)`, `useLastEndedSession`, `useStartSession`, `useEndSession`, `useUpdateSession`, `useDeleteSession`, `useInsertBackdatedSession`
+- [x] `src/features/sessions/useSessionTimer.ts` — hook tickujący 1s, format `HH:MM:SS`
+- [x] `src/lib/time.ts` — `formatDuration(ms): "1g 43m"`, `formatTime(date): "09:30"`, `formatRange(start, end): "09:30 → 11:13"`, `pluralizePL(n, ['drzemka', 'drzemki', 'drzemek'])`, `formatTimer`, `startOfDayInAppTz`
+- [x] `src/components/ActiveWindowCard.tsx` — pomarańczowa karta (mockup #1): czas od końca ostatniej sesji + planowana drzemka
+- [x] `src/components/SleepInProgressCard.tsx` — granatowa karta (mockup #2): timer + przycisk „Pełny ekran"
+- [x] `src/components/TodayStatsCard.tsx` — biała karta z agregatami (sen nocny / drzemki / najdł. aktywność)
+- [x] `src/components/BigActionButton.tsx` — granatowy duży przycisk „Rozpocznij sen" / „Zakończ sen"
+- [x] `src/components/QuickActions.tsx` — 3 białe przyciski (Drzemka teraz / Sen nocny / Dodaj wstecz)
+- [x] `src/components/SessionListItem.tsx` — pojedynczy wpis historii (mockup #2 dół)
+- [x] `app/(app)/index.tsx` — kompozycja: header + ActiveWindowCard ALBO SleepInProgressCard + TodayStatsCard + BigActionButton + QuickActions + lista sesji dziś
+- [x] `app/(app)/sleep-fullscreen.tsx` — duży timer + `expo-keep-awake.activateAsync()` w `useEffect`
+- [x] Modal „Dodaj wstecz" — TextInput HH:MM dla start/end + chips typu (świadomie bez DateTimePickera — nowa zależność odłożona do Fazy 3)
+- [x] Mutacja `useStartSession` z optimistic update
+- [x] Mutacja `useEndSession` z optimistic update
+- [ ] Weryfikacja: tap „Rozpocznij sen" → karta zmienia kolor i nagłówek — manual test (mobile)
+- [ ] Weryfikacja: zamknij i otwórz app → timer kontynuuje z poprawnym czasem — manual test (mobile)
+- [ ] Weryfikacja: „Dodaj wstecz" tworzy sesję w przeszłości i pojawia się w agregatach „Dzisiaj" — manual test (mobile)
+- [ ] Weryfikacja: agregat „13g 35m" = suma wszystkich sesji z dziś (sprawdzić manualnie) — manual test (mobile)
+
+### Notatki implementacyjne Fazy 2
+
+- Numer migracji `0007` (nie `0002` z planu) zachowuje chronologię po fixach Fazy 1 (0005, 0006).
+- Modal „Dodaj wstecz" używa tekstowych inputów `HH:MM` zamiast `@react-native-community/datetimepicker` — pozwala uniknąć nowej zależności w Fazie 2. Full date picker dochodzi w Fazie 3 razem z day pickerem historii.
+- Brak setupu testów (Jest/Vitest) — zgodnie z CLAUDE.md i planem zadania (Faza 2 nie ma checkboxów `Test:`). Testy `time.ts` dochodzą gdy setup testów będzie świadomą decyzją projektu.
+- `database.types.ts` zaktualizowane ręcznie (replika wzorca Supabase) — projekt nie ma skonfigurowanego `supabase login` do remote `gen types`.
 
 ---
 

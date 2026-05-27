@@ -1,7 +1,7 @@
 # Kontekst: MVP — Aplikacja do trackowania snu i okien aktywności dziecka
 
 **Branch:** `feature/mvp-sleep-tracker`
-**Ostatnia aktualizacja:** 2026-05-26
+**Ostatnia aktualizacja:** 2026-05-27
 
 ## Źródła
 - Requirements doc: brak (nie użyto `/dev-brainstorm`)
@@ -154,3 +154,42 @@
 
 ### Commit
 - `9de7387` — feat(setup): scaffold Expo app with TS strict, NativeWind, TanStack Query
+
+## Log fazy 2 (2026-05-27)
+
+### Wykonane
+- Migracja `0007_children_sessions.sql`: tabele `children`, `sessions`, partial unique index na aktywnej sesji, RLS przez `is_family_member()`.
+- Hooks: `useChildren`, `useCreateChild`, `useActiveChild` (Zustand+AsyncStorage), pełen zestaw session hooks (start/end optimistic, update, delete, backdated insert, useSessions w oknie, useActiveSession, useLastEndedSession).
+- Hook `useSessionTimer` (tick 1s, derived state).
+- `lib/time.ts`: `formatDuration`, `formatTimer`, `formatTime`, `formatRange`, `pluralizePL`, `startOfDayInAppTz`.
+- Komponenty: `ActiveWindowCard`, `SleepInProgressCard`, `TodayStatsCard` (z agregatami: night sleep, naps, longest awake gap), `BigActionButton`, `QuickActions`, `SessionListItem`.
+- Onboarding `AddChildForm` (imię + data YYYY-MM-DD + paleta 5 kolorów avatara).
+- Modal `BackdatedSessionModal` (chips typu + TextInputy daty/godziny + walidacja end>start, !future).
+- `app/(app)/index.tsx` przepisany jako kompozycja sekcji (NoFamily banner, invitations, AddChild lub ActiveChildSection).
+- `app/(app)/sleep-fullscreen.tsx` z `expo-keep-awake` i auto-redirect gdy aktywna sesja znika (np. zdalnie zakończona).
+- `(app)/_layout.tsx`: `sleep-fullscreen` ukryty z tab bara (`href: null`).
+
+### Odchylenia od planu
+- Migracja ponumerowana `0007` zamiast planowanego `0002` — utrzymuje chronologię po fixach Fazy 1 (0005, 0006). Plan był oparty na greenfield, ale w międzyczasie powstały dodatkowe migracje.
+- Modal „Dodaj wstecz" nie używa `@react-native-community/datetimepicker` (plan tego pakietu nie wymienia jako zależności Fazy 2, a coding-rules §8 wymaga zgody na nowe deps). Zamiast tego inputy tekstowe `HH:MM` z walidacją regex. DateTimePicker wprowadzimy razem z day pickerem historii w Fazie 3.
+- `database.types.ts` zaktualizowane ręcznie (nie `supabase gen types`) — projekt nie ma supabase CLI dowiązanego do remote project.
+- Brak testów jednostkowych — Faza 2 nie ma checkboxów `Test:`, CLAUDE.md wskazuje że setup testów dochodzi gdy będzie potrzebny. Czyste funkcje `time.ts` testowalne, ale wymagałyby instalacji Jest/Vitest (osobna decyzja).
+
+### Decyzje schematu Fazy 2
+- `children.family_id` zamiast `parent_id` — dziecko należy do rodziny (wymiana usera nie psuje referencji).
+- `sessions.type` jako CHECK constraint zamiast Postgres enum — łatwiej dodać typ bez migracji DDL.
+- Brak `duration_seconds` jako kolumny — derived z `end_at - start_at`.
+- Walidacja Postgres: `sessions_end_after_start` CHECK (end_at IS NULL OR end_at >= start_at).
+- Avatar color jako hex string z regex check.
+
+### Decyzje implementacyjne Fazy 2
+- Optimistic updates dla START/STOP (zgodnie z planem). Backdated insert bez optimistic (formularz wymaga walidacji).
+- `useSessions(childId, rangeStart, rangeEnd)` — generyczne okno czasowe, nie hardcoded "dziś". Pozwala reuse w Fazie 3 (historia).
+- `TodayStatsCard.computeAggregates` — sumy ograniczone do okna dnia (sesja przecinająca północ liczy się proporcjonalnie). „Najdłuższe okno aktywności" wyliczane jako max luka między sesjami w obrębie dnia.
+- Tick „now" w `index.tsx` co 30s (nie 1s) — agregaty nie potrzebują sub-sekundowej dokładności, tylko karta `SleepInProgressCard` ma 1s tick lokalnie.
+- `sleep-fullscreen` auto-redirect na `/` gdy aktywna sesja znika — pokrywa scenariusz „drugi telefon zakończył" + invalidate po focus.
+
+### Walidacja
+- `npx tsc --noEmit` -> PASS (0 błędów)
+- `npm run lint` -> PASS (0 errors, 0 warnings)
+- Manual mobile testing: pending (jak Faza 1)
