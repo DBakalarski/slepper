@@ -435,3 +435,26 @@ Severity gate: ✅ **GOTOWE DO KONTYNUACJI** (0 × P1, 0 × P2, 3 × P3 backlog 
 **Decyzja:** P2 wymaga decyzji userowej — albo (a) ~30-60 min uzupelnienia `dark:*` na kartach + inputach + empty states (pelny dark mode WCAG AA), albo (b) zaakceptowanie jako "polish dla siebie" MVP i przejscie do manual testing scenariuszy. P3 backlog.
 
 **Mobile-manual:** 7 scenariuszy w `manual-test-faza-6.md` pozostaje pending operator (fizyczne urzadzenie + Expo Go/dev build). Scenariusze 1-2 (haptic) sa P1 z perspektywy core UX, nie blokuja code review gate.
+
+### Re-review fazy 6 (2026-05-27, po fix cyklu 1 `90c3446`)
+
+**Severity gate: ✅ CZYSTE (z perspektywy KOD)** — 0 × P1, 0 × P2, 5 × P3 (z 6 — `dark-surface` dead code zamkniete bonus). Pelny raport: `review-faza-6.md` (sekcja Re-review).
+
+**Weryfikacja 3 × P2 z cyklu 1:**
+
+- ✅ P2-correctness (kontrast WCAG): `dark:text-cream` dodane na empty/error states i tytulach w session/[id].tsx (3 miejsca), history.tsx (4 miejsca), index.tsx NoFamilyBanner + InvitationRow. Kontrast `#F5F0E8` na `#0F0D26` ~13:1 PASS.
+- ✅ P2-arch (karty bez dark variant): `dark:bg-dark-card` na 8 komponentach kart (TodayStatsCard, SessionListItem, QuickActions, AddChildForm, SessionEditForm, BackdatedSessionModal inner, InvitationRow, profile.Rodzina). Karty `bg-cream` zagniezdzone w dark-card -> `dark:bg-dark-surface` (FamilyMembersList, PendingInvitationsList, InviteMemberForm input, history ModeChip, Chip). Brak `bg-white` bez dark variant w calym `src/`.
+- ✅ P2-correctness (inputs): `dark:bg-dark-card dark:text-cream` na TextInput sign-in/sign-up (4 inputy), SessionEditForm textarea, BackdatedSessionModal (date + 2 time inputs).
+
+**Bonus:** P3-arch `dark-surface` dead code zamkniete — kolor uzywany realnie w 5 miejscach po fixie.
+
+**P3 pozostale (5, backlog non-blocking):**
+- BigActionButton.tsx:22-29 — haptic przed onPress (teoretyczne)
+- (app)/_layout.tsx:36-38 — tabBarStyle bez useMemo
+- (app)/_layout.tsx:35 — `isDark ? '#7C6BAD' : '#7C6BAD'` no-op
+- eas.json:3 — eas-cli bez devDependency (pragmatyczne MVP)
+- NativeWind subscriber cost — neglible nota
+
+**Walidacja po fix:** `npx tsc --noEmit` PASS (exit 0), `npm run lint` PASS (exit 0). Brak nowych warningow.
+
+**Decyzja:** Faza 6 KOD CZYSTE. Pozostaje wylacznie mobile-manual (7 scenariuszy pending operator).

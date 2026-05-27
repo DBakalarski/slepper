@@ -31,11 +31,11 @@ sleeper/                          # ← root (TEN katalog)
 
 **Wazne:** kod aplikacji zyje w `sleeper-app/`. Komendy `npm/expo/tsc` uruchamiaj z `sleeper-app/`. `docs/` i `.claude/` zostaja w roocie i sa wspolne.
 
-## Aktualny stan (2026-05-26)
+## Aktualny stan (2026-05-27)
 
 - **Branch:** `feature/mvp-sleep-tracker`
-- **Faza:** Faza 0 zamknieta (scaffold + SDK54 downgrade + health probe), trwa przygotowanie Fazy 1 (Auth + rodzina)
-- Aktualne zadania: `docs/active/mvp-sleep-tracker/mvp-sleep-tracker-zadania.md`
+- **Faza:** MVP UKONCZONE — wszystkie fazy 0-6 zamkniete, kod CZYSTY (review CZYSTE po fix cyklach). Pozostaje mobile-manual testing (38 scenariuszy) + EAS build dla usera na fizycznych urzadzeniach.
+- Archiwum zadania: `docs/completed/mvp-sleep-tracker/`
 
 ## Stack (zainstalowany — sprawdzone w `sleeper-app/package.json`)
 
