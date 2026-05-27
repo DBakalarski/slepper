@@ -3,7 +3,7 @@
 **Branch:** `feature/mvp-sleep-tracker`
 **Ostatnia aktualizacja:** 2026-05-27
 
-Postęp: 5 / 7 faz ukończone (Faza 1–5: kod gotowy, Faza 1–3 review CZYSTE, Faza 4 review CZYSTE po cyklu 2, Faza 5 oczekuje review + mobile-manual)
+Postęp: 5 / 7 faz ukończone (Faza 1–5: kod gotowy, Faza 1–3 review CZYSTE, Faza 4 review CZYSTE po cyklu 2, Faza 5 review ZASTRZEŻENIA — 2 × P2 + mobile-manual pending)
 
 ---
 
@@ -261,6 +261,34 @@ Severity gate (cykl 1): ⚠️ **KONTYNUUJ Z ZASTRZEZENIAMI** (0 × P1, 1 × P2,
 - `useUpdateSession.onSuccess` przeplanowuje wzgledem TEJ edytowanej sesji — nie sprawdza czy to ostatnia. Uproszczenie MVP: typowy use case to edycja ostatniej sesji; edycja starej sesji daje "lekko nadgorliwe" reschedule (notyfikacja moze wskazac stary target), do dopracowania w Fazie 6.
 - Brak setupu testow (zgodnie z CLAUDE.md i pattern z Fazy 2). `targetWakeWindowMinutes` testowane recznie w Scenariuszu 7 manual-test.
 - iOS Settings → Notifications → sleeper-app permits widoczne; Android: channel "Drzemki" (`default` ID) z `AndroidImportance.HIGH`.
+
+### Do poprawy po review fazy 5
+
+Severity gate cyklu 1: ⚠️ **ZASTRZEŻENIA** (0 × P1, 2 × P2, 5 × P3). Pełny raport: `review-faza-5.md`. Po cyklu 1 fix: ✅ 2 × P2 naprawione, 5 × P3 backlog. Mobile-manual: 8 scenariuszy w `manual-test-faza-5.md` — pending operator.
+
+**P2 — Important:**
+
+- [x] 🟠 [P2-arch] **features/sessions/hooks.ts:314-329** — `useUpdateSession` schedule wzgledem edytowanej sesji, nie ostatniej. **Fix (cykl 1):** rename `rescheduleAfterDelete` → `rescheduleFromLastEnded` w `schedule-nap-side-effects.ts`, uzyty zarowno w `useUpdateSession.onSuccess` jak i `useDeleteSession.onSuccess`. Notyfikacja zawsze odzwierciedla aktualnie najnowsza zakonczona sesje (symetria reschedule mechanizmu).
+- [x] 🟠 [P2-arch] **features/sessions/hooks.ts:278-281** — `useEndSession.onSuccess` cicho cancel gdy `data.end_at === null`. **Fix (cykl 1):** dodano `console.warn('[notifications] useEndSession received row with end_at === null — cancelling notification as fallback')` przed cancelem dla diagnostyki race condition.
+
+**P3 — Nits (opcjonalne):**
+
+- [ ] 🟡 [P3-arch] **lib/notifications.ts:70-74** — channel id='default' z name='Drzemki' myli czytelnika. Sugestia: id='nap-reminders' + `content.channelId: 'nap-reminders'` w `scheduleNotificationAsync` dla izolacji.
+- [ ] 🟡 [P3-perf] **lib/time.ts:150-159** — `targetWakeWindowMinutes` uzywa 30 days/miesiac (5-10% dryf). Sugestia: `date-fns.differenceInMonths` dla precyzji kalendarzowej.
+- [ ] 🟡 [P3-arch] **lib/notifications.ts:128-138** — `scheduleNotificationAsync` bez explicit `content.channelId` — Android domyslnie hit 'default'. Spina z P3-arch nr 1.
+- [ ] 🟡 [P3-arch] **features/children/components/AddChildForm.tsx:55-62** — `requestPermissions` w `onSuccess` po kazdym dodaniu dziecka. Idempotent w praktyce (form tylko gdy `children.length === 0`), ale komentarz "po pierwszym dziecku" mylacy gdyby form pojawil sie pozniej.
+- [ ] 🟡 [P3-feature] **lib/notifications.ts** — brak deep-link handlera dla tap-on-notification. Notatka dla Fazy 6 polish.
+
+**Mobile-manual (pending operator):**
+
+- [ ] 📱 Scenariusz 1 — Permission granted po dodaniu 1szego dziecka
+- [ ] 📱 Scenariusz 2 — Permission denied
+- [ ] 📱 Scenariusz 3 — Notyfikacja schedulowana po endSession
+- [ ] 📱 Scenariusz 4 — Start nowej sesji anuluje pending notyfikacje
+- [ ] 📱 Scenariusz 5 — Edycja end_at aktualizuje czas notyfikacji
+- [ ] 📱 Scenariusz 6 — Delete ostatniej sesji recalcule
+- [ ] 📱 Scenariusz 7 — Wake window calculation per wiek (REPL)
+- [ ] 📱 Scenariusz 8 — App foreground/background/killed
 
 ---
 

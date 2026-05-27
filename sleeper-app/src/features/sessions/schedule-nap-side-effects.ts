@@ -70,9 +70,15 @@ export async function cancelNapNotificationSafe(childId: string): Promise<void> 
   }
 }
 
-// Po delete: musimy sprawdzic nowa "ostatnia zakonczona sesje" i przeplanowac.
-// Uzywane w useDeleteSession.onSuccess.
-export async function rescheduleAfterDelete(childId: string): Promise<void> {
+// Po mutacji ktora mogla zmienic ktora sesja jest "ostatnia zakonczona" (delete
+// albo update niekoniecznie ostatniej sesji) — zapytaj baze o aktualnie
+// najnowsza zakonczona sesje i (re)schedule notyfikacje wzgledem niej.
+// Jesli zadnej zakonczonej sesji nie ma → cancel.
+//
+// Uzywane w `useDeleteSession.onSuccess` oraz `useUpdateSession.onSuccess`
+// dla zachowania symetrii: notyfikacja zawsze odzwierciedla "ostatnie okno
+// aktywnosci", niezaleznie czy edytowano ostatnia czy starsza sesje.
+export async function rescheduleFromLastEnded(childId: string): Promise<void> {
   try {
     const { data, error } = await supabase
       .from('sessions')
@@ -83,12 +89,12 @@ export async function rescheduleAfterDelete(childId: string): Promise<void> {
       .limit(1)
       .maybeSingle();
     if (error) {
-      console.warn('[notifications] reschedule-after-delete query failed:', error);
+      console.warn('[notifications] reschedule-from-last-ended query failed:', error);
       return;
     }
     const lastEndAt = data?.end_at ? new Date(data.end_at) : null;
     await rescheduleNapNotification(childId, lastEndAt);
   } catch (err) {
-    console.warn('[notifications] reschedule-after-delete failed:', err);
+    console.warn('[notifications] reschedule-from-last-ended failed:', err);
   }
 }
