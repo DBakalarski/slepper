@@ -193,3 +193,32 @@
 - `npx tsc --noEmit` -> PASS (0 błędów)
 - `npm run lint` -> PASS (0 errors, 0 warnings)
 - Manual mobile testing: pending (jak Faza 1)
+
+### Code review (2026-05-27)
+
+Przeprowadzony `/dev-docs-review docs/active/mvp-sleep-tracker 2`. Severity gate: ⛔ **WYMAGA POPRAWEK**.
+
+- 1 × P1 (data integrity): `created_by NOT NULL ... ON DELETE SET NULL` w migracji 0007 to sprzeczność. Wymaga migracji 0008 (lub edycji 0007 przed push, jeśli środowisko remote pozwala).
+- 9 × P2 (performance, correctness tz, RLS column-level grant, deps explicit, type assertions, error mapping). Pełny raport: `review-faza-2.md`.
+- 8 × P3 (magic numbers, brakujące memo, brak `rowToChild` parsera, race przy podwójnym tapie). Backlog.
+- Manual test checklist: `manual-test-faza-2.md` (4 scenariusze: start/stop, persistence, dodaj wstecz, agregaty).
+
+**Kluczowy wniosek (TZ correctness):** trzy P2 dotyczą jednego źródła — założenia device tz = Warsaw. Refaktor `time.ts` powinien używać konsekwentnie `fromZonedTime`/`toZonedTime` zamiast modyfikować Date objects via `setHours`. Wzorzec do utrwalenia w `learned-patterns.md` po fixie.
+
+### Code review cykl 2 (2026-05-27, po fix `e7ab97d`)
+
+Re-run `/dev-docs-review docs/active/mvp-sleep-tracker 2` po cyklu napraw. Severity gate: ✅ **CZYSTE** — gotowe do Fazy 3.
+
+- 1 × P1 z cyklu 1 → naprawiony przez migration 0008 (`drop not null` na `sessions.created_by` + column-level `grant update`).
+- 9 × P2 z cyklu 1 → naprawione, mapowanie 1:1 zweryfikowane w `review-faza-2.md` (sekcja "Review cykl 2").
+- 2 × P3 nowe (cykl 2) — opcjonalne sugestie:
+  - `useStartSession` `throw new Error(translateSessionError(error))` traci `code` property (custom `SessionError` rozważyć w przyszłości).
+  - `useCreateChild.onSuccess` używa `removeQueries(['sessions'])` szeroko zamiast per-child (pragmatyczne dla single-child MVP).
+- 4 × mobile-manual checkboxy pozostają `[ ]` jako znany pending operatora (Expo Go on-device).
+- Quality gate cykl 2: typecheck + lint PASS.
+
+**Wzorce do utrwalenia w `learned-patterns.md`** (po `/dev-compound`):
+1. TZ-safe date math: zawsze `fromZonedTime(dayKey + 'T00:00:00', tz)` zamiast `setHours()`.
+2. DST-safe end-of-day: `startOfDayInAppTz(addDays(date, 1))` zamiast `+ 24h`.
+3. Hook API: `string | null` (ISO) > `Date | null` dla useEffect deps stability (string deepEqual = primitive equality).
+4. Migration constraint sanity: `NOT NULL` + `ON DELETE SET NULL` to sprzeczność — wykrywać w pre-push review.
