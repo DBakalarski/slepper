@@ -1,5 +1,5 @@
-import { format } from 'date-fns';
-import { toZonedTime } from 'date-fns-tz';
+import { addDays, format } from 'date-fns';
+import { fromZonedTime, toZonedTime } from 'date-fns-tz';
 
 // Strefa czasowa UI. Baza trzyma UTC; formatowanie zawsze przez ten tz.
 export const APP_TIMEZONE = 'Europe/Warsaw';
@@ -71,10 +71,32 @@ export function pluralizePL(n: number, forms: [string, string, string]): string 
 
 // Wycina date do poczatku dnia (00:00) w strefie aplikacji.
 // Uzywane do filtrowania sesji "dzisiaj" niezaleznie od UTC drift.
+//
+// Implementacja: format() zwraca date-string w app tz (np. "2026-05-27"),
+// nastepnie fromZonedTime konwertuje "2026-05-27T00:00:00" w Europe/Warsaw na
+// wlasciwy UTC instant. Dziala poprawnie niezaleznie od device tz.
 export function startOfDayInAppTz(date: Date): Date {
-  const zoned = toZonedTime(date, APP_TIMEZONE);
-  zoned.setHours(0, 0, 0, 0);
-  // toZonedTime daje Date z UTC reprezentujacy tamten moment w lokalnym tz.
-  // setHours dzialal na tym lokalnym Date — wynik to start dnia w app tz.
-  return zoned;
+  const dayKey = format(toZonedTime(date, APP_TIMEZONE), 'yyyy-MM-dd');
+  return fromZonedTime(`${dayKey}T00:00:00`, APP_TIMEZONE);
+}
+
+// Koniec dnia w app tz = poczatek nastepnego dnia w app tz. Uzywaj addDays
+// (nie `+ 24h`) zeby poprawnie obsluzyc DST (23/25h doby 2 razy/rok).
+export function endOfDayInAppTz(date: Date): Date {
+  return startOfDayInAppTz(addDays(date, 1));
+}
+
+// Parsuje string "YYYY-MM-DD" + "HH:MM" jako moment w app tz (Europe/Warsaw),
+// nie w device tz. Zwraca null gdy format zly. Uzywane przez backdated modal.
+export function parseAppTzDateTime(dateStr: string, timeStr: string): Date | null {
+  const iso = `${dateStr}T${timeStr}:00`;
+  const parsed = fromZonedTime(iso, APP_TIMEZONE);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return parsed;
+}
+
+// Zwraca date-string YYYY-MM-DD reprezentujacy dzien w app tz dla zadanej daty.
+// Uzywane do prefill backdated modal (dzisiejsza data w Warsaw, nie device tz).
+export function todayDateInAppTz(now: Date = new Date()): string {
+  return format(toZonedTime(now, APP_TIMEZONE), 'yyyy-MM-dd');
 }

@@ -7,6 +7,7 @@ import {
 } from '@tanstack/react-query';
 
 import { useAuth } from '@/features/auth/AuthProvider';
+import { translateSessionError } from '@/features/sessions/translate-session-error';
 import { supabase } from '@/lib/supabase';
 
 export type SessionType = 'nap' | 'night_sleep';
@@ -162,7 +163,10 @@ export function useStartSession(): UseMutationResult<
         })
         .select('id, child_id, type, start_at, end_at, notes, created_by, created_at')
         .single();
-      if (error) throw error;
+      // Map 23505 (partial unique idx — race ze startem na drugim telefonie) i
+      // inne typowe bledy na PL. Wrzucamy nowy Error zeby UI mogl wyswietlic
+      // czysty komunikat bez parsowania PostgrestError po stronie komponentu.
+      if (error) throw new Error(translateSessionError(error));
       return rowToSession(data);
     },
     // Optimistic: pokaz aktywna sesje natychmiast, rollback przy bledzie.

@@ -14,6 +14,29 @@ export interface Child {
 
 const childrenQueryKey = (familyId: string) => ['children', familyId] as const;
 
+interface ChildRow {
+  id: string;
+  family_id: string;
+  name: string;
+  birth_date: string;
+  avatar_color: string;
+  created_at: string;
+}
+
+// Parser DB row -> domain typ. Spojnie z rowToSession w features/sessions/hooks,
+// eliminuje type assertion (`as Child`) ktore lamie coding-rules §10.
+// Walidacja minimalna — RLS+CHECK constraints w bazie gwarantuja niezmiennosc.
+function rowToChild(row: ChildRow): Child {
+  return {
+    id: row.id,
+    family_id: row.family_id,
+    name: row.name,
+    birth_date: row.birth_date,
+    avatar_color: row.avatar_color,
+    created_at: row.created_at,
+  };
+}
+
 export function useChildren(familyId: string | null): UseQueryResult<Child[]> {
   return useQuery({
     queryKey: childrenQueryKey(familyId ?? 'none'),
@@ -26,7 +49,7 @@ export function useChildren(familyId: string | null): UseQueryResult<Child[]> {
         .eq('family_id', familyId)
         .order('created_at', { ascending: true });
       if (error) throw error;
-      return data;
+      return data.map(rowToChild);
     },
   });
 }
@@ -55,10 +78,13 @@ export function useCreateChild() {
         .select('id, family_id, name, birth_date, avatar_color, created_at')
         .single();
       if (error) throw error;
-      return data as Child;
+      return rowToChild(data);
     },
     onSuccess: (child) => {
       void queryClient.invalidateQueries({ queryKey: childrenQueryKey(child.family_id) });
+      // Drop sessions cache poprzedniego dziecka — w multi-child UI stary cache
+      // dawalby flicker przed refetchem dla nowego id (P2-8 z review).
+      queryClient.removeQueries({ queryKey: ['sessions'] });
       // Auto-select swiezo dodane dziecko jesli nic nie bylo wybrane.
       setActiveChildId(child.id);
     },

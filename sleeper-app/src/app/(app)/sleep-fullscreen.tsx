@@ -20,8 +20,7 @@ export default function SleepFullscreenScreen() {
   const endSession = useEndSession();
 
   const session = activeQuery.data ?? null;
-  const startAt = session ? new Date(session.start_at) : null;
-  const { display } = useSessionTimer(startAt);
+  const { display } = useSessionTimer(session?.start_at ?? null);
 
   useEffect(() => {
     void activateKeepAwakeAsync(KEEP_AWAKE_TAG);

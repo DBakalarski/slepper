@@ -1,7 +1,7 @@
 import { Text, View } from 'react-native';
 
 import type { SleepSession } from '@/features/sessions/hooks';
-import { formatDuration } from '@/lib/time';
+import { endOfDayInAppTz, formatDuration } from '@/lib/time';
 
 interface TodayStatsCardProps {
   sessions: SleepSession[];
@@ -41,7 +41,8 @@ function computeAggregates(
   let napsMs = 0;
   let napsCount = 0;
 
-  const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000);
+  // DST-safe: koniec dnia = poczatek nastepnego w app tz, nie start + 24h.
+  const endOfDay = endOfDayInAppTz(startOfDay);
 
   for (const session of sessions) {
     const start = new Date(session.start_at);

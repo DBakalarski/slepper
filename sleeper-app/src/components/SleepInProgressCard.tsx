@@ -5,7 +5,8 @@ import { useSessionTimer } from '@/features/sessions/useSessionTimer';
 import type { SessionType } from '@/features/sessions/hooks';
 
 interface SleepInProgressCardProps {
-  startAt: Date;
+  // ISO string z bazy (stable po deepEqual, useSessionTimer parsuje wewnatrz).
+  startAt: string;
   type: SessionType;
 }
 

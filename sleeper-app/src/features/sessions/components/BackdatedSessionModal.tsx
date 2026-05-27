@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 
 import { useInsertBackdatedSession, type SessionType } from '@/features/sessions/hooks';
+import { parseAppTzDateTime, todayDateInAppTz } from '@/lib/time';
 
 interface BackdatedSessionModalProps {
   visible: boolean;
@@ -22,22 +23,11 @@ interface BackdatedSessionModalProps {
 const TIME_REGEX = /^([01]\d|2[0-3]):([0-5]\d)$/;
 const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 
-function parseLocalDateTime(date: string, time: string): Date | null {
+function parseAppTzInput(date: string, time: string): Date | null {
   if (!DATE_REGEX.test(date) || !TIME_REGEX.test(time)) return null;
-  // ISO local — bez Z, JS uzywa local tz. To wystarczy, bo user wpisuje
-  // godziny w swojej strefie (Europe/Warsaw).
-  const iso = `${date}T${time}:00`;
-  const parsed = new Date(iso);
-  if (Number.isNaN(parsed.getTime())) return null;
-  return parsed;
-}
-
-function todayLocalISODate(): string {
-  const now = new Date();
-  const y = now.getFullYear();
-  const m = `${now.getMonth() + 1}`.padStart(2, '0');
-  const d = `${now.getDate()}`.padStart(2, '0');
-  return `${y}-${m}-${d}`;
+  // User wpisuje godziny w strefie Europe/Warsaw (konwencja UI), niezaleznie
+  // od device tz — uzywamy fromZonedTime przez parseAppTzDateTime.
+  return parseAppTzDateTime(date, time);
 }
 
 // Modal do wstawienia sesji w przeszlosci. MVP: text input HH:MM zamiast
@@ -48,14 +38,14 @@ export function BackdatedSessionModal({
   onClose,
 }: BackdatedSessionModalProps) {
   const insertSession = useInsertBackdatedSession();
-  const [date, setDate] = useState<string>(todayLocalISODate());
+  const [date, setDate] = useState<string>(todayDateInAppTz());
   const [startTime, setStartTime] = useState<string>('09:00');
   const [endTime, setEndTime] = useState<string>('10:30');
   const [type, setType] = useState<SessionType>('nap');
   const [validationError, setValidationError] = useState<string | null>(null);
 
   function resetForm() {
-    setDate(todayLocalISODate());
+    setDate(todayDateInAppTz());
     setStartTime('09:00');
     setEndTime('10:30');
     setType('nap');
@@ -70,8 +60,8 @@ export function BackdatedSessionModal({
 
   function handleSubmit() {
     setValidationError(null);
-    const start = parseLocalDateTime(date, startTime);
-    const end = parseLocalDateTime(date, endTime);
+    const start = parseAppTzInput(date, startTime);
+    const end = parseAppTzInput(date, endTime);
     if (!start || !end) {
       setValidationError('Sprawdz format daty i godzin (YYYY-MM-DD, HH:MM)');
       return;

@@ -112,10 +112,34 @@ Severity gate po cyklu 2: ✅ **CZYSTE** (0 × P1, 2 × P2 świadomie pominięte
 - [x] Modal „Dodaj wstecz" — TextInput HH:MM dla start/end + chips typu (świadomie bez DateTimePickera — nowa zależność odłożona do Fazy 3)
 - [x] Mutacja `useStartSession` z optimistic update
 - [x] Mutacja `useEndSession` z optimistic update
-- [ ] Weryfikacja: tap „Rozpocznij sen" → karta zmienia kolor i nagłówek — manual test (mobile)
-- [ ] Weryfikacja: zamknij i otwórz app → timer kontynuuje z poprawnym czasem — manual test (mobile)
-- [ ] Weryfikacja: „Dodaj wstecz" tworzy sesję w przeszłości i pojawia się w agregatach „Dzisiaj" — manual test (mobile)
-- [ ] Weryfikacja: agregat „13g 35m" = suma wszystkich sesji z dziś (sprawdzić manualnie) — manual test (mobile)
+- [ ] Weryfikacja: tap „Rozpocznij sen" → karta zmienia kolor i nagłówek — manual test (patrz `manual-test-faza-2.md`)
+- [ ] Weryfikacja: zamknij i otwórz app → timer kontynuuje z poprawnym czasem — manual test (patrz `manual-test-faza-2.md`)
+- [ ] Weryfikacja: „Dodaj wstecz" tworzy sesję w przeszłości i pojawia się w agregatach „Dzisiaj" — manual test (patrz `manual-test-faza-2.md`)
+- [ ] Weryfikacja: agregat „13g 35m" = suma wszystkich sesji z dziś (sprawdzić manualnie) — manual test (patrz `manual-test-faza-2.md`)
+
+### Do poprawy po review fazy 2
+
+Severity gate: ⛔ **WYMAGA POPRAWEK** (1 × P1 blocking). Pełny raport: `review-faza-2.md`.
+
+**P1 — Blocking:**
+
+- [x] 🔴 [P1-data-integrity] **migrations/0008_sessions_fixes.sql** — `created_by NOT NULL ... ON DELETE SET NULL` rozwiazany przez `alter column created_by drop not null`. Sesje przezywaja delete usera, audit traci tylko atrybucje (rekomendacja `c` z review).
+
+**P2 — Important:**
+
+- [x] 🟠 [P2-perf] **useSessionTimer.ts** — refactor API na `startAt: string | null`, parsing wewnatrz przez Date.parse + useMemo. Callerzy (SleepInProgressCard, sleep-fullscreen) podaja ISO string z bazy.
+- [x] 🟠 [P2-correctness] **BackdatedSessionModal.tsx + time.ts** — `parseAppTzDateTime` przez `fromZonedTime(iso, APP_TIMEZONE)`, `todayDateInAppTz` zamiast `getFullYear/getMonth` na device tz.
+- [x] 🟠 [P2-correctness] **time.ts:startOfDayInAppTz** — przeniesione na `format(toZonedTime, 'yyyy-MM-dd')` + `fromZonedTime(\`${day}T00:00:00\`)`. Dziala niezaleznie od device tz.
+- [x] 🟠 [P2-correctness] **index.tsx + TodayStatsCard.tsx** — nowy helper `endOfDayInAppTz(date) = startOfDayInAppTz(addDays(date, 1))` zamiast `+ 24h`. DST-safe.
+- [x] 🟠 [P2-security] **migrations/0008** — `revoke update on sessions ... grant update (type, start_at, end_at, notes)` (wzor z 0006 families).
+- [x] 🟠 [P2-arch] **features/children/hooks.ts** — `rowToChild` parser w `useChildren` i `useCreateChild` zamiast `as Child`.
+- [x] 🟠 [P2-scenario] **features/sessions/translate-session-error.ts** — nowy modul mapujacy `isUniqueViolation` na PL ("Inny czlonek rodziny juz rozpoczal sesje. Odswiez i sprobuj ponownie."). `useStartSession` thrutuje `new Error(translateSessionError(error))`.
+- [x] 🟠 [P2-scenario] **features/children/hooks.ts:useCreateChild** — `queryClient.removeQueries({ queryKey: ['sessions'] })` w onSuccess przed setActiveChildId — czysci cache poprzedniego dziecka.
+- [x] 🟠 [P2-deps] **package.json** — `npx expo install expo-keep-awake` → `~15.0.8` explicit w dependencies.
+
+**P3 — Nit (8):**
+
+Lista pełna w `review-faza-2.md`. Highlights: magic numbers (`1000`, `60*1000`, `30*1000` rozproszone), `useChildren` bez `rowToChild` parsera, `useStartSession` race przy podwójnym tapie, brak `useMemo` na `incoming` w `index.tsx:64`, kopiowanie sessions w `computeAggregates`, query key z ISO mogący flap w przyszłości.
 
 ### Notatki implementacyjne Fazy 2
 

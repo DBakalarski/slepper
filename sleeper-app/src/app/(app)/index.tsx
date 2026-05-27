@@ -27,7 +27,7 @@ import {
   useSessions,
   useStartSession,
 } from '@/features/sessions/hooks';
-import { startOfDayInAppTz } from '@/lib/time';
+import { endOfDayInAppTz, startOfDayInAppTz } from '@/lib/time';
 
 const TICK_MS = 30 * 1000; // odswiez "now" co 30s dla agregatow / okna
 
@@ -133,10 +133,9 @@ function ActiveChildSection({ childId }: ActiveChildSectionProps) {
   }, []);
 
   const startOfDay = useMemo(() => startOfDayInAppTz(now), [now]);
-  const endOfDay = useMemo(
-    () => new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000),
-    [startOfDay],
-  );
+  // endOfDay = poczatek nastepnego dnia w app tz (uwzglednia DST, w odroznieniu
+  // od start + 24h ktore dwa razy w roku przesuwa granice o godzine).
+  const endOfDay = useMemo(() => endOfDayInAppTz(now), [now]);
 
   const activeSessionQuery = useActiveSession(childId);
   const lastEndedQuery = useLastEndedSession(childId);
@@ -163,7 +162,7 @@ function ActiveChildSection({ childId }: ActiveChildSectionProps) {
     <>
       {activeSession ? (
         <SleepInProgressCard
-          startAt={new Date(activeSession.start_at)}
+          startAt={activeSession.start_at}
           type={activeSession.type}
         />
       ) : (
