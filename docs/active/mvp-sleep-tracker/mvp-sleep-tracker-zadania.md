@@ -3,7 +3,7 @@
 **Branch:** `feature/mvp-sleep-tracker`
 **Ostatnia aktualizacja:** 2026-05-27
 
-Postęp: 2 / 7 faz ukończone (Faza 1: kod gotowy, mobile-manual verification pending; Faza 2: kod gotowy, mobile-manual verification pending)
+Postęp: 3 / 7 faz ukończone (Faza 1–2: kod gotowy, mobile-manual verification pending; Faza 3: kod gotowy, mobile-manual verification pending)
 
 ---
 
@@ -152,19 +152,28 @@ Lista pełna w `review-faza-2.md`. Highlights: magic numbers (`1000`, `60*1000`,
 
 ## Faza 3 — Historia + edycja (Effort: M)
 
-- [ ] Sekcja „Sesje dzisiaj" na `index.tsx` (ostatnie 5) + link „Pokaż wszystkie" → `history.tsx`
-- [ ] `app/(app)/history.tsx` — `FlatList` sesji + day picker w headerze (`@react-native-community/datetimepicker`)
-- [ ] Group by date dla widoku „wszystkie sesje" (sekcje dnia)
-- [ ] `app/(app)/session/[id].tsx` — formularz edycji (`useForm` z `react-hook-form` lub useState)
-- [ ] Time picker dla `start_at` i `end_at`
-- [ ] Dropdown dla `type`
-- [ ] TextArea dla `notes`
-- [ ] Przycisk „Usuń sesję" z confirm dialog (`Alert.alert`)
-- [ ] Mutacja `useUpdateSession` (bez optimistic, bo formularz)
-- [ ] Mutacja `useDeleteSession` z confirm
-- [ ] Weryfikacja: edycja sesji aktualizuje agregaty „Dzisiaj" po powrocie
-- [ ] Weryfikacja: day picker → wybierz wczoraj → pokazują się sesje z wczoraj
-- [ ] Weryfikacja: usunięcie sesji wymaga potwierdzenia + znika z listy
+- [x] Sekcja „Sesje dzisiaj" na `index.tsx` (ostatnie 5) + link „Pokaż wszystkie" → `history.tsx`
+- [x] `app/(app)/history.tsx` — `SectionList`/lista sesji + day picker w headerze (`@react-native-community/datetimepicker`)
+- [x] Group by date dla widoku „wszystkie sesje" (sekcje dnia, 14 dni wstecz)
+- [x] `app/(app)/session/[id].tsx` — formularz edycji (useState, `useSessionById` hook)
+- [x] Time picker dla `start_at` i `end_at` (komponent `TimePickerField`)
+- [x] Dropdown/chipy dla `type` (Drzemka / Sen nocny) — pattern z BackdatedSessionModal
+- [x] TextArea dla `notes`
+- [x] Przycisk „Usuń sesję" z confirm dialog (`Alert.alert`)
+- [x] Mutacja `useUpdateSession` (bez optimistic, bo formularz) + invalidate `['session', id]`
+- [x] Mutacja `useDeleteSession` z confirm + invalidate `['session', id]`
+- [ ] Weryfikacja: edycja sesji aktualizuje agregaty „Dzisiaj" po powrocie — manual test (patrz `manual-test-faza-3.md`)
+- [ ] Weryfikacja: day picker → wybierz wczoraj → pokazują się sesje z wczoraj — manual test (patrz `manual-test-faza-3.md`)
+- [ ] Weryfikacja: usunięcie sesji wymaga potwierdzenia + znika z listy — manual test (patrz `manual-test-faza-3.md`)
+
+### Notatki implementacyjne Fazy 3
+
+- Nowe komponenty `DatePickerField` i `TimePickerField` w `src/components/` jako wrappery `@react-native-community/datetimepicker` — natywny picker (iOS inline, Android modal), wartosci kontrolowane przez rodzica. Reuse w history (day picker) i session/[id] (start/end).
+- `useSessionById(id)` — nowy hook w `features/sessions/hooks.ts`, query po jednej sesji. Cache key `['session', id]`; `useUpdateSession` i `useDeleteSession` invalidiuja ten klucz dodatkowo.
+- `SessionListItem` zostaje klikalny przez `Link` z `expo-router` (asChild + Pressable). Opcja `disableNavigation` zachowana na przyszly read-only kontekst.
+- Helpery `formatDateShort`, `formatDateNoYear`, `dayKeyInAppTz` dodane do `lib/time.ts` (wszystkie TZ-safe).
+- Historia: dwa tryby — „Wybierz dzien" (FlatList z DatePicker, max = today) i „Ostatnie 14 dni" (SectionList grouped by `dayKeyInAppTz`). Brak paginacji w MVP.
+- session/[id]: aktywna sesja (end_at null) — koniec nieedytowalny (informacja na karcie), update wysyla tylko `start_at/type/notes`.
 
 ---
 

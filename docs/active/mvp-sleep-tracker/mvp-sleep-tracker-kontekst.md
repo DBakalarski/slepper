@@ -1,7 +1,7 @@
 # Kontekst: MVP — Aplikacja do trackowania snu i okien aktywności dziecka
 
 **Branch:** `feature/mvp-sleep-tracker`
-**Ostatnia aktualizacja:** 2026-05-27
+**Ostatnia aktualizacja:** 2026-05-27 (Faza 3 zamknieta)
 
 ## Źródła
 - Requirements doc: brak (nie użyto `/dev-brainstorm`)
@@ -222,3 +222,36 @@ Re-run `/dev-docs-review docs/active/mvp-sleep-tracker 2` po cyklu napraw. Sever
 2. DST-safe end-of-day: `startOfDayInAppTz(addDays(date, 1))` zamiast `+ 24h`.
 3. Hook API: `string | null` (ISO) > `Date | null` dla useEffect deps stability (string deepEqual = primitive equality).
 4. Migration constraint sanity: `NOT NULL` + `ON DELETE SET NULL` to sprzeczność — wykrywać w pre-push review.
+
+## Log fazy 3 (2026-05-27)
+
+### Wykonane
+- Dependency: `@react-native-community/datetimepicker@8.4.4` zainstalowany przez `npx expo install` (SDK 54 compat).
+- Komponenty `DatePickerField` i `TimePickerField` w `src/components/` — wrappery natywnego pickera (iOS inline / Android modal), wartosci kontrolowane.
+- Helpery time.ts: `formatDateShort`, `formatDateNoYear`, `dayKeyInAppTz` (wszystkie przez `toZonedTime`, TZ-safe).
+- `useSessionById(id)` — nowy hook w `features/sessions/hooks.ts` z `queryKey: ['session', id]`. `useUpdateSession` i `useDeleteSession` invalidiuja ten klucz dodatkowo.
+- `src/app/(app)/history.tsx` — przepisany z placeholdera na dwutrybowy ekran (day picker + grouped 14-day list via `SectionList`).
+- `src/app/(app)/session/[id].tsx` — nowy ekran edycji sesji (formularz useState, walidacja, Alert.alert na delete, banner "Sesja w toku" dla aktywnej sesji).
+- `SessionListItem` opakowany w `Link asChild + Pressable` (klikalny przez całą rodzinę), opcja `disableNavigation` dla read-only przyszłosci.
+- `index.tsx`: link "Pokaz wszystkie" w nagłowku sekcji "Sesje dzisiaj" → `/history`.
+- `(app)/_layout.tsx`: `<Tabs.Screen name="session/[id]" options={{ href: null }} />` — route ukryta z tab bara.
+
+### Odchylenia od planu
+- Plan w zadaniach mowil o "FlatList" w history; uzyto `SectionList` dla trybu "wszystkie" (sekcje per dzien) — funkcjonalnie pelnoprawne, lepsze dla grouping bez wlasnej logiki sticky-header.
+- Plan wspominal `useForm` z `react-hook-form` "lub useState" — wybrano `useState` (jeden formularz, brak walidacji w realtime, brak nowej dependency).
+- "Pokaz wszystkie 5 ostatnich" było już zaimplementowane w Fazie 2 (slice(0,5) w `index.tsx`). Faza 3 dodała tylko link `Pokaz wszystkie` przy nagłowku sekcji.
+- Day picker w history ma `maximumDate={today}` (nie da się wybrać przyszłego dnia). Plan nie mówił explicite, ale to oczywiste UX.
+- Zamiast natywnego dropdown dla typu uzyto chipow (pattern z `BackdatedSessionModal`) — spojnosc designu.
+- Faza 3 nie ma checkboxow `Test:` — brak setupu testow w projekcie, zgodnie z polityka CLAUDE.md.
+
+### Decyzje implementacyjne Fazy 3
+- Edycja aktywnej sesji (end_at = null): nie pokazujemy pol "Godz. koniec" / "Data konca", w `update` nie wysylamy `end_at`. Banner informuje usera o stanie.
+- `combineDateAndTime(datePart, timePart)`: helper łączący wybor z DatePicker (data) z TimePicker (godzina). Operuje na local fields urządzenia — picker zwraca już wartości widoczne dla usera w jego strefie. Konwersja do UTC dzieje sie przez `toISOString()` w submit.
+- `useSessionById` jako pojedynczy fetch (`maybeSingle`) niezalezny od `sessionsByChildKey` — pozwala otworzyc edycje sesji która nie jest w obecnym oknie listy (np. z 30 dni temu).
+- `groupByDay` zachowuje sortowanie z `useSessions` (desc po start_at) — najnowszy dzien pierwszy, w obrębie dnia: najnowsza sesja pierwsza.
+- ALL_RANGE_DAYS = 14 (sztywno) — MVP scope; paginacja gdy bedzie potrzeba.
+
+### Walidacja
+- `npx tsc --noEmit` → PASS (0 błędów)
+- `npm run lint` → PASS (0 errors, 0 warnings)
+- Manual mobile testing: pending — checklist w `manual-test-faza-3.md` (11 scenariuszy).
