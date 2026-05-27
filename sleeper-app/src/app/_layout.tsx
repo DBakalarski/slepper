@@ -7,7 +7,12 @@ import { useEffect } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AuthProvider } from '@/features/auth/AuthProvider';
+import { configureNotificationHandler } from '@/lib/notifications';
 import { queryClient, setupFocusManager } from '@/lib/query-client';
+
+// Wolane modulowo (raz) — handler musi byc skonfigurowany przed pierwsza
+// notyfikacja, niezaleznie od momentu permission request (Faza 5).
+configureNotificationHandler();
 
 export default function RootLayout() {
   useEffect(() => {

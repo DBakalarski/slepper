@@ -3,6 +3,7 @@ import { ActivityIndicator, Pressable, Text, TextInput, View } from 'react-nativ
 
 import { useCreateChild } from '@/features/children/hooks';
 import { extractErrorMessage } from '@/lib/extract-error-message';
+import { requestPermissions } from '@/lib/notifications';
 
 const AVATAR_COLORS: string[] = ['#7C6BAD', '#E08B6F', '#1E1B4B', '#5A8B6F', '#B86F8B'];
 const BIRTH_DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
@@ -43,12 +44,23 @@ export function AddChildForm({ familyId }: AddChildFormProps) {
       return;
     }
     setValidationError(null);
-    createChild.mutate({
-      familyId,
-      name: trimmedName,
-      birthDate,
-      avatarColor,
-    });
+    createChild.mutate(
+      {
+        familyId,
+        name: trimmedName,
+        birthDate,
+        avatarColor,
+      },
+      {
+        // Po dodaniu pierwszego dziecka prosimy o uprawnienia do powiadomien
+        // (Faza 5). Idempotent — przy kolejnych dzieciach status juz granted/denied
+        // i system nie pokaze promptu ponownie. Fire-and-forget; nie blokujemy
+        // przejscia do glownego ekranu jesli user odmowi.
+        onSuccess: () => {
+          void requestPermissions();
+        },
+      },
+    );
   }
 
   return (

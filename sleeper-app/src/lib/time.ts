@@ -131,3 +131,29 @@ export function combineDateAndTimeInAppTz(datePart: Date, timePart: Date): Date 
   const timeKey = format(toZonedTime(timePart, APP_TIMEZONE), 'HH:mm');
   return fromZonedTime(`${dayKey}T${timeKey}:00`, APP_TIMEZONE);
 }
+
+// Tabela referencyjna okien aktywnosci wg wieku dziecka. Wartosci w minutach,
+// uzywane do schedulowania powiadomienia "Drzemka za ~15min" (Faza 5).
+// Zrodlo: typowe wartosci z poradnikow snu niemowlecego (np. Precious Little
+// Sleep, baby sleep consultants). MVP — przyblizenie, do dostrojenia per dziecko
+// pozniej.
+//
+// Granice wiekowe w pelnych miesiacach od daty urodzenia (1 miesiac = 30 dni
+// dla uproszczenia, kalkulacji nie potrzebujemy z precyzja kalendarzowa).
+const DAYS_PER_MONTH = 30;
+const WAKE_WINDOW_0_3M_MIN = 75;
+const WAKE_WINDOW_3_6M_MIN = 105;
+const WAKE_WINDOW_6_9M_MIN = 150;
+const WAKE_WINDOW_9_12M_MIN = 180;
+const WAKE_WINDOW_12M_PLUS_MIN = 240;
+
+export function targetWakeWindowMinutes(birthDate: Date, now: Date = new Date()): number {
+  const ageMs = now.getTime() - birthDate.getTime();
+  const ageDays = ageMs / (MS_PER_SECOND * SEC_PER_MINUTE * MIN_PER_HOUR * 24);
+  const ageMonths = ageDays / DAYS_PER_MONTH;
+  if (ageMonths < 3) return WAKE_WINDOW_0_3M_MIN;
+  if (ageMonths < 6) return WAKE_WINDOW_3_6M_MIN;
+  if (ageMonths < 9) return WAKE_WINDOW_6_9M_MIN;
+  if (ageMonths < 12) return WAKE_WINDOW_9_12M_MIN;
+  return WAKE_WINDOW_12M_PLUS_MIN;
+}

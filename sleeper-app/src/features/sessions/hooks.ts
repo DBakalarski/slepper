@@ -7,6 +7,11 @@ import {
 } from '@tanstack/react-query';
 
 import { useAuth } from '@/features/auth/AuthProvider';
+import {
+  cancelNapNotificationSafe,
+  rescheduleAfterDelete,
+  rescheduleNapNotification,
+} from '@/features/sessions/schedule-nap-side-effects';
 import { translateSessionError } from '@/features/sessions/translate-session-error';
 import { supabase } from '@/lib/supabase';
 
@@ -192,6 +197,11 @@ export function useStartSession(): UseMutationResult<
       if (error) throw new Error(translateSessionError(error));
       return rowToSession(data);
     },
+    // Po starcie sesji — anuluj pending notyfikacje "Drzemka za 15min".
+    // Dziecko juz spi, przypomnienie niepotrzebne (Faza 5).
+    onSuccess: ({ child_id }) => {
+      void cancelNapNotificationSafe(child_id);
+    },
     // Optimistic: pokaz aktywna sesje natychmiast, rollback przy bledzie.
     onMutate: async ({ childId, type, startAt }) => {
       if (!user?.id) return { previousActive: undefined };
@@ -263,6 +273,12 @@ export function useEndSession(): UseMutationResult<
         queryClient.setQueryData(activeSessionKey(childId), context.previousActive);
       }
     },
+    // Po zakonczeniu sesji — schedule notyfikacja na targetEnd - 15min.
+    // Fire-and-forget; powiadomienia to nie-krytyczny boczny efekt (Faza 5).
+    onSuccess: (data) => {
+      const endAt = data.end_at ? new Date(data.end_at) : null;
+      void rescheduleNapNotification(data.child_id, endAt);
+    },
     onSettled: (_data, _err, { childId }) => {
       void queryClient.invalidateQueries({ queryKey: activeSessionKey(childId) });
       invalidateChildSessions(queryClient, childId);
@@ -299,6 +315,16 @@ export function useUpdateSession() {
       void queryClient.invalidateQueries({ queryKey: activeSessionKey(childId) });
       void queryClient.invalidateQueries({ queryKey: ['session', data.id] });
       invalidateChildSessions(queryClient, childId);
+      // Edycja sesji moze zmienic end_at -> przeplanuj notyfikacje. Dla aktywnej
+      // sesji (end_at === null) anulujemy (dziecko nadal spi). Dla zakonczonej —
+      // ustawiamy nowy target na podstawie nowego end_at (Faza 5).
+      //
+      // Uwaga: edytujemy mozliwie nie-ostatnia sesje, ale w MVP zawsze
+      // rescheduluje sie wzgledem TEJ sesji — uproszczenie zaakceptowane,
+      // bo ostatnia zakonczona sesja jest faktycznym zrodlem prawdy "od kiedy
+      // okno aktywnosci". Korner-case (edycja starej sesji) ignorowany w MVP.
+      const endAt = data.end_at ? new Date(data.end_at) : null;
+      void rescheduleNapNotification(data.child_id, endAt);
     },
   });
 }
@@ -320,6 +346,10 @@ export function useDeleteSession() {
       void queryClient.invalidateQueries({ queryKey: activeSessionKey(childId) });
       void queryClient.invalidateQueries({ queryKey: ['session', sessionId] });
       invalidateChildSessions(queryClient, childId);
+      // Delete moze zmienic ktora sesja jest "ostatnia zakonczona". Helper
+      // pobiera aktualnie ostatnia sesje z bazy i (re)schedule notyfikacje.
+      // Jesli nie ma juz zadnej zakonczonej sesji -> cancel (Faza 5).
+      void rescheduleAfterDelete(childId);
     },
   });
 }
