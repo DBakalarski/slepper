@@ -3,7 +3,7 @@
 **Branch:** `feature/mvp-sleep-tracker`
 **Ostatnia aktualizacja:** 2026-05-27
 
-Postęp: 4 / 7 faz ukończone (Faza 1–4: kod gotowy, Faza 1–3 review CZYSTE, mobile-manual verification pending)
+Postęp: 4 / 7 faz ukończone (Faza 1–4: kod gotowy, Faza 1–3 review CZYSTE, Faza 4 review z ZASTRZEZENIAMI (1 × P2), mobile-manual verification pending)
 
 ---
 
@@ -206,6 +206,20 @@ Severity gate (cykl 2, po fix `04622d7`): ✅ **CZYSTE** (0 × P1, 0 × P2, 5 ×
 - [x] Wywołać hook w `app/(app)/_layout.tsx` (na poziomie aktywnego dziecka)
 - [ ] Weryfikacja: telefon A startuje sen → telefon B widzi aktywną sesję w <2s — manual test (patrz `manual-test-faza-4.md`)
 - [ ] Weryfikacja: telefon A wyłącza wifi → wykonuje akcję → włącza wifi → telefon B dostaje update w <5s — manual test (patrz `manual-test-faza-4.md`)
+
+### Do poprawy po review fazy 4
+
+Severity gate (cykl 1): ⚠️ **KONTYNUUJ Z ZASTRZEZENIAMI** (0 × P1, 1 × P2, 3 × P3). Pełny raport: `review-faza-4.md`.
+
+**P2 — Important:**
+
+- [x] 🟠 [P2-scenario] **hooks.ts:91 + useRealtimeSessions.ts:40** — `useSessionById` queryKey `['session', id]` (singular) nie matchuje invalidacji `['sessions']` (plural). Form edycji nie odswieza sie na realtime event → silent overwrite gdy partner edytuje rownolegle. Wybor: (a) dodac `invalidateQueries({ queryKey: ['session'] })` w hooku, (b) banner "Sesja byla edytowana" (z Fazy 3 P3 backlog), (c) swiadome odlozenie + komentarz w hooku. **Fix (cykl 1):** wybrano opcje (a) — dodana inwalidacja prefixu `['session']` w `useRealtimeSessions`. Bezpieczne dla otwartego formularza: `useState` w `session/[id].tsx` inicjalizuje sie raz przez `form === null` guard, refetch nie nadpisuje dirty stanu. Banner konfliktow odlozony do Fazy 5/6 (TODO w hooku, wymaga `updated_at`).
+
+**P3 — Nit (opcjonalne, backlog):**
+
+- [ ] 🟡 [P3-arch] **useRealtimeSessions.ts:50** — `queryClient` w dep array jest redundantne (stabilny ref z `QueryClientProvider`), ale wymagane przez eslint exhaustive-deps. Opcjonalny komentarz `// queryClient stable from provider`.
+- [ ] 🟡 [P3-observability] **useRealtimeSessions.ts:43** — `.subscribe()` bez callbacka statusu. Dodanie `(status) => { if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') console.warn(...) }` pomoze debugowac problemy WS przed Sentry (Faza 5/6).
+- [ ] 🟡 [P3-scenario] **manual-test-faza-4.md scenariusz 5** — brak deadline'u dla dluzszego offline (>5 min); pokrycie zalezy od refetch on focus (`focusManager` z Fazy 1 P2), nie od WS replay. Udokumentowac w `Notatki implementacyjne Fazy 4` lub dodac scenariusz.
 
 ### Notatki implementacyjne Fazy 4
 

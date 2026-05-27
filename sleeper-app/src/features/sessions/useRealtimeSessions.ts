@@ -32,12 +32,22 @@ export function useRealtimeSessions(childId: string | null): void {
           filter: `child_id=eq.${childId}`,
         },
         () => {
-          // Inwalidacja calego klucza ['sessions'] — pokrywa:
+          // Inwalidacja calego prefixu ['sessions'] — pokrywa:
           //  - useSessions(childId, range) -> ['sessions', childId, startISO, endISO]
           //  - useActiveSession(childId) -> ['sessions', childId, 'active']
-          //  - useLastEndedSession, useSessionById itd.
+          //  - useLastEndedSession -> ['sessions', childId, 'last-ended']
           // TanStack zrobi refetch tylko dla aktywnych observerow.
           void queryClient.invalidateQueries({ queryKey: ['sessions'] });
+          // useSessionById uzywa prefixu ['session', id] (singular) — wymaga
+          // osobnej inwalidacji, inaczej ekran edycji session/[id].tsx nie
+          // dostaje swiezych danych po zmianie od partnera (P2 review faza 4).
+          // Bezpieczne dla otwartego formularza: stan `form` w session/[id].tsx
+          // jest useState inicjalizowany RAZ (`form === null` guard w useEffect),
+          // refetch nie nadpisze edytowanych pol.
+          // TODO (Faza 5/6): banner "Sesja byla edytowana przez partnera" gdy
+          // refetch zmieni dane przy dirty form — wymaga porownania updated_at
+          // (kolumna do dodania) i detekcji dirty state.
+          void queryClient.invalidateQueries({ queryKey: ['session'] });
         },
       )
       .subscribe();
