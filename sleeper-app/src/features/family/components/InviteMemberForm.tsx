@@ -40,7 +40,7 @@ export function InviteMemberForm({ familyId, currentEmail }: InviteMemberFormPro
 
   return (
     <View>
-      <Text className="text-sm font-semibold text-navy">Zapros partnera</Text>
+      <Text className="text-sm font-semibold text-navy dark:text-cream">Zapros partnera</Text>
       <Text className="mt-1 text-xs text-purple">
         Partner po sign-in zobaczy zaproszenie i bedzie mogl je zaakceptowac.
       </Text>
@@ -53,7 +53,7 @@ export function InviteMemberForm({ familyId, currentEmail }: InviteMemberFormPro
         keyboardType="email-address"
         placeholder="email partnera"
         placeholderTextColor="#9d97b5"
-        className="mt-3 rounded-2xl border border-purple/30 bg-cream px-4 py-3 text-base text-navy"
+        className="mt-3 rounded-2xl border border-purple/30 bg-cream px-4 py-3 text-base text-navy dark:bg-dark-surface dark:text-cream"
       />
 
       {error ? <Text className="mt-2 text-xs text-orange">{error}</Text> : null}

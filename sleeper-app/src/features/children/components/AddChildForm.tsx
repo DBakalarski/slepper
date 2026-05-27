@@ -64,8 +64,8 @@ export function AddChildForm({ familyId }: AddChildFormProps) {
   }
 
   return (
-    <View className="rounded-2xl bg-white p-5">
-      <Text className="text-lg font-semibold text-navy">Dodaj dziecko</Text>
+    <View className="rounded-2xl bg-white p-5 dark:bg-dark-card">
+      <Text className="text-lg font-semibold text-navy dark:text-cream">Dodaj dziecko</Text>
       <Text className="mt-1 text-sm text-purple">
         Aby rozpoczac trackowanie, dodaj pierwsze dziecko.
       </Text>
@@ -78,7 +78,7 @@ export function AddChildForm({ familyId }: AddChildFormProps) {
             onChangeText={setName}
             placeholder="np. Maja"
             placeholderTextColor="#7C6BAD"
-            className="mt-1 rounded-xl border border-purple/30 px-3 py-2 text-base text-navy"
+            className="mt-1 rounded-xl border border-purple/30 px-3 py-2 text-base text-navy dark:text-cream"
             editable={!isPending}
             accessibilityLabel="Imie dziecka"
           />
@@ -94,7 +94,7 @@ export function AddChildForm({ familyId }: AddChildFormProps) {
             keyboardType="numbers-and-punctuation"
             autoCapitalize="none"
             autoCorrect={false}
-            className="mt-1 rounded-xl border border-purple/30 px-3 py-2 text-base text-navy"
+            className="mt-1 rounded-xl border border-purple/30 px-3 py-2 text-base text-navy dark:text-cream"
             editable={!isPending}
             accessibilityLabel="Data urodzenia dziecka"
           />

@@ -55,7 +55,7 @@ export default function SignInScreen() {
 
           <View className="mt-8 gap-4">
             <View>
-              <Text className="mb-2 text-sm font-medium text-navy">Email</Text>
+              <Text className="mb-2 text-sm font-medium text-navy dark:text-cream">Email</Text>
               <TextInput
                 value={email}
                 onChangeText={setEmail}
@@ -65,12 +65,12 @@ export default function SignInScreen() {
                 textContentType="emailAddress"
                 placeholder="email@example.com"
                 placeholderTextColor="#9d97b5"
-                className="rounded-2xl border border-purple/30 bg-white px-4 py-3 text-base text-navy"
+                className="rounded-2xl border border-purple/30 bg-white px-4 py-3 text-base text-navy dark:bg-dark-card dark:text-cream"
               />
             </View>
 
             <View>
-              <Text className="mb-2 text-sm font-medium text-navy">Haslo</Text>
+              <Text className="mb-2 text-sm font-medium text-navy dark:text-cream">Haslo</Text>
               <TextInput
                 value={password}
                 onChangeText={setPassword}
@@ -79,7 +79,7 @@ export default function SignInScreen() {
                 textContentType="password"
                 placeholder="••••••••"
                 placeholderTextColor="#9d97b5"
-                className="rounded-2xl border border-purple/30 bg-white px-4 py-3 text-base text-navy"
+                className="rounded-2xl border border-purple/30 bg-white px-4 py-3 text-base text-navy dark:bg-dark-card dark:text-cream"
               />
             </View>
 
@@ -104,8 +104,8 @@ export default function SignInScreen() {
             </Pressable>
 
             <View className="mt-4 flex-row justify-center gap-2">
-              <Text className="text-sm text-purple">Nie masz konta?</Text>
-              <Link href="/sign-up" className="text-sm font-semibold text-navy">
+              <Text className="text-sm text-purple dark:text-cream/70">Nie masz konta?</Text>
+              <Link href="/sign-up" className="text-sm font-semibold text-navy dark:text-cream">
                 Zaloz konto
               </Link>
             </View>

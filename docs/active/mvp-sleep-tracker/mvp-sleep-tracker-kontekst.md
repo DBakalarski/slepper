@@ -420,3 +420,18 @@ Severity gate: ✅ **GOTOWE DO KONTYNUACJI** (0 × P1, 0 × P2, 3 × P3 backlog 
 - TestFlight (Apple Developer $99 + App Store Connect)
 - Custom ikona/splash design (opcjonalne, post-MVP)
 - 7 scenariuszy manual mobile testing
+
+### Review fazy 6 (2026-05-27, cykl 1)
+
+**Severity gate: ⚠️ KONTYNUUJ Z ZASTRZEZENIAMI** — 0 × P1, 3 × P2, 6 × P3. Pełny raport: `review-faza-6.md`.
+
+**Kluczowe findings:**
+
+- 🟠 P2 (correctness) — `text-navy` na `bg-cream dark:bg-dark-bg` BEZ dark variant tekstu = kontrast 1.4:1 w dark mode, WCAG AA fail. Lokalizacje: empty/error states w session/[id].tsx, history.tsx, NoFamilyBanner w index.tsx.
+- 🟠 P2 (arch/UX) — karty `bg-white` i `bg-cream` w wielu komponentach (TodayStatsCard, SessionListItem, QuickActions, formularze, modal Backdated, sekcje Rodzina) nie maja `dark:bg-dark-card`. Dark mode = "wyspy light mode" na ciemnym tle. Decyzja "selective dark variants" byla swiadoma, ale rezultat niespojny.
+- 🟠 P2 (correctness) — TextInputy `bg-white text-navy` w sign-in/sign-up, SessionEditForm, BackdatedSessionModal bez dark variant. Wizualnie "out-of-place" w dark scenie.
+- 🟡 P3 × 6: nity (tabBarStyle bez useMemo, tabBarInactiveTintColor identyczny w obu trybach, dark-surface kolor dead code, BigActionButton handlePress order, eas-cli devDependency, NativeWind subscriber cost).
+
+**Decyzja:** P2 wymaga decyzji userowej — albo (a) ~30-60 min uzupelnienia `dark:*` na kartach + inputach + empty states (pelny dark mode WCAG AA), albo (b) zaakceptowanie jako "polish dla siebie" MVP i przejscie do manual testing scenariuszy. P3 backlog.
+
+**Mobile-manual:** 7 scenariuszy w `manual-test-faza-6.md` pozostaje pending operator (fizyczne urzadzenie + Expo Go/dev build). Scenariusze 1-2 (haptic) sa P1 z perspektywy core UX, nie blokuja code review gate.

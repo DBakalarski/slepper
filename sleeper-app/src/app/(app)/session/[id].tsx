@@ -50,7 +50,7 @@ export default function SessionEditScreen() {
     return (
       <SafeAreaView className="flex-1 bg-cream dark:bg-dark-bg">
         <View className="flex-1 items-center justify-center px-6">
-          <Text className="text-base text-navy">Brak ID sesji.</Text>
+          <Text className="text-base text-navy dark:text-cream">Brak ID sesji.</Text>
         </View>
       </SafeAreaView>
     );
@@ -70,7 +70,7 @@ export default function SessionEditScreen() {
     return (
       <SafeAreaView className="flex-1 bg-cream dark:bg-dark-bg">
         <View className="flex-1 items-center justify-center gap-3 px-6">
-          <Text className="text-base text-navy">Nie udalo sie zaladowac sesji.</Text>
+          <Text className="text-base text-navy dark:text-cream">Nie udalo sie zaladowac sesji.</Text>
           {sessionQuery.isError ? (
             <Text className="text-xs text-orange">{extractErrorMessage(sessionQuery.error)}</Text>
           ) : null}
@@ -154,7 +154,7 @@ export default function SessionEditScreen() {
         className="flex-1">
         <ScrollView contentContainerClassName="px-6 py-6 gap-4">
           <View className="flex-row items-center justify-between">
-            <Text className="text-2xl font-semibold text-navy">Edytuj sesje</Text>
+            <Text className="text-2xl font-semibold text-navy dark:text-cream">Edytuj sesje</Text>
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Anuluj"

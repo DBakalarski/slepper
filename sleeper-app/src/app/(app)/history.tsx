@@ -82,8 +82,8 @@ export default function HistoryScreen() {
       <View className="mt-4 flex-1">
         {!hasChild ? (
           <View className="flex-1 items-center justify-center px-6">
-            <Text className="text-base text-navy">Brak dziecka w rodzinie.</Text>
-            <Text className="mt-1 text-xs text-purple">
+            <Text className="text-base text-navy dark:text-cream">Brak dziecka w rodzinie.</Text>
+            <Text className="mt-1 text-xs text-purple dark:text-cream/70">
               Dodaj dziecko na ekranie Dzisiaj, zeby zobaczyc historie.
             </Text>
           </View>
@@ -93,7 +93,7 @@ export default function HistoryScreen() {
           </View>
         ) : sessionsQuery.isError ? (
           <View className="flex-1 items-center justify-center px-6">
-            <Text className="text-base text-navy">Blad ladowania historii.</Text>
+            <Text className="text-base text-navy dark:text-cream">Blad ladowania historii.</Text>
             <Text className="mt-1 text-xs text-orange">
               {extractErrorMessage(sessionsQuery.error)}
             </Text>
@@ -120,8 +120,8 @@ function ModeChip({ label, selected, onPress }: ModeChipProps) {
       accessibilityRole="button"
       accessibilityState={{ selected }}
       onPress={onPress}
-      className={`rounded-xl px-3 py-2 ${selected ? 'bg-navy' : 'bg-white'}`}>
-      <Text className={`text-xs font-semibold ${selected ? 'text-cream' : 'text-navy'}`}>
+      className={`rounded-xl px-3 py-2 ${selected ? 'bg-navy dark:bg-dark-surface' : 'bg-white dark:bg-dark-card'}`}>
+      <Text className={`text-xs font-semibold ${selected ? 'text-cream' : 'text-navy dark:text-cream'}`}>
         {label}
       </Text>
     </Pressable>
@@ -136,7 +136,7 @@ function FlatHistoryList({ sessions }: ListProps) {
   if (sessions.length === 0) {
     return (
       <View className="flex-1 items-center justify-center px-6">
-        <Text className="text-base text-navy">Brak sesji tego dnia.</Text>
+        <Text className="text-base text-navy dark:text-cream">Brak sesji tego dnia.</Text>
       </View>
     );
   }
@@ -181,7 +181,7 @@ function GroupedHistoryList({ sessions }: ListProps) {
   if (sections.length === 0) {
     return (
       <View className="flex-1 items-center justify-center px-6">
-        <Text className="text-base text-navy">Brak sesji w ostatnich {ALL_RANGE_DAYS} dniach.</Text>
+        <Text className="text-base text-navy dark:text-cream">Brak sesji w ostatnich {ALL_RANGE_DAYS} dniach.</Text>
       </View>
     );
   }

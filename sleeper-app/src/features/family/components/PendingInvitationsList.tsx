@@ -36,13 +36,13 @@ export function PendingInvitationsList({ familyId }: PendingInvitationsListProps
 
   return (
     <View>
-      <Text className="text-sm font-semibold text-navy">Oczekujace zaproszenia</Text>
+      <Text className="text-sm font-semibold text-navy dark:text-cream">Oczekujace zaproszenia</Text>
       <View className="mt-2 gap-2">
         {invitations.map((inv) => (
           <View
             key={inv.id}
-            className="flex-row items-center justify-between rounded-xl bg-cream px-3 py-2">
-            <Text className="flex-1 text-sm text-navy">{inv.email}</Text>
+            className="flex-row items-center justify-between rounded-xl bg-cream px-3 py-2 dark:bg-dark-surface">
+            <Text className="flex-1 text-sm text-navy dark:text-cream">{inv.email}</Text>
             <Pressable
               accessibilityRole="button"
               onPress={() => handleRevoke(inv)}

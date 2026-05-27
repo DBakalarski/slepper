@@ -46,15 +46,15 @@ export function SessionEditForm({
     <>
       {isActive ? (
         <View className="rounded-xl bg-orange/15 px-4 py-3">
-          <Text className="text-xs font-semibold text-navy">Sesja w toku</Text>
-          <Text className="mt-1 text-xs text-purple">
+          <Text className="text-xs font-semibold text-navy dark:text-cream">Sesja w toku</Text>
+          <Text className="mt-1 text-xs text-purple dark:text-cream/70">
             Mozna zmienic typ, start i notatki. Koniec ustawi sie automatycznie po
             zakonczeniu sesji.
           </Text>
         </View>
       ) : null}
 
-      <View className="rounded-2xl bg-white p-4 gap-4">
+      <View className="rounded-2xl bg-white p-4 gap-4 dark:bg-dark-card">
         <View>
           <Text className="text-xs font-semibold text-purple">Typ</Text>
           <View className="mt-2 flex-row gap-2">
@@ -142,7 +142,7 @@ export function SessionEditForm({
             placeholderTextColor="#7C6BAD"
             multiline
             numberOfLines={3}
-            className="mt-1 min-h-[80px] rounded-xl border border-purple/30 px-3 py-2 text-base text-navy"
+            className="mt-1 min-h-[80px] rounded-xl border border-purple/30 px-3 py-2 text-base text-navy dark:text-cream"
             editable={!isPending}
             accessibilityLabel="Notatki do sesji"
             textAlignVertical="top"

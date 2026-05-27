@@ -104,7 +104,7 @@ export function TodayStatsCard({
   const agg = computeAggregates(sessions, activeSession, now, startOfDay);
 
   return (
-    <View className="rounded-2xl bg-white p-5">
+    <View className="rounded-2xl bg-white p-5 dark:bg-dark-card">
       <Text className="text-xs font-semibold uppercase tracking-wide text-purple">Dzisiaj</Text>
       <View className="mt-3 flex-row gap-4">
         <StatItem label="Sen nocny" value={formatDuration(agg.nightSleepMs)} />
@@ -124,7 +124,7 @@ function StatItem({ label, value }: StatItemProps) {
   return (
     <View className="flex-1">
       <Text className="text-xs text-purple">{label}</Text>
-      <Text className="mt-1 text-base font-semibold text-navy">{value}</Text>
+      <Text className="mt-1 text-base font-semibold text-navy dark:text-cream">{value}</Text>
     </View>
   );
 }

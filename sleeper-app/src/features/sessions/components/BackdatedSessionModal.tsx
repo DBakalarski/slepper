@@ -97,10 +97,10 @@ export function BackdatedSessionModal({
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={handleClose}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        className="flex-1 bg-cream">
+        className="flex-1 bg-cream dark:bg-dark-bg">
         <ScrollView contentContainerClassName="px-6 py-6 gap-4">
           <View className="flex-row items-center justify-between">
-            <Text className="text-2xl font-semibold text-navy">Dodaj sesje wstecz</Text>
+            <Text className="text-2xl font-semibold text-navy dark:text-cream">Dodaj sesje wstecz</Text>
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Zamknij"
@@ -109,7 +109,7 @@ export function BackdatedSessionModal({
             </Pressable>
           </View>
 
-          <View className="rounded-2xl bg-white p-4 gap-3">
+          <View className="rounded-2xl bg-white p-4 gap-3 dark:bg-dark-card">
             <View>
               <Text className="text-xs font-semibold text-purple">Typ</Text>
               <View className="mt-2 flex-row gap-2">
@@ -136,7 +136,7 @@ export function BackdatedSessionModal({
                 autoCapitalize="none"
                 autoCorrect={false}
                 keyboardType="numbers-and-punctuation"
-                className="mt-1 rounded-xl border border-purple/30 px-3 py-2 text-base text-navy"
+                className="mt-1 rounded-xl border border-purple/30 px-3 py-2 text-base text-navy dark:text-cream"
                 editable={!isPending}
                 accessibilityLabel="Data sesji"
               />
@@ -153,7 +153,7 @@ export function BackdatedSessionModal({
                   autoCapitalize="none"
                   autoCorrect={false}
                   keyboardType="numbers-and-punctuation"
-                  className="mt-1 rounded-xl border border-purple/30 px-3 py-2 text-base text-navy"
+                  className="mt-1 rounded-xl border border-purple/30 px-3 py-2 text-base text-navy dark:text-cream"
                   editable={!isPending}
                   accessibilityLabel="Godzina rozpoczecia"
                 />
@@ -168,7 +168,7 @@ export function BackdatedSessionModal({
                   autoCapitalize="none"
                   autoCorrect={false}
                   keyboardType="numbers-and-punctuation"
-                  className="mt-1 rounded-xl border border-purple/30 px-3 py-2 text-base text-navy"
+                  className="mt-1 rounded-xl border border-purple/30 px-3 py-2 text-base text-navy dark:text-cream"
                   editable={!isPending}
                   accessibilityLabel="Godzina zakonczenia"
                 />

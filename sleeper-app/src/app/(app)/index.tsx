@@ -83,10 +83,10 @@ export default function TodayScreen() {
 
         {incoming.length > 0 ? (
           <View className="rounded-2xl bg-orange/15 p-4">
-            <Text className="text-sm font-semibold text-navy">
+            <Text className="text-sm font-semibold text-navy dark:text-cream">
               {incoming.length === 1 ? 'Masz zaproszenie' : `Masz ${incoming.length} zaproszen`}
             </Text>
-            <Text className="mt-1 text-xs text-purple">
+            <Text className="mt-1 text-xs text-purple dark:text-cream/70">
               Aby dolaczyc do rodziny ktora Cie zaprosila, kliknij ponizej.
             </Text>
             <View className="mt-3 gap-2">
@@ -211,7 +211,7 @@ function ActiveChildSection({ childId }: ActiveChildSectionProps) {
             <Text className="text-xs font-semibold uppercase tracking-wide text-purple">
               Sesje dzisiaj
             </Text>
-            <Link href="/history" className="text-xs font-semibold text-navy underline">
+            <Link href="/history" className="text-xs font-semibold text-navy underline dark:text-cream">
               Pokaz wszystkie
             </Link>
           </View>
@@ -233,11 +233,11 @@ function ActiveChildSection({ childId }: ActiveChildSectionProps) {
 function NoFamilyBanner() {
   return (
     <View className="rounded-2xl bg-orange/15 p-4">
-      <Text className="text-sm font-semibold text-navy">Nie nalezysz do rodziny</Text>
-      <Text className="mt-1 text-xs text-purple">
+      <Text className="text-sm font-semibold text-navy dark:text-cream">Nie nalezysz do rodziny</Text>
+      <Text className="mt-1 text-xs text-purple dark:text-cream/70">
         Przejdz do profilu zeby stworzyc rodzine lub przyjac zaproszenie.
       </Text>
-      <Link href="/profile" className="mt-3 text-sm font-semibold text-navy underline">
+      <Link href="/profile" className="mt-3 text-sm font-semibold text-navy underline dark:text-cream">
         Przejdz do profilu
       </Link>
     </View>
@@ -254,9 +254,9 @@ interface InvitationRowProps {
 function InvitationRow({ invitation, onAccept, isProcessing, errorMessage }: InvitationRowProps) {
   return (
     <View>
-      <View className="flex-row items-center justify-between rounded-xl bg-white px-3 py-2">
+      <View className="flex-row items-center justify-between rounded-xl bg-white px-3 py-2 dark:bg-dark-card">
         <View className="flex-1">
-          <Text className="text-sm font-medium text-navy">{invitation.family_name}</Text>
+          <Text className="text-sm font-medium text-navy dark:text-cream">{invitation.family_name}</Text>
           <Text className="text-xs text-purple">na {invitation.email}</Text>
         </View>
         <Pressable

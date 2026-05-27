@@ -23,12 +23,12 @@ export function SessionListItem({ session, disableNavigation = false }: SessionL
   const durationMs = end ? end.getTime() - start.getTime() : 0;
 
   const content = (
-    <View className="flex-row items-center justify-between rounded-xl bg-white px-4 py-3">
+    <View className="flex-row items-center justify-between rounded-xl bg-white px-4 py-3 dark:bg-dark-card">
       <View className="flex-1">
-        <Text className="text-sm font-semibold text-navy">{TYPE_LABELS[session.type]}</Text>
+        <Text className="text-sm font-semibold text-navy dark:text-cream">{TYPE_LABELS[session.type]}</Text>
         <Text className="mt-0.5 text-xs text-purple">{formatRange(start, end)}</Text>
       </View>
-      <Text className={`text-sm font-semibold ${isActive ? 'text-orange' : 'text-navy'}`}>
+      <Text className={`text-sm font-semibold ${isActive ? 'text-orange' : 'text-navy dark:text-cream'}`}>
         {isActive ? 'trwa' : formatDuration(durationMs)}
       </Text>
     </View>

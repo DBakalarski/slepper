@@ -27,9 +27,9 @@ function MemberRow({ member, currentEmail }: MemberRowProps) {
   const roleLabel = member.role === 'owner' ? 'Wlasciciel' : 'Czlonek';
 
   return (
-    <View className="flex-row items-center justify-between rounded-xl bg-cream px-3 py-2">
+    <View className="flex-row items-center justify-between rounded-xl bg-cream px-3 py-2 dark:bg-dark-surface">
       <View className="flex-1">
-        <Text className="text-sm font-medium text-navy">{label}</Text>
+        <Text className="text-sm font-medium text-navy dark:text-cream">{label}</Text>
         {member.isCurrentUser ? null : (
           <Text className="text-xs text-purple">id: {member.user_id.slice(0, 8)}…</Text>
         )}

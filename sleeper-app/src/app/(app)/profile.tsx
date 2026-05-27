@@ -26,8 +26,8 @@ export default function ProfileScreen() {
           <Text className="mt-1 text-base text-purple dark:text-cream/70">{user?.email}</Text>
         </View>
 
-        <View className="rounded-2xl bg-white p-4">
-          <Text className="text-lg font-semibold text-navy">Rodzina</Text>
+        <View className="rounded-2xl bg-white p-4 dark:bg-dark-card">
+          <Text className="text-lg font-semibold text-navy dark:text-cream">Rodzina</Text>
 
           {familyQuery.isLoading ? (
             <View className="mt-4 items-center">

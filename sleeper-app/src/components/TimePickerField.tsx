@@ -37,7 +37,7 @@ export function TimePickerField({
         onPress={() => setShow(true)}
         disabled={disabled}
         className={`mt-1 rounded-xl border border-purple/30 px-3 py-2 ${disabled ? 'opacity-50' : ''}`}>
-        <Text className="text-base text-navy">{formatTime(value)}</Text>
+        <Text className="text-base text-navy dark:text-cream">{formatTime(value)}</Text>
       </Pressable>
       {show ? (
         <DateTimePicker

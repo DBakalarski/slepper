@@ -35,10 +35,10 @@ function ActionButton({ label, onPress, disabled = false }: ActionButtonProps) {
       accessibilityRole="button"
       onPress={onPress}
       disabled={disabled}
-      className={`flex-1 items-center justify-center rounded-xl bg-white px-3 py-3 ${
+      className={`flex-1 items-center justify-center rounded-xl bg-white px-3 py-3 dark:bg-dark-card ${
         disabled ? 'opacity-50' : ''
       }`}>
-      <Text className="text-center text-xs font-semibold text-navy">{label}</Text>
+      <Text className="text-center text-xs font-semibold text-navy dark:text-cream">{label}</Text>
     </Pressable>
   );
 }
