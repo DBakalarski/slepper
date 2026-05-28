@@ -11,52 +11,56 @@
 
 ### Decyzje (blokery — wymagają zatwierdzenia przed startem implementacji)
 
-- [ ] **Decyzja:** Sleep norm table source (WHO / AAP / polskie zalecenia pediatryczne) → wartości w `sleep-norms.ts`. **Rekomendacja:** WHO+AAP hybrid (0-3m: 14-17h, 4-12m: 12-16h, 1-2y: 11-14h, 3-5y: 10-13h).
-- [ ] **Decyzja:** Gradient karty dziecka w Profilu — `expo-linear-gradient` (extra dep) vs solid color. **Rekomendacja:** solid `bg-purple-light` (SKIP dependency).
-- [ ] **Decyzja:** Sekcja "Rodzina"/invites — gdzie po redesignie. **Rekomendacja:** `/settings` placeholder route za gear icon (Profil bez utraty funkcjonalności).
-- [ ] **Decyzja:** Toggle dark mode — binary (light/dark) vs tri-state (System/Light/Dark bottom sheet). **Rekomendacja:** tri-state bottom sheet (iOS-idiomatic).
-- [ ] **Decyzja:** Bell icon dot — kropka zawsze widoczna (mock `true`) vs no-dot (mock `false`). **Rekomendacja:** mock `true` (matchuje screen #1).
+> **Wszystkie zatwierdzone przez usera 2026-05-28 (autopilot start) — przyjęte rekomendacje z planu.**
+
+- [x] **Decyzja:** Sleep norm table source → **WHO+AAP hybrid** (0-3m: 14-17h, 4-12m: 12-16h, 1-2y: 11-14h, 3-5y: 10-13h). Zatwierdzone 2026-05-28.
+- [x] **Decyzja:** Gradient karty dziecka → **solid `bg-purple-light`** (SKIP `expo-linear-gradient`). Zatwierdzone 2026-05-28.
+- [x] **Decyzja:** Sekcja "Rodzina" → **`/settings` placeholder route** za gear icon. Zatwierdzone 2026-05-28.
+- [x] **Decyzja:** Toggle dark mode → **tri-state bottom sheet** (System/Light/Dark). Zatwierdzone 2026-05-28.
+- [x] **Decyzja:** Bell icon dot → **mock `true`** (matchuje screen #1). Zatwierdzone 2026-05-28.
 
 ### Dependencies (zatwierdzenie usera, regula §8)
 
-- [ ] Sprawdzić `npm ls react-native-svg` w `sleeper-app/` — czy jest tranzytywnie via expo-router
-- [ ] Poinformować usera o `lucide-react-native` przed `npm i`
-- [ ] Decyzja: instalować `expo-linear-gradient` czy SKIP (rekomendacja: SKIP)
-- [ ] `npm i <approved-deps>` w `sleeper-app/`
+> **User zatwierdził 2026-05-28: tylko `lucide-react-native`. `react-native-svg` jeśli brak tranzytywnie — dopytaj. `expo-linear-gradient` SKIP.**
+
+- [x] Sprawdzić `npm ls react-native-svg` w `sleeper-app/` — przed instalacją lucide brak, po instalacji `lucide-react-native@1.17.0` dociaga tranzytywnie `react-native-svg@15.15.5` (BEZ blokera, BEZ osobnej instalacji)
+- [x] Poinformować usera o `lucide-react-native` przed `npm i` — zatwierdzone 2026-05-28
+- [x] Decyzja: `expo-linear-gradient` → SKIP (potwierdzone 2026-05-28)
+- [x] `npm i lucide-react-native` w `sleeper-app/` (zainstalowane 2026-05-28, wersja 1.17.0)
 
 ### Tokens — `sleeper-app/tailwind.config.js`
 
-- [ ] Dodać kolory: `purple-light: '#B8A8D9'`, `purple-soft: '#E8DEF7'`, `success: '#5A8B6F'`, `success-soft: '#D7E5DC'`, `orange-soft: '#FBE8DD'`, `text-muted: '#6B6580'`
-- [ ] Walidacja wartości eye-dropperem na finalnym mockupie/screenie
-- [ ] Dodać `borderRadius`: `card: '20px'`, `pill: '999px'`
-- [ ] Dodać `boxShadow`: `card: '0 4px 12px rgba(30,27,75,0.04)'`
-- [ ] Zweryfikować renderowanie `shadow-card` na iOS + Android (NativeWind v4 → `shadowColor/Offset/Opacity/Radius`)
-- [ ] Dodać `fontFamily`: aliasy `display` (system), `mono` (tabular-nums)
-- [ ] `darkMode: 'class'` (przygotowanie pod Fazę 1)
+- [x] Dodać kolory: `purple-light: '#B8A8D9'`, `purple-soft: '#E8DEF7'`, `success: '#5A8B6F'`, `success-soft: '#D7E5DC'`, `orange-soft: '#FBE8DD'`, `text-muted: '#6B6580'`
+- [ ] Walidacja wartości eye-dropperem na finalnym mockupie/screenie (faza review / on-device)
+- [x] Dodać `borderRadius`: `card: '20px'`, `pill: '999px'`
+- [x] Dodać `boxShadow`: `card: '0 4px 12px rgba(30,27,75,0.04)'`
+- [ ] Zweryfikować renderowanie `shadow-card` na iOS + Android (NativeWind v4 → `shadowColor/Offset/Opacity/Radius`) — faza on-device
+- [x] Dodać `fontFamily`: aliasy `display` (system), `mono` (tabular-nums)
+- [x] `darkMode: 'class'` (przygotowanie pod Fazę 1)
 
 ### Primitives — `sleeper-app/src/components/ui/`
 
-- [ ] `Avatar.tsx` — props `name`, `color?`, `size?`, `image?`; renderuje kółko z inicjałem
-- [ ] `Card.tsx` — wrapper `bg-white dark:bg-dark-card rounded-card p-5 shadow-card`; wariant `gradient?`
-- [ ] `Badge.tsx` — pill, warianty `success | neutral | orange`
-- [ ] `IconButton.tsx` — round button z lucide ikoną, prop `accessibilityLabel`
-- [ ] `ProgressBar.tsx` — value 0..1, `tintClassName?`
-- [ ] `ProgressBarStacked.tsx` — `segments: { value, className }[]`
-- [ ] `ProgressRing.tsx` — SVG, prop `value, size, strokeWidth, label?`
-- [ ] `SegmentedControl.tsx` — iOS pill, Reanimated `useSharedValue` dla active background
-- [ ] `Switch.tsx` — wrapper na RN Switch z naszymi kolorami
+- [x] `Avatar.tsx` — props `name`, `color?`, `size?`, `image?`; renderuje kółko z inicjałem
+- [x] `Card.tsx` — wrapper `bg-white dark:bg-dark-card rounded-card p-5 shadow-card`; wariant `gradient?`
+- [x] `Badge.tsx` — pill, warianty `success | neutral | orange`
+- [x] `IconButton.tsx` — round button z lucide ikoną, prop `accessibilityLabel`
+- [x] `ProgressBar.tsx` — value 0..1, `tintClassName?`
+- [x] `ProgressBarStacked.tsx` — `segments: { value, className }[]`
+- [x] `ProgressRing.tsx` — SVG, prop `value, size, strokeWidth, label?`
+- [x] `SegmentedControl.tsx` — iOS pill, Reanimated `useSharedValue` dla active background
+- [x] `Switch.tsx` — wrapper na RN Switch z naszymi kolorami
 
 ### Helpers — `sleeper-app/src/lib/`
 
-- [ ] `sleep-norms.ts` — `getNormForChild(birthDate, now)` → `{ minHours, maxHours, label }`
+- [x] `sleep-norms.ts` — `getNormForChild(birthDate, now)` → `{ minHours, maxHours, label }`
 
 ### Walidacja Fazy 0
 
-- [ ] `npx tsc --noEmit` w `sleeper-app/` = 0 błędów
-- [ ] `npm run lint` w `sleeper-app/` = 0 błędów
-- [ ] Smoke test: każdy primitive użyty raz na ekranie placeholder (lub w jsdoc-przykładzie)
-- [ ] Commit: `feat(ui-redesign): faza 0 — design system foundation`
-- [ ] Commit log w `docs/commits/`
+- [x] `npx tsc --noEmit` w `sleeper-app/` = 0 błędów (2026-05-28)
+- [x] `npm run lint` w `sleeper-app/` = 0 błędów (2026-05-28)
+- [ ] Smoke test: każdy primitive użyty raz na ekranie placeholder (lub w jsdoc-przykładzie) — pokrywa się w Fazach 2-5, gdzie primitives są konsumowane realnie
+- [x] Commit: `feat(ui-redesign): faza 0 — design system foundation`
+- [x] Commit log w `docs/commits/`
 
 ---
 

@@ -1,7 +1,11 @@
 # UI Redesign — kontekst
 
 **Branch:** `feature/ui-redesign`
-**Ostatnia aktualizacja:** 2026-05-28
+**Ostatnia aktualizacja:** 2026-05-28 (po Fazie 0)
+
+## Postęp
+
+- ✅ **Faza 0 — Design system foundation** (2026-05-28): tokeny tailwind (kolory purple-light/purple-soft/success/success-soft/orange-soft/text-muted, radii card/pill, shadow card, fontFamily display/mono, `darkMode: 'class'`), 9 primitives (`Avatar/Card/Badge/IconButton/ProgressBar/ProgressBarStacked/ProgressRing/SegmentedControl/Switch`), helper `sleep-norms.ts` (WHO+AAP hybrid). `react-native-svg@15.15.5` dociągnięty TRANZYTYWNIE via `lucide-react-native@1.17.0` — brak osobnej instalacji. `expo-linear-gradient` SKIPPED.
 
 ## Powiązane pliki
 
