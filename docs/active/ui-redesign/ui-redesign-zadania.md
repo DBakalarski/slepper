@@ -31,10 +31,10 @@
 ### Tokens — `sleeper-app/tailwind.config.js`
 
 - [x] Dodać kolory: `purple-light: '#B8A8D9'`, `purple-soft: '#E8DEF7'`, `success: '#5A8B6F'`, `success-soft: '#D7E5DC'`, `orange-soft: '#FBE8DD'`, `text-muted: '#6B6580'`
-- [ ] Walidacja wartości eye-dropperem na finalnym mockupie/screenie (faza review / on-device)
+- [ ] Walidacja wartości eye-dropperem na finalnym mockupie/screenie (faza review / on-device) — manual test (patrz `manual-test-faza-0.md`)
 - [x] Dodać `borderRadius`: `card: '20px'`, `pill: '999px'`
 - [x] Dodać `boxShadow`: `card: '0 4px 12px rgba(30,27,75,0.04)'`
-- [ ] Zweryfikować renderowanie `shadow-card` na iOS + Android (NativeWind v4 → `shadowColor/Offset/Opacity/Radius`) — faza on-device
+- [ ] Zweryfikować renderowanie `shadow-card` na iOS + Android (NativeWind v4 → `shadowColor/Offset/Opacity/Radius`) — faza on-device — manual test (patrz `manual-test-faza-0.md`)
 - [x] Dodać `fontFamily`: aliasy `display` (system), `mono` (tabular-nums)
 - [x] `darkMode: 'class'` (przygotowanie pod Fazę 1)
 
@@ -58,9 +58,18 @@
 
 - [x] `npx tsc --noEmit` w `sleeper-app/` = 0 błędów (2026-05-28)
 - [x] `npm run lint` w `sleeper-app/` = 0 błędów (2026-05-28)
-- [ ] Smoke test: każdy primitive użyty raz na ekranie placeholder (lub w jsdoc-przykładzie) — pokrywa się w Fazach 2-5, gdzie primitives są konsumowane realnie
+- [ ] Smoke test: każdy primitive użyty raz na ekranie placeholder (lub w jsdoc-przykładzie) — pokrywa się w Fazach 2-5, gdzie primitives są konsumowane realnie — manual test (patrz `manual-test-faza-0.md`)
 - [x] Commit: `feat(ui-redesign): faza 0 — design system foundation`
 - [x] Commit log w `docs/commits/`
+
+### Do poprawy po review fazy 0
+
+> Review: ✅ CZYSTE (0 P1, 0 P2, 4 P3). Pełny raport: `review-faza-0.md`. Wszystkie pozycje poniżej to **opcjonalne** sugestie do rozważenia w Fazie 6 polish — NIE blokują kontynuacji.
+
+- [ ] 🟡 [nit] **ProgressRing.tsx:36-37, Switch.tsx:15-17** — HEX literals (`#E8DEF7`, `#7C6BAD`, `#F5F0E8`) duplikują wartości z `tailwind.config.js`. Wyciągnąć do `src/lib/colors.ts` (single source of truth) gdy 3+ duplikacji się utrwali. Rozważ w Fazie 6.
+- [ ] 🟡 [nit] **SegmentedControl.tsx:44-48** — `useEffect` deps zawiera `segmentWidth` (SharedValue). Reanimated best practice: usunąć z deps jeśli ESLint plugin akceptuje (`[selectedIndex, durationMs]`).
+- [ ] 🟡 [nit] **Wszystkie primitives** — inferred return type zamiast explicit `ReactElement` (formalna odchyłka od reguły §10 coding-rules, ale konwencja React/Expo). Dodać w Fazie 6 polish jeśli zespół tak preferuje.
+- [ ] 🟡 [test-future] **sleep-norms.ts** — pierwszy kandydat na unit test gdy projekt dostanie Jest setup. Edge cases: 0m, 4m, 13m, 36m, 72m, 84m + `now < birthDate`.
 
 ---
 
@@ -68,19 +77,19 @@
 
 ### Implementacja
 
-- [ ] Potwierdzić `darkMode: 'class'` w `tailwind.config.js` (z Fazy 0)
-- [ ] `sleeper-app/src/features/settings/useThemeStore.ts` — Zustand + AsyncStorage persist, state `mode: 'system'|'light'|'dark'`, action `setMode(m)`
-- [ ] `sleeper-app/src/features/settings/ThemeProvider.tsx` — czyta mode + `useColorScheme()`, liczy `effectiveTheme`, opakowuje children w `className={effectiveTheme === 'dark' ? 'dark flex-1' : 'flex-1'}`
-- [ ] Mount `ThemeProvider` w `sleeper-app/src/app/_layout.tsx` powyżej `Stack`
-- [ ] `expo-status-bar` `style={effectiveTheme === 'dark' ? 'light' : 'dark'}` z `useThemeStore`
+- [x] Potwierdzić `darkMode: 'class'` w `tailwind.config.js` (z Fazy 0)
+- [x] `sleeper-app/src/features/settings/useThemeStore.ts` — Zustand + AsyncStorage persist, state `mode: 'system'|'light'|'dark'`, action `setMode(m)`
+- [x] `sleeper-app/src/features/settings/ThemeProvider.tsx` — czyta mode + `useColorScheme()`, liczy `effectiveTheme`, opakowuje children w `className={effectiveTheme === 'dark' ? 'dark flex-1' : 'flex-1'}`
+- [x] Mount `ThemeProvider` w `sleeper-app/src/app/_layout.tsx` powyżej `Stack`
+- [x] `expo-status-bar` `style={effectiveTheme === 'dark' ? 'light' : 'dark'}` z `useThemeStore`
 
 ### Walidacja
 
 - [ ] Walidacja po Fazie 5 (gdy toggle w Profilu działa): przełączyć każdą z 3 opcji
 - [ ] Sprawdzić persist między restartami appki
-- [ ] `npx tsc --noEmit` + `npm run lint` PASS
-- [ ] Commit: `feat(ui-redesign): faza 1 — dark mode manual override`
-- [ ] Commit log w `docs/commits/`
+- [x] `npx tsc --noEmit` + `npm run lint` PASS (2026-05-28)
+- [x] Commit: `feat(ui-redesign): faza 1 — dark mode manual override`
+- [x] Commit log w `docs/commits/`
 
 ---
 

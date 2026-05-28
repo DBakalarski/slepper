@@ -7,12 +7,26 @@ import { useEffect } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AuthProvider } from '@/features/auth/AuthProvider';
+import { ThemeProvider, useEffectiveTheme } from '@/features/settings/ThemeProvider';
 import { configureNotificationHandler } from '@/lib/notifications';
 import { queryClient, setupFocusManager } from '@/lib/query-client';
 
 // Wolane modulowo (raz) — handler musi byc skonfigurowany przed pierwsza
 // notyfikacja, niezaleznie od momentu permission request (Faza 5).
 configureNotificationHandler();
+
+function RootLayoutContent() {
+  const effectiveTheme = useEffectiveTheme();
+  return (
+    <SafeAreaProvider>
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="(auth)" />
+        <Stack.Screen name="(app)" />
+      </Stack>
+      <StatusBar style={effectiveTheme === 'dark' ? 'light' : 'dark'} />
+    </SafeAreaProvider>
+  );
+}
 
 export default function RootLayout() {
   useEffect(() => {
@@ -22,13 +36,9 @@ export default function RootLayout() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <SafeAreaProvider>
-          <Stack screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="(auth)" />
-            <Stack.Screen name="(app)" />
-          </Stack>
-          <StatusBar style="auto" />
-        </SafeAreaProvider>
+        <ThemeProvider>
+          <RootLayoutContent />
+        </ThemeProvider>
       </AuthProvider>
     </QueryClientProvider>
   );

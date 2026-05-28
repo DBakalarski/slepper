@@ -1,11 +1,15 @@
 # UI Redesign — kontekst
 
 **Branch:** `feature/ui-redesign`
-**Ostatnia aktualizacja:** 2026-05-28 (po Fazie 0)
+**Ostatnia aktualizacja:** 2026-05-28 (po Fazie 1)
 
 ## Postęp
 
 - ✅ **Faza 0 — Design system foundation** (2026-05-28): tokeny tailwind (kolory purple-light/purple-soft/success/success-soft/orange-soft/text-muted, radii card/pill, shadow card, fontFamily display/mono, `darkMode: 'class'`), 9 primitives (`Avatar/Card/Badge/IconButton/ProgressBar/ProgressBarStacked/ProgressRing/SegmentedControl/Switch`), helper `sleep-norms.ts` (WHO+AAP hybrid). `react-native-svg@15.15.5` dociągnięty TRANZYTYWNIE via `lucide-react-native@1.17.0` — brak osobnej instalacji. `expo-linear-gradient` SKIPPED.
+- ✅ **Code review Fazy 0** (2026-05-28): severity gate **CZYSTE** — 0 P1, 0 P2, 4 P3 (opcjonalne nity do rozważenia w Fazie 6). Raport: `review-faza-0.md`. Manual test checklist: `manual-test-faza-0.md` (non-blocking, wykonanie on-device dopiero po Fazie 2/3 gdy primitives wejdą na ekran). Walidacja: `tsc --noEmit` PASS, `expo lint` PASS, `npm ls` potwierdza `lucide-react-native@1.17.0` + transitywny `react-native-svg@15.15.5`.
+  - **Kluczowe wnioski**: (1) `getNormForChild` jest pure i idealnym kandydatem na pierwszy unit test gdy projekt dostanie test runner; (2) HEX literals w `ProgressRing`/`Switch` duplikują tailwind tokens — uzasadnione (RN API), ale do wyciągnięcia do `src/lib/colors.ts` przy 3+ duplikacji; (3) `SegmentedControl` używa Reanimated `withTiming` 200ms zgodnie z decyzją (NIE withSpring — zacinanie na Android); (4) wszystkie primitives mają WCAG-friendly accessibility props (role + label + value gdzie pasuje).
+- ✅ **Faza 1 — Dark mode manual override** (2026-05-28): `useThemeStore` (Zustand + AsyncStorage persist, key `theme-mode`, state `mode: 'system'|'light'|'dark'`, default `'system'`) + `ThemeProvider` (czyta `useColorScheme()`, oblicza `effectiveTheme`, opakowuje children w root `<View>` z klasą `dark` gdy potrzebne). Mount w `src/app/_layout.tsx` — `ThemeProvider` powyżej `RootLayoutContent` (Stack + StatusBar). `StatusBar.style` bindowany do `effectiveTheme` (`'light'` w dark, `'dark'` w light). **UI bottom sheet w Fazie 5** — store gotowy do konsumpcji. Walidacja: `tsc --noEmit` PASS, `expo lint` PASS.
+  - **Kluczowe decyzje**: (1) `useEffectiveTheme()` jako exportowany hook z `ThemeProvider.tsx` — będzie konsumowany przez Profil (Faza 5) i potencjalnie inne komponenty wymagające bezpośredniego dostępu do `'light'|'dark'` (np. wybór koloru SVG); (2) `RootLayoutContent` wyciągnięte jako sub-component — `useEffectiveTheme()` musi być wywołane WEWNĄTRZ `<ThemeProvider>`, więc nie da się tego zrobić w `RootLayout` bezpośrednio; (3) fallback `systemScheme === null` → `'light'` (RN może zwrócić null przed inicjalizacją modulu).
 
 ## Powiązane pliki
 
