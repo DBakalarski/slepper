@@ -85,11 +85,20 @@
 
 ### Walidacja
 
-- [ ] Walidacja po Fazie 5 (gdy toggle w Profilu działa): przełączyć każdą z 3 opcji
-- [ ] Sprawdzić persist między restartami appki
+- [ ] Walidacja po Fazie 5 (gdy toggle w Profilu działa): przełączyć każdą z 3 opcji — manual test (patrz `manual-test-faza-1.md`)
+- [ ] Sprawdzić persist między restartami appki — manual test (patrz `manual-test-faza-1.md`)
 - [x] `npx tsc --noEmit` + `npm run lint` PASS (2026-05-28)
 - [x] Commit: `feat(ui-redesign): faza 1 — dark mode manual override`
 - [x] Commit log w `docs/commits/`
+
+### Do poprawy po review fazy 1
+
+> Review: ✅ CZYSTE (0 P1, 0 P2, 4 P3). Pełny raport: `review-faza-1.md`. Wszystkie pozycje poniżej to **opcjonalne** sugestie / heads-up — NIE blokują kontynuacji do Fazy 2.
+
+- [ ] 🟡 [nit] **ThemeProvider.tsx:30** — `ThemeProvider` bez explicit return type `ReactElement` (formalna odchyłka §10, spójne z Fazą 0 — decyzja: zostawić, lub dodać w Fazie 6 polish).
+- [ ] 🟡 [heads-up-faza-2] **`(app)/_layout.tsx:11`** — tab bar nadal używa raw `useColorScheme()` zamiast `useEffectiveTheme()`. Skutek: manual override Light/Dark **nie wpływa na kolor tab bara**. **W Fazie 2 podmienić** `useColorScheme()` na `useEffectiveTheme()` (`from '@/features/settings/ThemeProvider'`) — Faza 2 i tak dotyka tego pliku.
+- [ ] 🟡 [perf-nit] **ThemeProvider.tsx + _layout.tsx** — `useEffectiveTheme()` wywołane w 2 miejscach (provider + content). 2 subskrypcje `useColorScheme` + 2 subskrypcje store. Koszt znikomy, refaktor (context-provider) nie jest wart komplikacji. Nie naprawiać.
+- [ ] 🟡 [test-future] **`useEffectiveTheme()`** — pure derived hook, idealny kandydat na unit test gdy projekt dostanie Jest + RNTL. Edge cases: `mode='system'` × `systemScheme='light'|'dark'|null` + override wins dla `mode='light'|'dark'`.
 
 ---
 
@@ -97,18 +106,20 @@
 
 ### Implementacja
 
-- [ ] **Wariant A (preferowany):** `sleeper-app/src/app/(app)/_layout.tsx` — dodać `tabBarIcon` w każdym `Tabs.Screen` z lucide: `Home`, `Calendar`, `BarChart3`, `User`
-- [ ] Active/inactive kolory z theme
-- [ ] **Wariant B (fallback):** Jeśli A nie pozwala na outlined box → nowy `sleeper-app/src/components/CustomTabBar.tsx`, `Tabs tabBar={...}`
+- [x] **Wariant A (preferowany):** `sleeper-app/src/app/(app)/_layout.tsx` — dodać `tabBarIcon` w każdym `Tabs.Screen` z lucide: `Home`, `Calendar`, `BarChart3`, `User`
+- [x] Active/inactive kolory z theme (`useEffectiveTheme()` z `ThemeProvider` — respekt manual override Fazy 1)
+- [x] Outlined box dla active state (border 2px + rounded-pill + paddingHorizontal 14 / paddingVertical 6) — uzyskane przez wrapper `<TabIcon>` w `tabBarIcon`, Wariant B nie byl potrzebny
+- [ ] **Wariant B (fallback):** Jeśli A nie pozwala na outlined box → nowy `sleeper-app/src/components/CustomTabBar.tsx`, `Tabs tabBar={...}` — **NIEPOTRZEBNY** (Wariant A zadzialal)
 
 ### Walidacja
 
-- [ ] Ikony renderują się w light/dark
-- [ ] Focus state widoczny (outlined box jak na screenie)
-- [ ] Tap area ≥44pt (a11y)
-- [ ] Test on-device iOS + Android
-- [ ] Commit: `feat(ui-redesign): faza 2 — tab bar redesign`
-- [ ] Commit log w `docs/commits/`
+- [ ] Ikony renderują się w light/dark — manual test (do weryfikacji w Expo Go)
+- [ ] Focus state widoczny (outlined box jak na screenie) — manual test
+- [ ] Tap area ≥44pt (a11y) — manual test (lucide size 22 + paddingVertical 6 + tabBarItemStyle paddingVertical 6 = ~46pt total)
+- [ ] Test on-device iOS + Android — manual test
+- [x] `npx tsc --noEmit` + `npm run lint` PASS (2026-05-28)
+- [x] Commit: `feat(ui-redesign): faza 2 — tab bar redesign`
+- [x] Commit log w `docs/commits/`
 
 ---
 
