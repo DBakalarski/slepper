@@ -1,10 +1,11 @@
-import { Link } from 'expo-router';
+import { Link, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ActiveWindowCard } from '@/components/ActiveWindowCard';
 import { BigActionButton } from '@/components/BigActionButton';
+import { HomeHeader } from '@/components/HomeHeader';
 import { QuickActions } from '@/components/QuickActions';
 import { SessionListItem } from '@/components/SessionListItem';
 import { SleepInProgressCard } from '@/components/SleepInProgressCard';
@@ -68,16 +69,16 @@ export default function TodayScreen() {
   return (
     <SafeAreaView className="flex-1 bg-cream dark:bg-dark-bg">
       <ScrollView contentContainerClassName="px-6 py-6 gap-4">
-        <View>
-          <Text className="text-3xl font-semibold text-navy dark:text-cream">Dzisiaj</Text>
-          {activeChild ? (
-            <Text className="mt-1 text-base text-purple dark:text-cream/70">{activeChild.name}</Text>
-          ) : (
+        {activeChild ? (
+          <HomeHeader child={activeChild} />
+        ) : (
+          <View>
+            <Text className="text-3xl font-semibold text-navy dark:text-cream">Dzisiaj</Text>
             <Text className="mt-1 text-base text-purple dark:text-cream/70">
               Zalogowany: {user?.email ?? 'brak'}
             </Text>
-          )}
-        </View>
+          </View>
+        )}
 
         {hasNoFamily ? <NoFamilyBanner /> : null}
 
@@ -127,6 +128,7 @@ interface ActiveChildSectionProps {
 }
 
 function ActiveChildSection({ childId }: ActiveChildSectionProps) {
+  const router = useRouter();
   const [now, setNow] = useState<Date>(() => new Date());
   const [isBackdatedOpen, setBackdatedOpen] = useState(false);
 
@@ -183,6 +185,7 @@ function ActiveChildSection({ childId }: ActiveChildSectionProps) {
 
       <BigActionButton
         mode={activeSession ? 'stop' : 'start'}
+        sessionType={activeSession?.type ?? 'nap'}
         onPress={activeSession ? handleStop : () => handleStart('nap')}
         isPending={startSession.isPending || endSession.isPending}
       />
@@ -208,12 +211,17 @@ function ActiveChildSection({ childId }: ActiveChildSectionProps) {
       {todaySessions.length > 0 ? (
         <View className="gap-2">
           <View className="flex-row items-center justify-between">
-            <Text className="text-xs font-semibold uppercase tracking-wide text-purple">
+            <Text className="text-xs font-semibold uppercase tracking-wide text-text-muted">
               Sesje dzisiaj
             </Text>
-            <Link href="/history" className="text-xs font-semibold text-navy underline dark:text-cream">
-              Pokaz wszystkie
-            </Link>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Pokaz wszystkie sesje"
+              onPress={() => router.push('/history')}>
+              <Text className="text-xs font-semibold text-navy underline dark:text-cream">
+                Pokaz wszystkie
+              </Text>
+            </Pressable>
           </View>
           {todaySessions.slice(0, 5).map((session) => (
             <SessionListItem key={session.id} session={session} />

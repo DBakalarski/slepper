@@ -1,3 +1,5 @@
+import type { LucideIcon } from 'lucide-react-native';
+import { Moon, Plus, Sun } from 'lucide-react-native';
 import { Pressable, Text, View } from 'react-native';
 
 interface QuickActionsProps {
@@ -7,7 +9,9 @@ interface QuickActionsProps {
   disabled?: boolean;
 }
 
-// 3 biale przyciski quick-access pod glownym CTA (mockup #1).
+// 3 biale karty quick-access z okraglym ikonowym chipem (design.md Faza 3,
+// screen #1). Sun (Drzemka, orange-soft), Moon (Sen, purple-soft), Plus
+// (Dodaj wstecz, neutral-soft).
 export function QuickActions({
   onStartNap,
   onStartNight,
@@ -16,29 +20,69 @@ export function QuickActions({
 }: QuickActionsProps) {
   return (
     <View className="flex-row gap-2">
-      <ActionButton label="Drzemka teraz" onPress={onStartNap} disabled={disabled} />
-      <ActionButton label="Sen nocny" onPress={onStartNight} disabled={disabled} />
-      <ActionButton label="Dodaj wstecz" onPress={onAddBackdated} disabled={disabled} />
+      <ActionCard
+        icon={Sun}
+        iconColor="#E08B6F"
+        chipClassName="bg-orange-soft"
+        label="Drzemka"
+        onPress={onStartNap}
+        disabled={disabled}
+      />
+      <ActionCard
+        icon={Moon}
+        iconColor="#7C6BAD"
+        chipClassName="bg-purple-soft"
+        label="Sen"
+        onPress={onStartNight}
+        disabled={disabled}
+      />
+      <ActionCard
+        icon={Plus}
+        iconColor="#6B6580"
+        chipClassName="bg-cream dark:bg-dark-surface"
+        label="Dodaj wstecz"
+        onPress={onAddBackdated}
+        disabled={disabled}
+      />
     </View>
   );
 }
 
-interface ActionButtonProps {
+interface ActionCardProps {
+  icon: LucideIcon;
+  // HEX kolor ikony lucide — pattern z Fazy 2 (lucide nie konsumuje className
+  // bezposrednio cross-platform). Trzymamy z paletka tailwind.
+  iconColor: string;
+  chipClassName: string;
   label: string;
   onPress: () => void;
   disabled?: boolean;
 }
 
-function ActionButton({ label, onPress, disabled = false }: ActionButtonProps) {
+function ActionCard({
+  icon: Icon,
+  iconColor,
+  chipClassName,
+  label,
+  onPress,
+  disabled = false,
+}: ActionCardProps) {
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityLabel={label}
       onPress={onPress}
       disabled={disabled}
-      className={`flex-1 items-center justify-center rounded-xl bg-white px-3 py-3 dark:bg-dark-card ${
+      className={`flex-1 items-center justify-center rounded-card bg-white p-4 shadow-card dark:bg-dark-card ${
         disabled ? 'opacity-50' : ''
       }`}>
-      <Text className="text-center text-xs font-semibold text-navy dark:text-cream">{label}</Text>
+      <View
+        className={`h-10 w-10 items-center justify-center rounded-pill ${chipClassName}`}>
+        <Icon size={20} color={iconColor} />
+      </View>
+      <Text className="mt-2 text-center text-xs font-medium text-navy dark:text-cream">
+        {label}
+      </Text>
     </Pressable>
   );
 }

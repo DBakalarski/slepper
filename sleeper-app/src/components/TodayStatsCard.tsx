@@ -1,5 +1,7 @@
 import { Text, View } from 'react-native';
 
+import { ProgressBarStacked } from '@/components/ui/ProgressBarStacked';
+import { ProgressRing } from '@/components/ui/ProgressRing';
 import type { SleepSession } from '@/features/sessions/hooks';
 import { endOfDayInAppTz, formatDuration } from '@/lib/time';
 
@@ -10,6 +12,10 @@ interface TodayStatsCardProps {
   now: Date;
   // Poczatek dnia w app tz — granica dla obciecia sesji ktore przeciagaja sie z poprzedniego dnia.
   startOfDay: Date;
+  // Zalecane godziny snu na dobe (placeholder = 13g/dobe wg design.md). W przyszlosci
+  // podlaczymy `getNormForChild(birthDate).maxHours` (out of scope Fazy 3 — data flow
+  // nie jest tu modyfikowany, plan eksplicytnie zaznacza reuse istniejacych props).
+  recommendedHours?: number;
 }
 
 interface Aggregates {
@@ -18,6 +24,9 @@ interface Aggregates {
   napsCount: number;
   longestAwakeMs: number;
 }
+
+const MS_PER_HOUR = 60 * 60 * 1000;
+const MS_PER_DAY = 24 * MS_PER_HOUR;
 
 function durationWithinDay(
   start: Date,
@@ -100,31 +109,86 @@ export function TodayStatsCard({
   activeSession,
   now,
   startOfDay,
+  recommendedHours = 13,
 }: TodayStatsCardProps) {
   const agg = computeAggregates(sessions, activeSession, now, startOfDay);
+  const totalSleepMs = agg.nightSleepMs + agg.napsMs;
+  const recommendedMs = recommendedHours * MS_PER_HOUR;
+  const ringProgress = recommendedMs > 0 ? totalSleepMs / recommendedMs : 0;
+  const pctLabel = `${Math.round(Math.min(1, ringProgress) * 100)}%`;
+
+  // Stacked bar: udzialy doby (24h) — Sen nocny + Drzemki + Aktywnosc (longest).
+  // Reszta doby (= sen utajony / brak sesji) zostawiamy jako puste track.
+  const dayMs = MS_PER_DAY;
+  const segments = [
+    { value: agg.nightSleepMs / dayMs, className: 'bg-purple' },
+    { value: agg.napsMs / dayMs, className: 'bg-orange' },
+    { value: agg.longestAwakeMs / dayMs, className: 'bg-success' },
+  ];
 
   return (
-    <View className="rounded-2xl bg-white p-5 dark:bg-dark-card">
-      <Text className="text-xs font-semibold uppercase tracking-wide text-purple">Dzisiaj</Text>
-      <View className="mt-3 flex-row gap-4">
-        <StatItem label="Sen nocny" value={formatDuration(agg.nightSleepMs)} />
-        <StatItem label="Drzemki" value={`${formatDuration(agg.napsMs)} (${agg.napsCount})`} />
-        <StatItem label="Najdl. aktywnosc" value={formatDuration(agg.longestAwakeMs)} />
+    <View className="rounded-card bg-white p-5 shadow-card dark:bg-dark-card">
+      <Text className="text-xs font-semibold uppercase tracking-wide text-text-muted">
+        Dzisiaj
+      </Text>
+
+      <View className="mt-3 flex-row items-center justify-between">
+        <View className="flex-1">
+          <Text
+            className="font-display text-3xl font-bold text-navy dark:text-cream"
+            style={{ fontVariant: ['tabular-nums'] }}>
+            {formatDuration(totalSleepMs)}
+          </Text>
+          <Text className="mt-1 text-sm text-text-muted">
+            z {recommendedHours}g zalecanych
+          </Text>
+        </View>
+        <ProgressRing value={ringProgress} size={64} strokeWidth={6} label={pctLabel} />
+      </View>
+
+      <View className="mt-4">
+        <ProgressBarStacked segments={segments} />
+      </View>
+
+      <View className="mt-4 flex-row gap-3">
+        <MiniStat
+          dotClassName="bg-purple"
+          label="Sen nocny"
+          value={formatDuration(agg.nightSleepMs)}
+        />
+        <MiniStat
+          dotClassName="bg-orange"
+          label="Drzemki"
+          value={`${agg.napsCount} · ${formatDuration(agg.napsMs)}`}
+        />
+        <MiniStat
+          dotClassName="bg-success"
+          label="Aktywność"
+          value={formatDuration(agg.longestAwakeMs)}
+        />
       </View>
     </View>
   );
 }
 
-interface StatItemProps {
+interface MiniStatProps {
+  dotClassName: string;
   label: string;
   value: string;
 }
 
-function StatItem({ label, value }: StatItemProps) {
+function MiniStat({ dotClassName, label, value }: MiniStatProps) {
   return (
     <View className="flex-1">
-      <Text className="text-xs text-purple">{label}</Text>
-      <Text className="mt-1 text-base font-semibold text-navy dark:text-cream">{value}</Text>
+      <View className="flex-row items-center gap-1.5">
+        <View className={`h-2 w-2 rounded-pill ${dotClassName}`} />
+        <Text className="text-xs text-text-muted">{label}</Text>
+      </View>
+      <Text
+        className="mt-1 text-sm font-semibold text-navy dark:text-cream"
+        style={{ fontVariant: ['tabular-nums'] }}>
+        {value}
+      </Text>
     </View>
   );
 }

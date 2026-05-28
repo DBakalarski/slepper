@@ -1,23 +1,33 @@
 import * as Haptics from 'expo-haptics';
-import { ActivityIndicator, Pressable, Text } from 'react-native';
+import { Moon } from 'lucide-react-native';
+import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+
+import type { SessionType } from '@/features/sessions/hooks';
 
 interface BigActionButtonProps {
   mode: 'start' | 'stop';
   onPress: () => void;
   isPending?: boolean;
   disabled?: boolean;
+  // Typ sesji ktora bedzie rozpoczeta (start mode) lub konczona (stop mode).
+  // Decyduje o ikonie: Moon dla night_sleep w start mode. Default 'nap' zachowuje
+  // istniejace zachowanie (`handleStart('nap')`) bez ikony przed labelem dla naps.
+  sessionType?: SessionType;
 }
 
 // Granatowy duzy CTA z mockupow. "Rozpocznij sen" gdy brak aktywnej sesji,
-// "Zakoncz sen" gdy aktywna trwa.
+// "Zakoncz sen" gdy aktywna trwa. Dla start + night_sleep prepend Moon ikony
+// (design.md Faza 3).
 export function BigActionButton({
   mode,
   onPress,
   isPending = false,
   disabled = false,
+  sessionType = 'nap',
 }: BigActionButtonProps) {
-  const label = mode === 'start' ? 'Rozpocznij sen' : 'Zakoncz sen';
+  const label = mode === 'start' ? 'Rozpocznij sen' : 'Zakończ sen';
   const isDisabled = disabled || isPending;
+  const showMoonIcon = mode === 'start' && sessionType === 'night_sleep';
 
   function handlePress() {
     // Medium impact daje wyrazne potwierdzenie startu/stopu bez nadmiernego
@@ -34,13 +44,16 @@ export function BigActionButton({
       accessibilityState={{ disabled: isDisabled, busy: isPending }}
       onPress={handlePress}
       disabled={isDisabled}
-      className={`items-center justify-center rounded-2xl px-6 py-5 ${
+      className={`flex-row items-center justify-center gap-2 rounded-card px-6 py-5 ${
         isDisabled ? 'bg-navy/50 dark:bg-purple/40' : 'bg-navy dark:bg-purple'
       }`}>
       {isPending ? (
         <ActivityIndicator color="#F5F0E8" />
       ) : (
-        <Text className="text-lg font-semibold text-cream">{label}</Text>
+        <View className="flex-row items-center gap-2">
+          {showMoonIcon ? <Moon size={20} color="#F5F0E8" /> : null}
+          <Text className="text-lg font-semibold text-cream">{label}</Text>
+        </View>
       )}
     </Pressable>
   );

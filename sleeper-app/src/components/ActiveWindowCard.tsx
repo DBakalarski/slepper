@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Text, View } from 'react-native';
 
-import { formatDuration } from '@/lib/time';
+import { Badge } from '@/components/ui/Badge';
+import { ProgressBar } from '@/components/ui/ProgressBar';
+import { formatDuration, formatTime } from '@/lib/time';
 
 interface ActiveWindowCardProps {
   // Czas zakonczenia ostatniej sesji. Jesli null = brak sesji w historii dziecka.
@@ -30,25 +32,55 @@ export function ActiveWindowCard({
   const sinceMs = lastSleepEndAt ? Math.max(0, now - lastSleepEndAt.getTime()) : null;
   const targetMs = targetWindowMinutes * MINUTE_MS;
   const remainingMs = sinceMs !== null ? Math.max(0, targetMs - sinceMs) : null;
+  const progressValue = sinceMs !== null ? Math.min(1, sinceMs / targetMs) : 0;
 
   return (
-    <View className="rounded-2xl bg-orange p-5">
-      <Text className="text-xs font-semibold uppercase tracking-wide text-cream/80">
-        Okno aktywnosci
-      </Text>
+    <View className="rounded-card bg-orange-soft p-5">
+      {/* Header: kropka + label "OKNO AKTYWNOŚCI" */}
+      <View className="flex-row items-center gap-2">
+        <View className="h-2 w-2 rounded-pill bg-orange" />
+        <Text className="text-xs font-semibold uppercase tracking-wide text-orange">
+          Okno aktywności
+        </Text>
+      </View>
+
       {sinceMs === null ? (
         <>
-          <Text className="mt-2 text-3xl font-semibold text-cream">Nowy dzien</Text>
-          <Text className="mt-1 text-sm text-cream/90">Brak sesji w historii.</Text>
+          <Text
+            className="mt-3 font-display text-6xl font-semibold text-navy dark:text-navy"
+            style={{ fontVariant: ['tabular-nums'] }}>
+            Nowy dzień
+          </Text>
+          <Text className="mt-2 text-sm text-text-muted">Brak sesji w historii.</Text>
         </>
       ) : (
         <>
-          <Text className="mt-2 text-3xl font-semibold text-cream">{formatDuration(sinceMs)}</Text>
-          <Text className="mt-1 text-sm text-cream/90">
-            {remainingMs && remainingMs > 0
-              ? `Planowana drzemka za ${formatDuration(remainingMs)}`
-              : 'Mozna probowac drzemki'}
+          <Text
+            className="mt-3 font-display text-6xl font-semibold text-navy dark:text-navy"
+            style={{ fontVariant: ['tabular-nums'] }}>
+            {formatDuration(sinceMs)}
           </Text>
+          {/* ProgressBar pod timerem — tint orange, track jasny */}
+          <View className="mt-4">
+            <ProgressBar
+              value={progressValue}
+              tintClassName="bg-orange"
+              trackClassName="bg-white/70"
+            />
+          </View>
+          {/* Footer: "Pobudka o HH:MM" + Badge "Drzemka za" */}
+          {lastSleepEndAt ? (
+            <View className="mt-4 flex-row items-center justify-between">
+              <Text className="text-sm text-text-muted">
+                Pobudka o {formatTime(lastSleepEndAt)}
+              </Text>
+              {remainingMs !== null && remainingMs > 0 ? (
+                <Badge label={`Drzemka za ~${formatDuration(remainingMs)}`} variant="orange" />
+              ) : (
+                <Badge label="Można próbować drzemki" variant="orange" />
+              )}
+            </View>
+          ) : null}
         </>
       )}
     </View>

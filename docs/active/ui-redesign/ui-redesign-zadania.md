@@ -113,13 +113,20 @@
 
 ### Walidacja
 
-- [ ] Ikony renderują się w light/dark — manual test (do weryfikacji w Expo Go)
-- [ ] Focus state widoczny (outlined box jak na screenie) — manual test
-- [ ] Tap area ≥44pt (a11y) — manual test (lucide size 22 + paddingVertical 6 + tabBarItemStyle paddingVertical 6 = ~46pt total)
-- [ ] Test on-device iOS + Android — manual test
+- [ ] Ikony renderują się w light/dark — manual test (patrz `manual-test-faza-2.md`)
+- [ ] Focus state widoczny (outlined box jak na screenie) — manual test (patrz `manual-test-faza-2.md`)
+- [ ] Tap area ≥44pt (a11y) — manual test (patrz `manual-test-faza-2.md`) (lucide size 22 + paddingVertical 6 + tabBarItemStyle paddingVertical 6 = ~46pt total)
+- [ ] Test on-device iOS + Android — manual test (patrz `manual-test-faza-2.md`)
 - [x] `npx tsc --noEmit` + `npm run lint` PASS (2026-05-28)
 - [x] Commit: `feat(ui-redesign): faza 2 — tab bar redesign`
 - [x] Commit log w `docs/commits/`
+
+### Do poprawy po review fazy 2
+
+> Review: ✅ CZYSTE (0 P1, 0 P2, 2 P3). Pełny raport: `review-faza-2.md`. Wszystkie pozycje poniżej to **opcjonalne** nity — NIE blokują kontynuacji do Fazy 3. Manual test checklist: `manual-test-faza-2.md` (4 scenariusze on-device, non-blocking).
+
+- [ ] 🟡 [nit] **`(app)/_layout.tsx:49`** — dead-ternary `backgroundColor: isDark ? 'transparent' : 'transparent'` (obie gałęzie identyczne). Akcja: usunąć linię lub zastąpić `backgroundColor: 'transparent'` bez ternary. Batch-fix w Fazie 6 polish.
+- [ ] 🟡 [nit] **`(app)/_layout.tsx:29,56`** — `TabIcon` i `AppTabsLayout` bez explicit `ReactElement | null` return type. Spójne z Fazą 0/1 (akceptowalna odchyłka formalna §10). Batch-fix w Fazie 6 jeśli zespół tak preferuje.
 
 ---
 
@@ -127,43 +134,44 @@
 
 ### Nowy komponent
 
-- [ ] `sleeper-app/src/components/HomeHeader.tsx`:
-  - [ ] Avatar (z `child.avatar_color`, `child.name` → inicjał)
-  - [ ] Greeting based on hour (Dzień dobry/Dobre popołudnie/Dobry wieczór/Dobranoc + `, ${child.name}` bold)
-  - [ ] `chevron-down` visual obok imienia (single-child, no dropdown)
-  - [ ] Bell `IconButton` po prawej z kropką stanu (mock z `useNotificationDot()`)
+- [x] `sleeper-app/src/components/HomeHeader.tsx`:
+  - [x] Avatar (z `child.avatar_color`, `child.name` → inicjał)
+  - [x] Greeting based on hour (Dzień dobry/Dobre popołudnie/Dobry wieczór/Dobranoc + `, ${child.name}` bold)
+  - [x] `chevron-down` visual obok imienia (single-child, no dropdown)
+  - [x] Bell `IconButton` po prawej z kropką stanu (mock z `useNotificationDot()`)
 
 ### Restyle istniejących
 
-- [ ] `sleeper-app/src/components/ActiveWindowCard.tsx`:
-  - [ ] Tło `bg-orange-soft` (lub gradient jeśli zatwierdzone)
-  - [ ] Header: kropka `bg-orange` + label "OKNO AKTYWNOŚCI" uppercase tracking-wide
-  - [ ] Timer `text-6xl` z `font-variant: tabular-nums`
-  - [ ] `ProgressBar` pod timerem (tint orange)
-  - [ ] Footer: "Pobudka o HH:MM" (left) + `Badge` "Drzemka za ~Xg Ym" (right)
-- [ ] `sleeper-app/src/components/TodayStatsCard.tsx`:
-  - [ ] Label "DZISIAJ" uppercase
-  - [ ] Wartość "Xg Ym" + `ProgressRing` 98% po prawej
-  - [ ] "z 13g zalecanych" text-muted
-  - [ ] `ProgressBarStacked` (Sen nocny / Drzemki / Aktywność)
-  - [ ] 3 mini-statystyki w grid z kropkami
-  - [ ] Reuse `computeAggregates()`
-- [ ] `sleeper-app/src/components/BigActionButton.tsx`:
-  - [ ] `Moon` lucide ikona przed labelem dla `mode='start'` + `type='night'`
-- [ ] `sleeper-app/src/components/QuickActions.tsx`:
-  - [ ] 3 białe karty z okrągłym ikonowym chipem: `Sun` (Drzemka, orange-soft bg), `Moon` (Sen, purple-soft bg), `Plus` (Dodaj wstecz, neutral-soft bg)
-- [ ] `sleeper-app/src/components/SessionListItem.tsx`:
-  - [ ] Polish — w sekcji "Sesje dzisiaj" BEZ "aktywność X" gapów (to tylko Historia)
-- [ ] `sleeper-app/src/app/(app)/index.tsx`:
-  - [ ] Wymiana headera na `HomeHeader`
-  - [ ] Sekcja "Pokaż wszystkie" link → `router.push('/history')`
+- [x] `sleeper-app/src/components/ActiveWindowCard.tsx`:
+  - [x] Tło `bg-orange-soft` (decyzja Fazy 0 — solid, NIE gradient)
+  - [x] Header: kropka `bg-orange` + label "OKNO AKTYWNOŚCI" uppercase tracking-wide
+  - [x] Timer `text-6xl` z `font-variant: tabular-nums`
+  - [x] `ProgressBar` pod timerem (tint orange)
+  - [x] Footer: "Pobudka o HH:MM" (left) + `Badge` "Drzemka za ~Xg Ym" (right)
+- [x] `sleeper-app/src/components/TodayStatsCard.tsx`:
+  - [x] Label "DZISIAJ" uppercase text-muted
+  - [x] Wartość "Xg Ym" + `ProgressRing` (procent total/recommended) po prawej
+  - [x] "z 13g zalecanych" text-muted (prop `recommendedHours?` default 13)
+  - [x] `ProgressBarStacked` (Sen nocny purple / Drzemki orange / Aktywność success)
+  - [x] 3 mini-statystyki w grid z kropkami (Sen nocny / Drzemki / Aktywność)
+  - [x] Reuse `computeAggregates()` (zachowany 1:1 z aktualnej impl)
+- [x] `sleeper-app/src/components/BigActionButton.tsx`:
+  - [x] `Moon` lucide ikona przed labelem dla `mode='start'` + `sessionType='night_sleep'` (default `sessionType='nap'` zachowuje obecne zachowanie)
+- [x] `sleeper-app/src/components/QuickActions.tsx`:
+  - [x] 3 białe karty z okrągłym ikonowym chipem: `Sun` (Drzemka, orange-soft bg), `Moon` (Sen, purple-soft bg), `Plus` (Dodaj wstecz, neutral-soft bg)
+- [x] `sleeper-app/src/components/SessionListItem.tsx`:
+  - [x] Polish — Faza 3 NIE rendera gapow (komponent juz ich nie ma). Prop `gapBeforeMs?` wprowadzimy w Fazie 4 razem z rewrite ikona+ChevronRight (YAGNI now)
+- [x] `sleeper-app/src/app/(app)/index.tsx`:
+  - [x] Wymiana headera na `HomeHeader`
+  - [x] Sekcja "Pokaż wszystkie" link → `router.push('/history')` (Pressable z explicit onPress)
+- [x] `sleeper-app/src/lib/useNotificationDot.ts` (nowy) — mock hook `() => true` (decyzja Fazy 0)
 
 ### Walidacja
 
-- [ ] Porównanie wizualne ze screenem #1 (delta acceptable: kerning fontów)
-- [ ] Dark mode parity
-- [ ] Test on-device iOS + Android
-- [ ] `npx tsc --noEmit` + `npm run lint` PASS
+- [ ] Porównanie wizualne ze screenem #1 (delta acceptable: kerning fontów) — manual test on-device
+- [ ] Dark mode parity — manual test on-device
+- [ ] Test on-device iOS + Android — manual test
+- [x] `npx tsc --noEmit` + `npm run lint` PASS (2026-05-28)
 - [ ] Commit: `feat(ui-redesign): faza 3 — dzisiaj redesign`
 - [ ] Commit log w `docs/commits/`
 
