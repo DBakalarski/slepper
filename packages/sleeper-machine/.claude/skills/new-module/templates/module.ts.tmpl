@@ -1,0 +1,30 @@
+// __MODULE_NAME__.ts — pure function nad danymi.
+//
+// Reguły (CLAUDE.md):
+//   - Brak Date.now() / new Date() — `now` przychodzi przez parametr.
+//   - Brak Math.random() / I/O / process.env.
+//   - Brak mutacji: zwracaj nowe obiekty/tablice.
+//   - Używaj brandowanych jednostek (Minutes, Hours, AgeMonths, AgeYears).
+//   - W równaniach z ln(age) / age^-0.5 zabezpiecz `max(1, ageMonths)`.
+
+import type { DateTime, Minutes } from './types.ts';
+
+export type __PASCAL_NAME__Input = {
+  // TODO: zdefiniuj minimalny kontrakt wejściowy.
+  // Pamiętaj o brandowanych jednostkach zamiast `number`.
+};
+
+export type __PASCAL_NAME__Output = {
+  // TODO: zdefiniuj kształt wyjścia. Pola `readonly`.
+};
+
+export function __MODULE_NAME__(
+  input: __PASCAL_NAME__Input,
+  now: DateTime,
+): __PASCAL_NAME__Output {
+  // TODO: implementacja.
+  // Determinizm: ten sam input + ten sam `now` → ten sam output.
+  void input;
+  void now;
+  throw new Error('__MODULE_NAME__ not implemented');
+}

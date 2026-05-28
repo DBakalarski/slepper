@@ -1,0 +1,18 @@
+{
+  "name": "sleeper-monorepo",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Monorepo: sleeper-machine (algorithm library) + sleeper-app (Expo mobile app).",
+  "scripts": {
+    "test": "pnpm --filter sleeper-machine test",
+    "build": "pnpm --filter sleeper-machine build",
+    "app:dev": "pnpm --filter sleeper-app start",
+    "app:ios": "pnpm --filter sleeper-app ios",
+    "app:android": "pnpm --filter sleeper-app android"
+  },
+  "engines": {
+    "node": ">=18",
+    "pnpm": ">=8"
+  },
+  "packageManager": "pnpm@8.15.1"
+}

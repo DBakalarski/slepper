@@ -1,0 +1,8 @@
+{
+  "_comment": "Scenariusz 1 — cold start: 4mo, brak historii, brak targetWakeTime. Oczekuje confidence='low', warning o normach wiekowych, nextSleepAt=null + warning o braku kotwicy.",
+  "now": "2026-05-27T10:00:00",
+  "profile": {
+    "dateOfBirth": "2026-01-27T00:00:00"
+  },
+  "history": []
+}

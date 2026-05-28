@@ -1,0 +1,22 @@
+import { describe, it, expect } from 'vitest';
+import { __MODULE_NAME__ } from '../src/__MODULE_NAME__.ts';
+
+// Reguły testowania (CLAUDE.md):
+//   - `now` zawsze jawne, nigdy z prawdziwego zegara.
+//   - Fixtures w tests/fixtures/*.json gdy input jest złożony.
+//   - Walidacja merytoryczna przeciw Galland 2012 (±5%) tam, gdzie dotyczy.
+
+describe('__MODULE_NAME__', () => {
+  it('jest deterministyczny — ten sam input + ten sam now → ten sam output', () => {
+    const now = new Date('2026-01-15T12:00:00Z');
+    // const input = { /* ... */ };
+    // const r1 = __MODULE_NAME__(input, now);
+    // const r2 = __MODULE_NAME__(input, now);
+    // expect(r1).toEqual(r2);
+    expect(true).toBe(true); // placeholder — usuń po implementacji
+  });
+
+  it.todo('zwraca sensowny wynik dla cold start (brak historii)');
+  it.todo('respektuje safety rails [0.7×, 1.3×] baseline');
+  it.todo('zgadza się z Galland 2012 dla wieku referencyjnego (±5%)');
+});
