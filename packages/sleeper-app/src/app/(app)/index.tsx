@@ -128,7 +128,12 @@ export default function TodayScreen() {
 }
 
 interface ActiveChildSectionProps {
-  child: { id: string; birth_date: string };
+  child: {
+    id: string;
+    birth_date: string;
+    preferred_naps_per_day: number | null;
+    preferred_bedtime: string | null;
+  };
 }
 
 function ActiveChildSection({ child }: ActiveChildSectionProps) {
@@ -155,7 +160,7 @@ function ActiveChildSection({ child }: ActiveChildSectionProps) {
 
   // Rekomendacja age-based liczona raz na poziomie sekcji — single source of truth
   // dla ActiveWindowCard (badge "Drzemka za") i RecommendationCard ("Nastepny sen").
-  const { recommendation } = useSleepRecommendation(childId, child.birth_date, now);
+  const { recommendation } = useSleepRecommendation(child, now);
 
   function handleStart(type: 'nap' | 'night_sleep') {
     if (activeSession) return;

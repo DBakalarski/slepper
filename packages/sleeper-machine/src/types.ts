@@ -30,6 +30,12 @@ export type SleepSession = {
 export type ChildProfile = {
   readonly dateOfBirth: Date;
   readonly targetWakeTime?: TimeOfDay;
+  // Twardy override liczby drzemek na dzien (0-5, integer). Gdy podane,
+  // recommend() pomija baseline wieku + adaptacje historii i uzywa tej wartosci.
+  readonly preferredNapsCount?: number;
+  // Twardy override godziny rozpoczecia nocnego snu. Gdy podane i wszystkie
+  // drzemki dnia sa zrobione, nextSleepAt = dzis o tej godzinie.
+  readonly preferredBedtime?: TimeOfDay;
 };
 
 export type State = {

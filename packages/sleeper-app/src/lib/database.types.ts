@@ -47,6 +47,8 @@ export type Database = {
           family_id: string
           id: string
           name: string
+          preferred_bedtime: string | null
+          preferred_naps_per_day: number | null
         }
         Insert: {
           avatar_color?: string
@@ -55,6 +57,8 @@ export type Database = {
           family_id: string
           id?: string
           name: string
+          preferred_bedtime?: string | null
+          preferred_naps_per_day?: number | null
         }
         Update: {
           avatar_color?: string
@@ -63,6 +67,8 @@ export type Database = {
           family_id?: string
           id?: string
           name?: string
+          preferred_bedtime?: string | null
+          preferred_naps_per_day?: number | null
         }
         Relationships: [
           {
@@ -70,47 +76,6 @@ export type Database = {
             columns: ["family_id"]
             isOneToOne: false
             referencedRelation: "families"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      sessions: {
-        Row: {
-          child_id: string
-          created_at: string
-          created_by: string
-          end_at: string | null
-          id: string
-          notes: string | null
-          start_at: string
-          type: string
-        }
-        Insert: {
-          child_id: string
-          created_at?: string
-          created_by: string
-          end_at?: string | null
-          id?: string
-          notes?: string | null
-          start_at: string
-          type: string
-        }
-        Update: {
-          child_id?: string
-          created_at?: string
-          created_by?: string
-          end_at?: string | null
-          id?: string
-          notes?: string | null
-          start_at?: string
-          type?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "sessions_child_id_fkey"
-            columns: ["child_id"]
-            isOneToOne: false
-            referencedRelation: "children"
             referencedColumns: ["id"]
           },
         ]
@@ -196,6 +161,47 @@ export type Database = {
             columns: ["family_id"]
             isOneToOne: false
             referencedRelation: "families"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sessions: {
+        Row: {
+          child_id: string
+          created_at: string
+          created_by: string
+          end_at: string | null
+          id: string
+          notes: string | null
+          start_at: string
+          type: string
+        }
+        Insert: {
+          child_id: string
+          created_at?: string
+          created_by: string
+          end_at?: string | null
+          id?: string
+          notes?: string | null
+          start_at: string
+          type: string
+        }
+        Update: {
+          child_id?: string
+          created_at?: string
+          created_by?: string
+          end_at?: string | null
+          id?: string
+          notes?: string | null
+          start_at?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sessions_child_id_fkey"
+            columns: ["child_id"]
+            isOneToOne: false
+            referencedRelation: "children"
             referencedColumns: ["id"]
           },
         ]

@@ -131,6 +131,9 @@ export default function AppTabsLayout() {
       {/* settings — Rodzina + Wyloguj (Faza 5 ui-redesign), dostepny przez
           gear icon z Profilu. Ukryty w tab barze. */}
       <Tabs.Screen name="settings" options={{ href: null }} />
+      {/* child/[id]/edit — ekran edycji dziecka, dostepny przez tap na
+          ActiveChildCard z Profilu. Ukryty w tab barze. */}
+      <Tabs.Screen name="child/[id]/edit" options={{ href: null }} />
     </Tabs>
   );
 }

@@ -85,7 +85,13 @@ export default function ProfileScreen() {
             <ActivityIndicator color={COLORS.navy} />
           </View>
         ) : activeChild ? (
-          <ActiveChildCard child={activeChild} />
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Edytuj dane dziecka ${activeChild.name}`}
+            onPress={() => router.push(`/child/${activeChild.id}/edit`)}
+            style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}>
+            <ActiveChildCard child={activeChild} />
+          </Pressable>
         ) : (
           <NoActiveChildCard email={user?.email ?? null} />
         )}

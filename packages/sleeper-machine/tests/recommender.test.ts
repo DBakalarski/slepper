@@ -295,6 +295,146 @@ describe('Coverage — public API surface via src/index.ts', () => {
   });
 });
 
+// === User preferences override (preferredNapsCount + preferredBedtime) ===
+describe('user preferences override', () => {
+  const dateOfBirth = new Date(2025, 7, 27); // 9mo at NOW_DEFAULT
+  const history = buildHistory(END_Y, END_M, END_D, 14, PATTERN_9MO);
+
+  it('preferredNapsCount overrides baseline (1 nap for 9mo baby)', () => {
+    const { state, profile } = buildState({
+      now: NOW_DEFAULT,
+      dateOfBirth,
+      targetWakeTime: { hour: 7, minute: 0 },
+      history,
+    });
+    const baseRec = recommend(state, profile);
+    const overrideRec = recommend(state, { ...profile, preferredNapsCount: 1 });
+    // Baseline 9mo daje ~2 drzemki; override wymusza 1. Plan musi miec mniej entries.
+    expect(overrideRec.remainingNapsToday.length).toBeLessThanOrEqual(
+      baseRec.remainingNapsToday.length,
+    );
+    // Warning informujacy o rozjezdzie z rekomendacja.
+    expect(
+      overrideRec.warnings.some((w) => /preferowana liczba drzemek/.test(w)),
+    ).toBe(true);
+  });
+
+  it('preferredNapsCount = 0 produces plan with only NIGHT entry', () => {
+    const { state, profile } = buildState({
+      now: NOW_DEFAULT,
+      dateOfBirth,
+      targetWakeTime: { hour: 7, minute: 0 },
+      history,
+    });
+    const rec = recommend(state, { ...profile, preferredNapsCount: 0 });
+    // remainingNapsToday filtruje > now (NOW_DEFAULT=15:00); bedtime jest po now,
+    // wiec powinien byc widoczny. Wszystkie pozostale entries powinny byc NIGHT.
+    for (const e of rec.remainingNapsToday) {
+      expect(e.type).toBe('NIGHT');
+    }
+  });
+
+  it('preferredBedtime sets nextSleepAt when all naps done', () => {
+    // Historia z 14 dni + dzisiaj 2 drzemki zrobione (do godz NOW_DEFAULT=15:00).
+    // 9mo PATTERN_9MO ma drzemki o 9:00 i 13:30 — obie zakonczone przed 15:00.
+    const { state, profile } = buildState({
+      now: NOW_DEFAULT,
+      dateOfBirth,
+      targetWakeTime: { hour: 7, minute: 0 },
+      history,
+    });
+    const rec = recommend(state, {
+      ...profile,
+      preferredBedtime: { hour: 19, minute: 30 },
+    });
+    expect(rec.nextSleepAt).not.toBeNull();
+    expect(rec.nextSleepAt!.getHours()).toBe(19);
+    expect(rec.nextSleepAt!.getMinutes()).toBe(30);
+    expect(rec.nextSleepAt!.getDate()).toBe(END_D);
+  });
+
+  it('preferredBedtime + targetWakeTime: warning when night too short', () => {
+    // bedtime 23:00, wake 06:00 -> noc = 7h (<8h) -> warning.
+    const { state, profile } = buildState({
+      now: NOW_DEFAULT,
+      dateOfBirth,
+      targetWakeTime: { hour: 6, minute: 0 },
+      history,
+    });
+    const rec = recommend(state, {
+      ...profile,
+      preferredBedtime: { hour: 23, minute: 0 },
+    });
+    expect(rec.warnings.some((w) => /niezdrową długość nocy/.test(w))).toBe(true);
+  });
+
+  it('preferredBedtime + targetWakeTime: healthy night does not warn', () => {
+    // bedtime 19:30, wake 07:00 -> noc = 11.5h -> OK.
+    const { state, profile } = buildState({
+      now: NOW_DEFAULT,
+      dateOfBirth,
+      targetWakeTime: { hour: 7, minute: 0 },
+      history,
+    });
+    const rec = recommend(state, {
+      ...profile,
+      preferredBedtime: { hour: 19, minute: 30 },
+    });
+    expect(rec.warnings.some((w) => /niezdrową długość nocy/.test(w))).toBe(false);
+  });
+
+  it('invalid preferredNapsCount throws', () => {
+    const { state, profile } = buildState({
+      now: NOW_DEFAULT,
+      dateOfBirth,
+      targetWakeTime: { hour: 7, minute: 0 },
+      history,
+    });
+    expect(() => recommend(state, { ...profile, preferredNapsCount: -1 })).toThrow(
+      /preferredNapsCount/,
+    );
+    expect(() => recommend(state, { ...profile, preferredNapsCount: 6 })).toThrow(
+      /preferredNapsCount/,
+    );
+    expect(() => recommend(state, { ...profile, preferredNapsCount: 2.5 })).toThrow(
+      /preferredNapsCount/,
+    );
+  });
+
+  it('invalid preferredBedtime throws', () => {
+    const { state, profile } = buildState({
+      now: NOW_DEFAULT,
+      dateOfBirth,
+      targetWakeTime: { hour: 7, minute: 0 },
+      history,
+    });
+    expect(() =>
+      recommend(state, { ...profile, preferredBedtime: { hour: 25, minute: 0 } }),
+    ).toThrow(/preferredBedtime/);
+    expect(() =>
+      recommend(state, { ...profile, preferredBedtime: { hour: 12, minute: 99 } }),
+    ).toThrow(/preferredBedtime/);
+  });
+
+  it('both fields undefined → behavior identical to before (regression)', () => {
+    const { state, profile } = buildState({
+      now: NOW_DEFAULT,
+      dateOfBirth,
+      targetWakeTime: { hour: 7, minute: 0 },
+      history,
+    });
+    const recA = recommend(state, profile);
+    const recB = recommend(state, {
+      ...profile,
+      preferredNapsCount: undefined,
+      preferredBedtime: undefined,
+    });
+    expect(recB.nextSleepAt?.getTime() ?? null).toBe(recA.nextSleepAt?.getTime() ?? null);
+    expect(recB.remainingNapsToday.length).toBe(recA.remainingNapsToday.length);
+    expect(recB.warnings).toEqual(recA.warnings);
+  });
+});
+
 // === Input validation (boundary) ===
 describe('recommend — input validation', () => {
   const validProfile: ChildProfile = { dateOfBirth: new Date(2025, 7, 27) };

@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient, type UseQueryResult } from '@tanstack/react-query';
 
 import { useActiveChild } from '@/features/children/useActiveChild';
+import type { TablesUpdate } from '@/lib/database.types';
 import { supabase } from '@/lib/supabase';
 
 export interface Child {
@@ -9,10 +10,15 @@ export interface Child {
   name: string;
   birth_date: string; // ISO date 'YYYY-MM-DD'
   avatar_color: string;
+  // Preferencje algorytmu (migracja 0010). null = algorytm decyduje sam.
+  preferred_naps_per_day: number | null;
+  preferred_bedtime: string | null; // Postgres time 'HH:MM:SS' lub null
   created_at: string;
 }
 
 const childrenQueryKey = (familyId: string) => ['children', familyId] as const;
+const CHILD_SELECT =
+  'id, family_id, name, birth_date, avatar_color, preferred_naps_per_day, preferred_bedtime, created_at';
 
 interface ChildRow {
   id: string;
@@ -20,6 +26,8 @@ interface ChildRow {
   name: string;
   birth_date: string;
   avatar_color: string;
+  preferred_naps_per_day: number | null;
+  preferred_bedtime: string | null;
   created_at: string;
 }
 
@@ -33,6 +41,8 @@ function rowToChild(row: ChildRow): Child {
     name: row.name,
     birth_date: row.birth_date,
     avatar_color: row.avatar_color,
+    preferred_naps_per_day: row.preferred_naps_per_day,
+    preferred_bedtime: row.preferred_bedtime,
     created_at: row.created_at,
   };
 }
@@ -45,7 +55,7 @@ export function useChildren(familyId: string | null): UseQueryResult<Child[]> {
       if (!familyId) return [];
       const { data, error } = await supabase
         .from('children')
-        .select('id, family_id, name, birth_date, avatar_color, created_at')
+        .select(CHILD_SELECT)
         .eq('family_id', familyId)
         .order('created_at', { ascending: true });
       if (error) throw error;
@@ -75,7 +85,7 @@ export function useCreateChild() {
           birth_date: birthDate,
           avatar_color: avatarColor,
         })
-        .select('id, family_id, name, birth_date, avatar_color, created_at')
+        .select(CHILD_SELECT)
         .single();
       if (error) throw error;
       return rowToChild(data);
@@ -87,6 +97,54 @@ export function useCreateChild() {
       queryClient.removeQueries({ queryKey: ['sessions'] });
       // Auto-select swiezo dodane dziecko jesli nic nie bylo wybrane.
       setActiveChildId(child.id);
+    },
+  });
+}
+
+export interface UpdateChildInput {
+  childId: string;
+  name?: string;
+  birthDate?: string;
+  avatarColor?: string;
+  // null = wyczyszczenie preferencji (algorytm decyduje sam).
+  // undefined = brak zmiany pola w tej mutacji.
+  preferredNapsPerDay?: number | null;
+  // 'HH:MM:SS' lub null.
+  preferredBedtime?: string | null;
+}
+
+export function useUpdateChild() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      childId,
+      name,
+      birthDate,
+      avatarColor,
+      preferredNapsPerDay,
+      preferredBedtime,
+    }: UpdateChildInput) => {
+      // Buduj patch tylko z pol jawnie podanych. Pola null sa intencjonalne
+      // (clear preferencji) i powinny isc do bazy.
+      const patch: TablesUpdate<'children'> = {};
+      if (name !== undefined) patch.name = name.trim();
+      if (birthDate !== undefined) patch.birth_date = birthDate;
+      if (avatarColor !== undefined) patch.avatar_color = avatarColor;
+      if (preferredNapsPerDay !== undefined) patch.preferred_naps_per_day = preferredNapsPerDay;
+      if (preferredBedtime !== undefined) patch.preferred_bedtime = preferredBedtime;
+
+      const { data, error } = await supabase
+        .from('children')
+        .update(patch)
+        .eq('id', childId)
+        .select(CHILD_SELECT)
+        .single();
+      if (error) throw error;
+      return rowToChild(data);
+    },
+    onSuccess: (child) => {
+      void queryClient.invalidateQueries({ queryKey: childrenQueryKey(child.family_id) });
     },
   });
 }

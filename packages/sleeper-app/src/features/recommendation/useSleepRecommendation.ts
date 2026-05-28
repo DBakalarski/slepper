@@ -14,36 +14,43 @@ export type UseSleepRecommendationResult = {
   readonly error: Error | null;
 };
 
+// Minimalny shape dziecka, ktory hook potrzebuje. Pelny Child interface jest
+// w features/children/hooks — tu unikamy circular dep i ograniczamy zaleznosci.
+export type ChildForRecommendation = {
+  readonly id: string;
+  readonly birth_date: string;
+  readonly preferred_naps_per_day: number | null;
+  readonly preferred_bedtime: string | null;
+};
+
 /**
  * Compute live sleep recommendation for a child.
  *
  * - Pulls last 14 days of sessions via existing `useSessions` query.
  * - Skips active session (`end_at === null`) at adapter layer.
  * - Re-computes on each render (recommend is <1 ms; memoized on inputs).
- * - Returns `null` while sessions are loading or childId is missing.
- *
- * @param childId — child UUID (null disables the query)
- * @param birthDateIso — child.birth_date from your child record
- * @param now — current moment (pass `useNow(1000 * 60)` from a tick hook or
- *              just `new Date()` — recommend is deterministic on this input)
- * @param targetWakeTime — optional, e.g. { hour: 7, minute: 0 }
+ * - Returns `null` while sessions are loading or child is null.
  */
 export function useSleepRecommendation(
-  childId: string | null,
-  birthDateIso: string | null,
+  child: ChildForRecommendation | null,
   now: Date,
   targetWakeTime?: TimeOfDay,
 ): UseSleepRecommendationResult {
   const rangeStart = useMemo(() => new Date(now.getTime() - 14 * MS_PER_DAY), [now]);
-  const sessionsQuery = useSessions(childId, rangeStart, now);
+  const sessionsQuery = useSessions(child?.id ?? null, rangeStart, now);
 
   const recommendation = useMemo<Recommendation | null>(() => {
-    if (!childId || !birthDateIso) return null;
+    if (!child) return null;
     if (!sessionsQuery.data) return null;
-    const profile = toLibProfile(birthDateIso, targetWakeTime);
+    const profile = toLibProfile(
+      child.birth_date,
+      targetWakeTime,
+      child.preferred_naps_per_day,
+      child.preferred_bedtime,
+    );
     const state = { now, history: toLibSessions(sessionsQuery.data) };
     return recommend(state, profile);
-  }, [childId, birthDateIso, now, targetWakeTime, sessionsQuery.data]);
+  }, [child, now, targetWakeTime, sessionsQuery.data]);
 
   return {
     recommendation,

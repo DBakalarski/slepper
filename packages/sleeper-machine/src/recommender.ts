@@ -42,6 +42,22 @@ function validateInput(state: State, profile: ChildProfile): void {
       );
     }
   }
+  if (profile.preferredNapsCount !== undefined) {
+    const n = profile.preferredNapsCount;
+    if (!Number.isInteger(n) || n < 0 || n > 5) {
+      throw new Error(
+        `recommend: preferredNapsCount must be integer 0-5 (got ${n})`,
+      );
+    }
+  }
+  if (profile.preferredBedtime) {
+    const { hour, minute } = profile.preferredBedtime;
+    if (hour < 0 || hour > 23 || minute < 0 || minute > 59) {
+      throw new Error(
+        `recommend: invalid preferredBedtime (${hour}:${minute})`,
+      );
+    }
+  }
   for (const s of state.history) {
     if (s.end.getTime() <= s.start.getTime()) {
       throw new Error(
@@ -115,7 +131,11 @@ export function recommend(state: State, profile: ChildProfile): Recommendation {
 
   const last7Naps = napsObs.slice(-7);
   const napDecision = decideNapsToday(adaptedNaps, baseline.naps, last7Naps);
-  const napsToday = napDecision.naps;
+  // Twardy override: gdy user wpisal preferowana liczbe drzemek, ignorujemy
+  // baseline + adaptacje. wakeWindows ponizej rzeczywiscie respektuje napsToday,
+  // wiec okna proporcjonalnie sie skaluja.
+  const napsToday =
+    profile.preferredNapsCount !== undefined ? profile.preferredNapsCount : napDecision.naps;
 
   const ageMonthsNum = baseline.ageMonths;
   const wakeWindows = deriveWakeWindows({
@@ -156,6 +176,33 @@ export function recommend(state: State, profile: ChildProfile): Recommendation {
     );
   }
 
+  // Override bedtime — nadpisz ostatni PlanEntry typu NIGHT na podana godzine.
+  // To wykonujemy PRZED Krokiem 8, zeby nextSleepAt mogl korzystac z nadpisanej wartosci.
+  let bedtimeOverride: DateTime | null = null;
+  if (profile.preferredBedtime && morningWake !== null) {
+    const { hour, minute } = profile.preferredBedtime;
+    bedtimeOverride = new Date(
+      state.now.getFullYear(),
+      state.now.getMonth(),
+      state.now.getDate(),
+      hour,
+      minute,
+      0,
+      0,
+    );
+    const idx = plan.length - 1;
+    const last = idx >= 0 ? plan[idx] : undefined;
+    if (last !== undefined && last.type === 'NIGHT') {
+      const replaced: PlanEntry =
+        last.plannedEnd !== undefined
+          ? { plannedStart: bedtimeOverride, plannedEnd: last.plannedEnd, type: 'NIGHT' }
+          : { plannedStart: bedtimeOverride, type: 'NIGHT' };
+      const mutable = [...plan];
+      mutable[idx] = replaced;
+      plan = mutable;
+    }
+  }
+
   // Krok 8 — current wake window + nextSleepAt + remaining naps.
   let nextSleepAt: DateTime | null = null;
   let currentWakeWindowDuration: Minutes = Minutes(0);
@@ -167,6 +214,11 @@ export function recommend(state: State, profile: ChildProfile): Recommendation {
     currentWakeWindowDuration = wakeWindows[i] ?? Minutes(0);
     const lastWake = lastWakeMs(morningWake, napsDone);
     nextSleepAt = new Date(lastWake + currentWakeWindowDuration * MS_PER_MIN);
+    // Gdy preferredBedtime jest ustawione i wszystkie drzemki dnia zrobione,
+    // nextSleepAt to bedtime — uzytkownik chce nadpisac naturalna pobudke.
+    if (bedtimeOverride !== null && napsDone.length >= napsToday) {
+      nextSleepAt = bedtimeOverride;
+    }
     remainingNapsToday = plan.filter(
       (e) => e.plannedStart.getTime() > state.now.getTime(),
     );
@@ -193,6 +245,28 @@ export function recommend(state: State, profile: ChildProfile): Recommendation {
     const elapsedMin = (state.now.getTime() - lastWake) / MS_PER_MIN;
     if (elapsedMin > 1.2 * currentWakeWindowDuration) {
       warnings.push('ryzyko przemęczenia');
+    }
+  }
+
+  // Override warnings — informuja usera o rozjazdach miedzy preferencja a algorytmem.
+  if (
+    profile.preferredNapsCount !== undefined &&
+    Math.abs(napDecision.naps - profile.preferredNapsCount) >= 1
+  ) {
+    warnings.push(
+      `preferowana liczba drzemek (${profile.preferredNapsCount}) różni się od rekomendowanej (${napDecision.naps})`,
+    );
+  }
+  if (profile.preferredBedtime && profile.targetWakeTime) {
+    // nightHours = (target wake - bedtime), z handlingiem cross-midnight.
+    const bedMin = profile.preferredBedtime.hour * 60 + profile.preferredBedtime.minute;
+    const wakeMin = profile.targetWakeTime.hour * 60 + profile.targetWakeTime.minute;
+    const nightMin = wakeMin > bedMin ? wakeMin - bedMin : wakeMin + 24 * 60 - bedMin;
+    const nightH = nightMin / 60;
+    if (nightH < 8 || nightH > 13) {
+      warnings.push(
+        `preferowana godzina nocnego snu daje niezdrową długość nocy (${nightH.toFixed(1)}h) względem targetWakeTime`,
+      );
     }
   }
 
