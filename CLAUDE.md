@@ -10,49 +10,66 @@ Przed pisaniem kodu Expo: przeczytaj wersjowane docs https://docs.expo.dev/versi
 
 ## Layout repozytorium
 
+Monorepo **pnpm workspaces** (`pnpm-workspace.yaml` → `packages/*`).
+
 ```
-sleeper/                          # ← root (TEN katalog)
-├── CLAUDE.md                     # ← ten plik
-├── PLAN.md                       # wysokopoziomowy plan techniczny (read-only reference)
+sleeper/                                  # ← root (TEN katalog)
+├── CLAUDE.md                             # ← ten plik
+├── PLAN.md                               # wysokopoziomowy plan techniczny (read-only reference)
+├── package.json                          # root: scripts proxy do filtrow pnpm
+├── pnpm-workspace.yaml                   # packages/*
 ├── docs/
-│   ├── active/mvp-sleep-tracker/ # kontekst + plan + zadania aktualnego MVP
-│   └── commits/                  # log commitow (jeden plik per commit, OBOWIAZKOWE)
+│   ├── active/active-window-machine/     # kontekst + plan + zadania aktualnego zadania
+│   ├── completed/mvp-sleep-tracker/      # archiwum ukonczonego MVP
+│   ├── completed/ui-redesign/            # archiwum ukonczonego redesignu UI
+│   ├── commits/                          # log commitow (jeden plik per commit, OBOWIAZKOWE)
+│   └── solutions/                        # baza wiedzy (zarzadzana przez /dev-compound)
 ├── .claude/
-│   ├── rules/                    # coding-rules.md, learned-patterns.md
-│   ├── docs/dev-pipeline.md      # opis pipeline'u skilli dev-*
-│   ├── agents/                   # custom subagenty
-│   ├── hooks/                    # error-handling, stop-build-check
-│   └── skills/                   # dev-brainstorm, dev-plan, dev-docs, code-review itd.
-└── sleeper-app/                  # ← KOD aplikacji Expo
-    ├── src/app/                  # routes (expo-router, file-based)
-    ├── src/lib/                  # supabase.ts, query-client.ts
-    └── ...
+│   ├── rules/                            # coding-rules.md, learned-patterns.md
+│   ├── docs/dev-pipeline.md              # opis pipeline'u skilli dev-*
+│   ├── agents/                           # custom subagenty
+│   ├── hooks/                            # error-handling, stop-build-check
+│   └── skills/                           # dev-brainstorm, dev-plan, dev-docs, code-review itd.
+└── packages/
+    ├── sleeper-app/                      # ← KOD aplikacji Expo (RN + expo-router)
+    │   ├── src/app/                      # routes (expo-router, file-based)
+    │   ├── src/components/, src/features/, src/lib/
+    │   └── supabase/{config.toml,migrations/}
+    └── sleeper-machine/                  # ← biblioteka algorytmu (TS, vitest)
+        └── src/, dist/, scripts/smoke-test.ts
 ```
 
-**Wazne:** kod aplikacji zyje w `sleeper-app/`. Komendy `npm/expo/tsc` uruchamiaj z `sleeper-app/`. `docs/` i `.claude/` zostaja w roocie i sa wspolne.
+**Wazne:**
+- Kod aplikacji zyje w `packages/sleeper-app/`. Komendy `expo/tsc/lint` uruchamiaj z tego katalogu **lub** przez `pnpm --filter sleeper-app <skrypt>` z roota.
+- Algorytm w `packages/sleeper-machine/` — importowany w app jako `sleeper-machine` (workspace link). Komendy: `pnpm --filter sleeper-machine test|build|smoke`.
+- `docs/` i `.claude/` zostaja w roocie i sa wspolne.
 
-## Aktualny stan (2026-05-27)
+## Aktualny stan (2026-05-28)
 
-- **Branch:** `feature/mvp-sleep-tracker`
-- **Faza:** MVP UKONCZONE — wszystkie fazy 0-6 zamkniete, kod CZYSTY (review CZYSTE po fix cyklach). Pozostaje mobile-manual testing (38 scenariuszy) + EAS build dla usera na fizycznych urzadzeniach.
-- Archiwum zadania: `docs/completed/mvp-sleep-tracker/`
+- **Branch:** `main`
+- **Aktualne zadanie:** `active-window-machine` — integracja biblioteki `sleeper-machine` z UI (ActiveWindowCard). Fazy 1-3 ukonczone, typecheck/lint PASS. Plan: `docs/active/active-window-machine/`.
+- **Ukonczone:**
+  - MVP sleep tracker → `docs/completed/mvp-sleep-tracker/`
+  - UI redesign → `docs/completed/ui-redesign/`
 
-## Stack (zainstalowany — sprawdzone w `sleeper-app/package.json`)
+## Stack (zainstalowany — sprawdzone w `packages/sleeper-app/package.json`)
 
 | Warstwa | Wybor | Wersja |
 |---|---|---|
-| Framework | Expo (RN + TS) | SDK **54** (lock) |
+| Framework | Expo (RN 0.81 + React 19 + TS 5.9) | SDK **54** (lock) |
 | Routing | expo-router | ~6.0 |
 | Stylowanie | NativeWind v4 + Tailwind v3.4 | v3.4 bo `nativewind@4.2` peer dep oczekuje Tailwind >3.3, NIE v4 |
 | State (server) | TanStack Query | ^5.100 |
 | State (UI) | Zustand | ^5.0 |
 | Backend | @supabase/supabase-js | ^2.106 (AsyncStorage persistence, URL polyfill) |
 | Daty | date-fns + date-fns-tz | UTC w bazie, `Europe/Warsaw` w UI |
+| Animacje | react-native-reanimated + worklets | ~4.1 / 0.5 |
+| Ikony | lucide-react-native | ^1.17 |
+| Notyfikacje / wake | expo-notifications, expo-keep-awake | ~0.32 / ~15.0 |
+| Algorytm | `sleeper-machine` (workspace) | 0.1.0 (vitest, build do `dist/`) |
 | TS | strict ON | path alias `@/*` -> `./src/*` |
 
-**Jeszcze NIE zainstalowane** (dochodzi w kolejnych fazach): `expo-notifications`, `expo-keep-awake`, features/ z hookami sesji, Supabase migracje (`supabase/` katalog).
-
-**Uwaga ws. struktury routingu:** plan w `PLAN.md` zaklada `app/` w roocie, ale template SDK trzyma routes w `src/app/`. Funkcjonalnie identyczne, alias `@/*` to obsluguje.
+**Uwaga ws. struktury routingu:** plan w `PLAN.md` zaklada `app/` w roocie, ale template SDK trzyma routes w `packages/sleeper-app/src/app/`. Funkcjonalnie identyczne, alias `@/*` to obsluguje.
 
 ## Konwencje specyficzne dla domeny
 
@@ -63,15 +80,20 @@ sleeper/                          # ← root (TEN katalog)
 - **Optimistic updates** tylko dla START/STOP sesji (najczestsza akcja). Edycja historii — bez optimistic.
 - **Tabs**: `Tabs` z `expo-router` (nie `NativeTabs` — wymaga PNG ikon per tab, polish ikon = Faza 6).
 
-## Walidacja (uruchom w `sleeper-app/` PRZED deklaracja "gotowe")
+## Walidacja (PRZED deklaracja "gotowe")
+
+Z roota (przez pnpm filter):
 
 ```bash
-npx tsc --noEmit     # typecheck — musi byc 0 bledow
-npm run lint         # expo lint
-# testy: brak setupu (Vitest/Jest dojdzie kiedy bedzie potrzebny)
+pnpm --filter sleeper-app exec tsc --noEmit   # typecheck app — 0 bledow
+pnpm --filter sleeper-app lint                # expo lint
+pnpm --filter sleeper-machine test            # vitest (algorytm)
+pnpm --filter sleeper-machine build           # tsc -> dist/ (gdy app importuje typy)
 ```
 
-Runtime: `npx expo start` -> QR -> Expo Go na fizycznym urzadzeniu. Symulator iOS wymaga Maca z Xcode.
+Alternatywnie wejdz do `packages/sleeper-app/` i uzyj `npx tsc --noEmit` / `pnpm lint` lokalnie.
+
+Runtime: `pnpm app:dev` (alias `pnpm --filter sleeper-app start`) -> QR -> Expo Go na fizycznym urzadzeniu. Symulator iOS wymaga Maca z Xcode.
 
 ## Commit logging — OBOWIAZKOWE
 
@@ -127,7 +149,8 @@ Pelny opis: `.claude/docs/dev-pipeline.md`. Skille bezargumentowe wyciagaja kont
 ## Czego NIE robic
 
 - Nie podnosic SDK z 54 bez explicit approval.
-- Nie mieszac package managerow (uzywamy `npm`).
+- Nie mieszac package managerow — projekt uzywa **`pnpm`** (workspaces). NIE wolno `npm install` / `yarn add` w packages.
+- Nie instalowac zaleznosci na poziomie root bez powodu — instaluj per package: `pnpm --filter <name> add <dep>`.
 - Nie instalowac nowych zaleznosci bez poinformowania usera (regula z `coding-rules.md` §8).
 - Nie tworzyc abstrakcji "na przyszlosc" — abstrakcja od 2+ uzyc.
 - Nie modyfikowac `PLAN.md` (read-only reference).
