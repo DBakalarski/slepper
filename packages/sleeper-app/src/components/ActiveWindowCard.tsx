@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
 import { Text, View } from 'react-native';
+import type { Recommendation } from 'sleeper-machine';
 
 import { Badge } from '@/components/ui/Badge';
 import { ProgressBar } from '@/components/ui/ProgressBar';
@@ -7,32 +7,36 @@ import { formatDuration, formatTime } from '@/lib/time';
 
 interface ActiveWindowCardProps {
   // Czas zakonczenia ostatniej sesji. Jesli null = brak sesji w historii dziecka.
-  lastSleepEndAt: Date | null;
-  // Oczekiwane okno aktywnosci dla wieku (np. 105 min dla 3-6mc).
-  // Faza 2: stala wartosc placeholder, Faza 5 podmienimy na age-based.
-  targetWindowMinutes?: number;
+  readonly lastSleepEndAt: Date | null;
+  // Rekomendacja z sleeper-machine. Null = brak kotwicy / loading / swieze dziecko.
+  readonly recommendation: Recommendation | null;
+  // Aktualny czas — tick rzadzony przez parent (useNow w ActiveChildSection).
+  readonly now: Date;
 }
 
-// Pomaranczowa karta z mockupu #1: pokazuje ile trwa okno aktywnosci
-// + opcjonalna planowana nastepna drzemka. Tick raz na minute (sekundy nie
-// sa potrzebne dla okna aktywnosci).
 const MINUTE_MS = 60 * 1000;
 
+// Pomaranczowa karta z mockupu #1: ile trwa okno aktywnosci + age-based
+// rekomendacja kolejnej drzemki. Wszystkie wartosci docelowe pochodza
+// z `recommendation` (sleeper-machine.recommend()), zadnych hardcode placeholderow.
 export function ActiveWindowCard({
   lastSleepEndAt,
-  targetWindowMinutes = 105,
+  recommendation,
+  now,
 }: ActiveWindowCardProps) {
-  const [now, setNow] = useState<number>(() => Date.now());
+  const nowMs = now.getTime();
+  const sinceMs = lastSleepEndAt ? Math.max(0, nowMs - lastSleepEndAt.getTime()) : null;
 
-  useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), MINUTE_MS);
-    return () => clearInterval(id);
-  }, []);
+  const targetMs = recommendation ? recommendation.currentWakeWindowDuration * MINUTE_MS : null;
 
-  const sinceMs = lastSleepEndAt ? Math.max(0, now - lastSleepEndAt.getTime()) : null;
-  const targetMs = targetWindowMinutes * MINUTE_MS;
-  const remainingMs = sinceMs !== null ? Math.max(0, targetMs - sinceMs) : null;
-  const progressValue = sinceMs !== null ? Math.min(1, sinceMs / targetMs) : 0;
+  const remainingMs = recommendation?.nextSleepAt
+    ? recommendation.nextSleepAt.getTime() - nowMs
+    : null;
+
+  const progressValue =
+    sinceMs !== null && targetMs !== null && targetMs > 0
+      ? Math.min(1, sinceMs / targetMs)
+      : null;
 
   return (
     <View className="rounded-card bg-orange-soft p-5">
@@ -60,24 +64,27 @@ export function ActiveWindowCard({
             style={{ fontVariant: ['tabular-nums'] }}>
             {formatDuration(sinceMs)}
           </Text>
-          {/* ProgressBar pod timerem — tint orange, track jasny */}
-          <View className="mt-4">
-            <ProgressBar
-              value={progressValue}
-              tintClassName="bg-orange"
-              trackClassName="bg-white/70"
-            />
-          </View>
-          {/* Footer: "Pobudka o HH:MM" + Badge "Drzemka za" */}
+          {progressValue !== null ? (
+            <View className="mt-4">
+              <ProgressBar
+                value={progressValue}
+                tintClassName="bg-orange"
+                trackClassName="bg-white/70"
+              />
+            </View>
+          ) : null}
           {lastSleepEndAt ? (
             <View className="mt-4 flex-row items-center justify-between">
               <Text className="text-sm text-text-muted">
                 Pobudka o {formatTime(lastSleepEndAt)}
               </Text>
-              {remainingMs !== null && remainingMs > 0 ? (
+              {remainingMs === null ? null : remainingMs > 0 ? (
                 <Badge label={`Drzemka za ~${formatDuration(remainingMs)}`} variant="orange" />
               ) : (
-                <Badge label="Można próbować drzemki" variant="orange" />
+                <Badge
+                  label={`Przekroczono okno o ~${formatDuration(-remainingMs)}`}
+                  variant="orange"
+                />
               )}
             </View>
           ) : null}

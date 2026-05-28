@@ -1,14 +1,10 @@
 import { Text, View } from 'react-native';
+import type { Recommendation } from 'sleeper-machine';
 
 import { formatTime } from '@/lib/time';
-import { useSleepRecommendation } from './useSleepRecommendation';
-import type { TimeOfDay } from 'sleeper-machine';
 
 interface RecommendationCardProps {
-  readonly childId: string;
-  readonly birthDateIso: string;
-  readonly now: Date;
-  readonly targetWakeTime?: TimeOfDay;
+  readonly recommendation: Recommendation | null;
 }
 
 const CONFIDENCE_LABEL: Record<'low' | 'medium' | 'high', string> = {
@@ -23,21 +19,8 @@ const CONFIDENCE_DOT: Record<'low' | 'medium' | 'high', string> = {
   high: 'bg-navy',
 };
 
-export function RecommendationCard({
-  childId,
-  birthDateIso,
-  now,
-  targetWakeTime,
-}: RecommendationCardProps) {
-  const { recommendation, isLoading, error } = useSleepRecommendation(
-    childId,
-    birthDateIso,
-    now,
-    targetWakeTime,
-  );
-
-  if (isLoading || !recommendation) return null;
-  if (error) return null;
+export function RecommendationCard({ recommendation }: RecommendationCardProps) {
+  if (!recommendation) return null;
 
   const { nextSleepAt, currentWakeWindowDuration, remainingNapsToday, confidence, warnings } =
     recommendation;

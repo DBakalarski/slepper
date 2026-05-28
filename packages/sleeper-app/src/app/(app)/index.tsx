@@ -21,6 +21,7 @@ import {
   type IncomingInvitation,
 } from '@/features/family/hooks';
 import { RecommendationCard } from '@/features/recommendation/RecommendationCard';
+import { useSleepRecommendation } from '@/features/recommendation/useSleepRecommendation';
 import { BackdatedSessionModal } from '@/features/sessions/components/BackdatedSessionModal';
 import {
   useActiveSession,
@@ -152,6 +153,10 @@ function ActiveChildSection({ child }: ActiveChildSectionProps) {
   const lastEnded = lastEndedQuery.data ?? null;
   const todaySessions = todaySessionsQuery.data ?? [];
 
+  // Rekomendacja age-based liczona raz na poziomie sekcji — single source of truth
+  // dla ActiveWindowCard (badge "Drzemka za") i RecommendationCard ("Nastepny sen").
+  const { recommendation } = useSleepRecommendation(childId, child.birth_date, now);
+
   function handleStart(type: 'nap' | 'night_sleep') {
     if (activeSession) return;
     startSession.mutate({ childId, type });
@@ -172,21 +177,10 @@ function ActiveChildSection({ child }: ActiveChildSectionProps) {
       ) : (
         <ActiveWindowCard
           lastSleepEndAt={lastEnded?.end_at ? new Date(lastEnded.end_at) : null}
+          recommendation={recommendation}
+          now={now}
         />
       )}
-
-      <TodayStatsCard
-        sessions={todaySessions}
-        activeSession={activeSession}
-        now={now}
-        startOfDay={startOfDay}
-      />
-
-      <RecommendationCard
-        childId={childId}
-        birthDateIso={child.birth_date}
-        now={now}
-      />
 
       <BigActionButton
         mode={activeSession ? 'stop' : 'start'}
@@ -235,6 +229,15 @@ function ActiveChildSection({ child }: ActiveChildSectionProps) {
           ))}
         </View>
       ) : null}
+
+      <TodayStatsCard
+        sessions={todaySessions}
+        activeSession={activeSession}
+        now={now}
+        startOfDay={startOfDay}
+      />
+
+      <RecommendationCard recommendation={recommendation} />
 
       <BackdatedSessionModal
         visible={isBackdatedOpen}
