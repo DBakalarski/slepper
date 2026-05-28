@@ -209,13 +209,23 @@
 
 ### Walidacja
 
-- [ ] Aktywność między sesjami liczona prawidłowo (test: dodać 2 sesje w bliskim odstępie) — manual test
-- [ ] Tap na sesję otwiera detal (`/session/[id]`) — manual test
-- [ ] Segment "Kalendarz" pokazuje placeholder — manual test
-- [ ] Dark mode parity — manual test
-- [x] `npx tsc --noEmit` + `npm run lint` PASS (2026-05-28)
-- [ ] Commit: `feat(ui-redesign): faza 4 — historia redesign`
-- [ ] Commit log w `docs/commits/`
+- [ ] Aktywność między sesjami liczona prawidłowo (test: dodać 2 sesje w bliskim odstępie) — manual test (patrz manual-test-faza-4.md S1)
+- [ ] Tap na sesję otwiera detal (`/session/[id]`) — manual test (patrz manual-test-faza-4.md S2)
+- [ ] Segment "Kalendarz" pokazuje placeholder — manual test (patrz manual-test-faza-4.md S3)
+- [ ] Dark mode parity — manual test (patrz manual-test-faza-4.md S4)
+- [x] `npx tsc --noEmit` + `npm run lint` PASS (2026-05-28; re-run po review 2026-05-28)
+- [x] Commit: `feat(ui-redesign): faza 4 — historia redesign` (22dd268)
+- [x] Commit log w `docs/commits/` (460a2aa)
+
+### Do poprawy po review fazy 4
+
+Review fazy 4 (2026-05-28, raport: `review-faza-4.md`) — severity gate **CZYSTE** (0 P1, 0 P2, 5 P3). Wszystkie pozycje to nity / batch-fix kandydaci do Fazy 6 polish — kontynuacja Fazy 5 odblokowana.
+
+- [ ] 🟡 [nit] **history.tsx:57-58** — `setDate(getDate() - N)` zastapic `addDays(createdAt, -(RANGE_DAYS - 1))` z `date-fns` (spojnosc z `learned-patterns.md` TZ-safe time pattern; Faza 6 batch-fix)
+- [ ] 🟡 [nit] **SessionListItem.tsx:120** — `accessibilityLabel` nie wymienia `gapBeforeMs` gdy `showGap` (VoiceOver kontekst); rozwazyc dolaczenie "po aktywnosci Xg Ym" gdy gap > 0 (Faza 6 a11y batch)
+- [ ] 🟡 [nit] **history.tsx:91 + ScrollView** — przy skalowaniu (`RANGE_DAYS` > 30 lub 200+ sesji) przeniesc na FlatList z `getItemLayout`; obecnie ~70 itemow → bez akcji teraz
+- [ ] 🟡 [nit] **MoreVertical placeholder** — pominiety w Fazie 4 (visual deviation); rozwazyc dodanie w Fazie 6 polish JESLI manual test S1 wykaze brak parity ze screenem #2
+- [ ] 🟡 [nit] **Cross-midnight session UI** — sesja 23:30 → 01:30 wyswietla "23:30 — 01:30" bez wskazania ze konczy sie nastepnego dnia; manual test S7 zweryfikuje czy UX jest akceptowalny dla MVP
 
 ---
 
@@ -223,33 +233,34 @@
 
 ### Implementacja
 
-- [ ] `sleeper-app/src/lib/child-age.ts` — `formatChildAge(birthDate)` → "21 miesięcy · ur. 12 sie. 2024" (polski format)
-- [ ] `sleeper-app/src/lib/sleep-stats.ts` — `useAvgSleep7d(childId)` hook (TanStack Query, reuse `useSessions`)
-- [ ] `sleeper-app/src/app/(app)/profile.tsx` (rewrite):
-  - [ ] Header: tytuł "Profil" + subtitle "Dzieci i ustawienia"
-  - [ ] Gear `IconButton` po prawej → `router.push('/settings')` (placeholder route, zgodnie z decyzją Fazy 0)
-  - [ ] Karta aktywnego dziecka (solid `bg-purple-light` lub gradient):
-    - [ ] Avatar size lg + border
-    - [ ] Imię (font-display text-2xl bold) + wiek + data ur.
-    - [ ] Zagnieżdżona Card: label "NORMA SNU DLA WIEKU" + value "13-15g/dobę"
-    - [ ] `ProgressBar` (avgSleep7d / recommendedMax)
-    - [ ] "Średnio Xg Ym ostatnie 7 dni · Y% normy" (success/orange color)
-  - [ ] Sekcja SKRÓTY:
-    - [ ] Row 1: `Bell` + "Przypomnienia" + "Włączone" + `ChevronRight` (no-op / placeholder)
-    - [ ] Row 2: `Moon` + "Tryb ciemny" + `Switch` (controlled by `useThemeStore`) lub tri-state bottom sheet (zgodnie z decyzją Fazy 0)
-- [ ] Sekcja "Rodzina" → `/settings` placeholder (lub zachowana pod SKRÓTAMI, zgodnie z decyzją Fazy 0)
-- [ ] `sleeper-app/src/app/(app)/settings.tsx` (placeholder route) — jeśli decyzja Fazy 0 = `/settings`
+- [x] `sleeper-app/src/lib/child-age.ts` — `formatChildAge(birthDate)` → "21 miesiecy · ur. 12 sie. 2024" (polski format, TZ-safe via `toZonedTime`)
+- [x] `sleeper-app/src/lib/sleep-stats.ts` — `useAvgSleep7d(childId)` hook (TanStack Query reuse `useSessions`, range 7 pelnych dni wstecz, `dayKeyInAppTz` per-day aggregation, cross-midnight split)
+- [x] `sleeper-app/src/app/(app)/profile.tsx` (rewrite):
+  - [x] Header: tytul "Profil" + subtitle "Dzieci i ustawienia"
+  - [x] Gear `IconButton` po prawej → `router.push('/settings')` (placeholder route, decyzja Fazy 0)
+  - [x] Karta aktywnego dziecka — solid `bg-purple-light` (decyzja Fazy 0, NIE gradient):
+    - [x] Avatar size lg + border (border-2 border-white)
+    - [x] Imie (font-display text-2xl bold) + wiek + data ur.
+    - [x] Zagniezdzona biala Card: label "NORMA SNU DLA WIEKU" + value "X-Yg/dobe" (z `getNormForChild`)
+    - [x] `ProgressBar` (avgSleep7d / norm.maxHours), tint success/orange wg progu 85%
+    - [x] "Srednio Xg Ym ostatnie N dni · Y% normy" (success/orange color)
+  - [x] Sekcja SKROTY:
+    - [x] Row 1: `Bell` + "Przypomnienia" + "Wlaczone" + `ChevronRight` (no-op placeholder)
+    - [x] Row 2: `Moon` + "Tryb ciemny" + label aktualnego trybu (System/Jasny/Ciemny) + `ChevronRight` → tri-state bottom sheet (decyzja Fazy 0)
+- [x] Sekcja "Rodzina" + Wyloguj → przeniesione do `/settings` (zachowana funkcjonalnosc, sign out dziala)
+- [x] `sleeper-app/src/app/(app)/settings.tsx` — Tabs.Screen z `href: null` (analogicznie do sleep-fullscreen i session/[id])
+- [x] `sleeper-app/src/features/settings/ThemeModeBottomSheet.tsx` — RN Modal (transparent + slide), 3 opcje z lucide Smartphone/Sun/Moon + Check dla aktywnej (KISS, bez nowych deps)
 
 ### Walidacja
 
-- [ ] Norma snu poprawnie wyliczona dla różnych wieków (test: dziecko 6m vs 24m)
-- [ ] Średnia 7d zgodna z `useSessions` (test manual: sprawdzić ostatnie 7 dni w bazie)
-- [ ] Toggle Tryb ciemny zmienia całą apkę natychmiast (sprawdzenie po Fazie 1)
-- [ ] Persist między restartami (sprawdzenie z Fazy 1)
-- [ ] Dark mode parity
-- [ ] `npx tsc --noEmit` + `npm run lint` PASS
-- [ ] Commit: `feat(ui-redesign): faza 5 — profil redesign`
-- [ ] Commit log w `docs/commits/`
+- [ ] Norma snu poprawnie wyliczona dla roznych wiekow (test: dziecko 6m vs 24m) — manual test
+- [ ] Srednia 7d zgodna z `useSessions` (test manual: sprawdzic ostatnie 7 dni w bazie) — manual test
+- [ ] Toggle Tryb ciemny zmienia cala apke natychmiast — manual test
+- [ ] Persist miedzy restartami — manual test
+- [ ] Dark mode parity — manual test
+- [x] `npx tsc --noEmit` + `npm run lint` PASS (2026-05-28)
+- [x] Commit: `feat(ui-redesign): faza 5 — profil redesign`
+- [x] Commit log w `docs/commits/`
 
 ---
 

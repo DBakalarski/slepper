@@ -129,6 +129,9 @@ export default function AppTabsLayout() {
       <Tabs.Screen name="sleep-fullscreen" options={{ href: null }} />
       {/* session/[id] — ekran edycji, dostepny przez Link z listy sesji */}
       <Tabs.Screen name="session/[id]" options={{ href: null }} />
+      {/* settings — Rodzina + Wyloguj (Faza 5 ui-redesign), dostepny przez
+          gear icon z Profilu. Ukryty w tab barze. */}
+      <Tabs.Screen name="settings" options={{ href: null }} />
     </Tabs>
   );
 }

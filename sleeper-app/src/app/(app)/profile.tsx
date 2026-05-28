@@ -1,70 +1,250 @@
+import { useRouter } from 'expo-router';
+import { Bell, ChevronRight, Moon, Settings as SettingsIcon } from 'lucide-react-native';
+import { useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { Avatar } from '@/components/ui/Avatar';
+import { IconButton } from '@/components/ui/IconButton';
+import { ProgressBar } from '@/components/ui/ProgressBar';
 import { useAuth } from '@/features/auth/AuthProvider';
-import { FamilyMembersList } from '@/features/family/components/FamilyMembersList';
-import { InviteMemberForm } from '@/features/family/components/InviteMemberForm';
-import { NoFamilyFallback } from '@/features/family/components/NoFamilyFallback';
-import { PendingInvitationsList } from '@/features/family/components/PendingInvitationsList';
+import { useChildren, type Child } from '@/features/children/hooks';
+import { useActiveChild } from '@/features/children/useActiveChild';
 import { useCurrentFamily } from '@/features/family/hooks';
-import { supabase } from '@/lib/supabase';
+import { ThemeModeBottomSheet } from '@/features/settings/ThemeModeBottomSheet';
+import { useEffectiveTheme } from '@/features/settings/ThemeProvider';
+import { useThemeStore } from '@/features/settings/useThemeStore';
+import { formatChildAge } from '@/lib/child-age';
+import { getNormForChild } from '@/lib/sleep-norms';
+import {
+  avgSleepPercentOfNorm,
+  avgSleepProgressRatio,
+  useAvgSleep7d,
+} from '@/lib/sleep-stats';
+import { formatDuration } from '@/lib/time';
+
+// Profil — Faza 5 ui-redesign. Karta aktywnego dziecka (Avatar + wiek + norma
+// snu + srednia 7d), sekcja SKROTY (Przypomnienia placeholder + Tryb ciemny
+// tri-state). Sekcja Rodzina + Wyloguj przeniesione do `/settings` (gear icon).
+
+const SUCCESS_THRESHOLD_PCT = 85;
+
+function modeLabel(mode: 'system' | 'light' | 'dark'): string {
+  if (mode === 'system') return 'System';
+  if (mode === 'light') return 'Jasny';
+  return 'Ciemny';
+}
 
 export default function ProfileScreen() {
+  const router = useRouter();
   const { user } = useAuth();
   const familyQuery = useCurrentFamily();
   const family = familyQuery.data ?? null;
+  const familyId = family?.id ?? null;
+  const childrenQuery = useChildren(familyId);
+  const children = useMemo(() => childrenQuery.data ?? [], [childrenQuery.data]);
+  const { activeChildId } = useActiveChild();
+  const activeChild = useMemo<Child | null>(
+    () => children.find((c) => c.id === activeChildId) ?? null,
+    [children, activeChildId],
+  );
 
-  async function handleSignOut() {
-    await supabase.auth.signOut();
-  }
+  const effectiveTheme = useEffectiveTheme();
+  const themeMode = useThemeStore((s) => s.mode);
+  const [themeSheetVisible, setThemeSheetVisible] = useState(false);
+
+  const gearIconColor = effectiveTheme === 'dark' ? '#F5F0E8' : '#1E1B4B';
 
   return (
     <SafeAreaView className="flex-1 bg-cream dark:bg-dark-bg">
-      <ScrollView contentContainerClassName="px-6 py-8 gap-6">
-        <View>
-          <Text className="text-3xl font-semibold text-navy dark:text-cream">Profil</Text>
-          <Text className="mt-1 text-base text-purple dark:text-cream/70">{user?.email}</Text>
-        </View>
-
-        <View className="rounded-2xl bg-white p-4 dark:bg-dark-card">
-          <Text className="text-lg font-semibold text-navy dark:text-cream">Rodzina</Text>
-
-          {familyQuery.isLoading ? (
-            <View className="mt-4 items-center">
-              <ActivityIndicator color="#1E1B4B" />
-            </View>
-          ) : familyQuery.error ? (
-            <Text className="mt-2 text-sm text-orange">
-              Blad ladowania rodziny: {familyQuery.error.message}
+      <ScrollView contentContainerClassName="px-6 py-6 gap-6">
+        {/* Header */}
+        <View className="flex-row items-start justify-between">
+          <View className="flex-1">
+            <Text className="text-3xl font-semibold text-navy dark:text-cream">Profil</Text>
+            <Text className="mt-1 text-base text-text-muted dark:text-cream/60">
+              Dzieci i ustawienia
             </Text>
-          ) : family ? (
-            <>
-              <Text className="mt-1 text-sm text-purple">{family.name}</Text>
-
-              <View className="mt-4">
-                <FamilyMembersList members={family.members} currentEmail={user?.email ?? null} />
-              </View>
-
-              <View className="mt-6 border-t border-purple/15 pt-4">
-                <InviteMemberForm familyId={family.id} currentEmail={user?.email ?? null} />
-              </View>
-
-              <View className="mt-6 border-t border-purple/15 pt-4">
-                <PendingInvitationsList familyId={family.id} />
-              </View>
-            </>
-          ) : (
-            <NoFamilyFallback />
-          )}
+          </View>
+          <IconButton
+            icon={SettingsIcon}
+            accessibilityLabel="Ustawienia"
+            onPress={() => router.push('/settings')}
+            iconColor={gearIconColor}
+          />
         </View>
 
-        <Pressable
-          accessibilityRole="button"
-          onPress={handleSignOut}
-          className="mt-4 items-center justify-center rounded-2xl border border-orange/40 px-4 py-3">
-          <Text className="text-sm font-semibold text-orange">Wyloguj</Text>
-        </Pressable>
+        {/* Karta aktywnego dziecka */}
+        {familyQuery.isLoading || childrenQuery.isLoading ? (
+          <View className="items-center py-6">
+            <ActivityIndicator color="#1E1B4B" />
+          </View>
+        ) : activeChild ? (
+          <ActiveChildCard child={activeChild} />
+        ) : (
+          <NoActiveChildCard email={user?.email ?? null} />
+        )}
+
+        {/* Sekcja SKROTY */}
+        <View className="gap-2">
+          <Text className="text-xs font-semibold uppercase tracking-wide text-text-muted">
+            Skroty
+          </Text>
+          <View className="rounded-card bg-white shadow-card dark:bg-dark-card">
+            <ShortcutRow
+              icon={Bell}
+              iconBgClassName="bg-orange-soft dark:bg-orange/20"
+              iconColor="#E08B6F"
+              label="Przypomnienia"
+              value="Wlaczone"
+              onPress={() => {
+                // Placeholder — flow `expo-notifications` out of scope redesignu.
+              }}
+              isLast={false}
+            />
+            <ShortcutRow
+              icon={Moon}
+              iconBgClassName="bg-purple-soft dark:bg-purple/30"
+              iconColor="#7C6BAD"
+              label="Tryb ciemny"
+              value={modeLabel(themeMode)}
+              onPress={() => setThemeSheetVisible(true)}
+              isLast
+            />
+          </View>
+        </View>
       </ScrollView>
+
+      <ThemeModeBottomSheet
+        visible={themeSheetVisible}
+        onClose={() => setThemeSheetVisible(false)}
+      />
     </SafeAreaView>
+  );
+}
+
+interface ActiveChildCardProps {
+  child: Child;
+}
+
+function ActiveChildCard({ child }: ActiveChildCardProps) {
+  const birthDate = useMemo(() => new Date(child.birth_date), [child.birth_date]);
+  const norm = useMemo(() => getNormForChild(birthDate), [birthDate]);
+  const { avgMs, daysCovered } = useAvgSleep7d(child.id);
+
+  const progress = avgSleepProgressRatio(avgMs, norm.maxHours);
+  const percentOfNorm = avgSleepPercentOfNorm(avgMs, norm.maxHours);
+  const isWithinNorm = percentOfNorm >= SUCCESS_THRESHOLD_PCT;
+
+  // Karta z solid `bg-purple-light` (decyzja Fazy 0 — SKIP gradient).
+  // Tekst: navy w light, cream w dark (na fioletowym tle WCAG AA OK dla navy).
+  return (
+    <View className="rounded-card bg-purple-light shadow-card p-5 gap-4 dark:bg-dark-surface">
+      <View className="flex-row items-center gap-4">
+        <Avatar
+          name={child.name}
+          color={child.avatar_color}
+          size="lg"
+          ringClassName="border-2 border-white dark:border-cream/30"
+        />
+        <View className="flex-1">
+          <Text className="font-display text-2xl font-bold text-navy dark:text-cream">
+            {child.name}
+          </Text>
+          <Text className="mt-1 text-base text-navy/70 dark:text-cream/70">
+            {formatChildAge(child.birth_date)}
+          </Text>
+        </View>
+      </View>
+
+      {/* Zagniezdzona biala karta z norma snu */}
+      <View className="rounded-card bg-white p-4 gap-2 dark:bg-dark-card">
+        <Text className="text-xs font-semibold uppercase tracking-wide text-text-muted">
+          Norma snu dla wieku
+        </Text>
+        <Text className="text-2xl font-bold text-navy dark:text-cream">
+          {norm.minHours}-{norm.maxHours}g/dobe
+        </Text>
+        <View className="mt-2">
+          <ProgressBar
+            value={progress}
+            tintClassName={isWithinNorm ? 'bg-success' : 'bg-orange'}
+          />
+        </View>
+        <Text className="mt-1 text-xs text-text-muted dark:text-cream/60">
+          {daysCovered > 0
+            ? `Srednio ${formatDuration(avgMs)} ostatnie ${daysCovered} ${daysCovered === 1 ? 'dzien' : 'dni'} · `
+            : 'Brak danych z ostatnich 7 dni · '}
+          <Text
+            className={
+              isWithinNorm ? 'font-semibold text-success' : 'font-semibold text-orange'
+            }>
+            {percentOfNorm}% normy
+          </Text>
+        </Text>
+      </View>
+    </View>
+  );
+}
+
+interface NoActiveChildCardProps {
+  email: string | null;
+}
+
+function NoActiveChildCard({ email }: NoActiveChildCardProps) {
+  return (
+    <View className="rounded-card bg-white p-5 shadow-card dark:bg-dark-card">
+      <Text className="text-base font-semibold text-navy dark:text-cream">
+        Brak aktywnego dziecka
+      </Text>
+      <Text className="mt-1 text-sm text-text-muted dark:text-cream/60">
+        Aby zobaczyc karte profilu, dodaj dziecko z ekranu Dzisiaj lub przyjmij
+        zaproszenie do rodziny.
+      </Text>
+      {email ? (
+        <Text className="mt-3 text-xs text-text-muted dark:text-cream/50">
+          Zalogowany: {email}
+        </Text>
+      ) : null}
+    </View>
+  );
+}
+
+interface ShortcutRowProps {
+  icon: React.ComponentType<{ size?: number; color?: string }>;
+  iconBgClassName: string;
+  iconColor: string;
+  label: string;
+  value: string;
+  onPress: () => void;
+  isLast: boolean;
+}
+
+function ShortcutRow({
+  icon: Icon,
+  iconBgClassName,
+  iconColor,
+  label,
+  value,
+  onPress,
+  isLast,
+}: ShortcutRowProps) {
+  const effectiveTheme = useEffectiveTheme();
+  const chevronColor = effectiveTheme === 'dark' ? '#B8A8D9' : '#6B6580';
+  const separator = isLast ? '' : 'border-b border-cream dark:border-dark-surface';
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`${label}, ${value}`}
+      onPress={onPress}
+      className={`flex-row items-center px-4 py-4 ${separator}`}>
+      <View
+        className={`w-10 h-10 items-center justify-center rounded-pill ${iconBgClassName}`}>
+        <Icon size={20} color={iconColor} />
+      </View>
+      <Text className="ml-3 flex-1 text-base text-navy dark:text-cream">{label}</Text>
+      <Text className="text-sm text-text-muted dark:text-cream/60 mr-2">{value}</Text>
+      <ChevronRight size={20} color={chevronColor} />
+    </Pressable>
   );
 }
