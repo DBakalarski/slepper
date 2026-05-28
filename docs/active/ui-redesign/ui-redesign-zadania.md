@@ -168,12 +168,22 @@
 
 ### Walidacja
 
-- [ ] Porównanie wizualne ze screenem #1 (delta acceptable: kerning fontów) — manual test on-device
-- [ ] Dark mode parity — manual test on-device
-- [ ] Test on-device iOS + Android — manual test
+- [ ] Porównanie wizualne ze screenem #1 (delta acceptable: kerning fontów) — manual test (patrz `manual-test-faza-3.md`)
+- [ ] Dark mode parity — manual test (patrz `manual-test-faza-3.md`)
+- [ ] Test on-device iOS + Android — manual test (patrz `manual-test-faza-3.md`)
 - [x] `npx tsc --noEmit` + `npm run lint` PASS (2026-05-28)
-- [ ] Commit: `feat(ui-redesign): faza 3 — dzisiaj redesign`
-- [ ] Commit log w `docs/commits/`
+- [x] Commit: `feat(ui-redesign): faza 3 — dzisiaj redesign` (commit `2220c5d` 2026-05-28)
+- [x] Commit log w `docs/commits/` (zalogowany `a71aae7`)
+
+### Do poprawy po review fazy 3
+
+> Review: ✅ CZYSTE (0 P1, 0 P2, 5 P3). Pełny raport: `review-faza-3.md`. Wszystkie pozycje poniżej to **opcjonalne** nity — NIE blokują kontynuacji do Fazy 4. Manual test checklist: `manual-test-faza-3.md` (6 scenariuszy on-device, non-blocking).
+
+- [ ] 🟡 [nit] **`HomeHeader.tsx:37,39`, `BigActionButton.tsx:51,54`, `QuickActions.tsx:25,33,41`** — HEX literals przekroczyły próg "3+ duplikacji" z Fazy 0 (łącznie 9+ wystąpień `#1E1B4B` / `#F5F0E8` / `#E08B6F` / `#7C6BAD` / `#6B6580` w fazach 0+2+3). Wyciągnąć do `src/lib/colors.ts` (`PALETTE = { navy, cream, ... } as const`). Batch-fix w Fazie 6 polish.
+- [ ] 🟡 [nit] **`TodayStatsCard.tsx:122`** — `const dayMs = MS_PER_DAY` local re-alias modułowej stałej. Użyć `MS_PER_DAY` bezpośrednio w segments. Kosmetyczne, przy najbliższej edycji pliku.
+- [ ] 🟡 [nit] **`ActiveWindowCard.tsx:50,59`** — `dark:text-navy` === `text-navy` (redundancja klasy). Świadomy zabieg bo karta nie ma `dark:bg-*` (decyzja designerska — tło zostaje pomarańczowe w dark mode), ale klasa pusta. Usunąć w Fazie 6 LUB dodać `dark:bg-orange/20` jeśli zmienić decyzję dark.
+- [ ] 🟡 [nit-design] **`ActiveWindowCard.tsx:38`** — brak `dark:bg-*` variant na `bg-orange-soft`. Karta zostaje pomarańczowa w dark mode (vs `TodayStatsCard`/`QuickActions` które idą w `bg-dark-card`). **Decyzja designerska do walidacji manual** (Scenariusz S6 dark mode parity w `manual-test-faza-3.md`). Jeśli wygląda obco — dodać `dark:bg-orange/20`.
+- [ ] 🟡 [nit] **Wszystkie komponenty Fazy 3** — inferred return type zamiast explicit `ReactElement`. Spójne z fazami 0/1/2 (akceptowalna odchyłka §10). Batch-fix w Fazie 6 jeśli zespół tak preferuje. `useNotificationDot` ma explicit `: boolean` — wzorzec do naśladowania dla pure helperów.
 
 ---
 
@@ -181,29 +191,29 @@
 
 ### Implementacja
 
-- [ ] `sleeper-app/src/app/(app)/history.tsx`:
-  - [ ] Header: tytuł "Historia" + subtitle "Wszystkie sesje snu" (text-muted)
-  - [ ] `SegmentedControl` Lista (`List` icon) / Kalendarz (`Calendar` icon)
-  - [ ] Widok kalendarza = placeholder ("Widok kalendarza wkrótce")
-  - [ ] Grupowanie po dniach z header: tytuł + agregat "Xg Ym · N sesji" (text-muted)
-  - [ ] Karty sesji wewnątrz jednej Card (rounded-card) z separatorem
-  - [ ] Linia "aktywność Xg Ym" między sesjami (text-orange-dark, mała czcionka)
-- [ ] `sleeper-app/src/lib/session-gaps.ts` — `computeGapsBetweenSessions(sessions)` (gap = `prev.end_at` → `next.start_at`)
-- [ ] `sleeper-app/src/components/SessionListItem.tsx`:
-  - [ ] Ikona po lewej: `Sun` (nap orange) / `Moon` (night purple) w okrągłym chipie
-  - [ ] Środek: zakres "09:30 — 10:41" (font-display bold large)
-  - [ ] Pod zakresem: "Drzemka · 1g 11m" + kropka status
-  - [ ] Po prawej: `ChevronRight` → link do `/session/[id]`
-  - [ ] Lewa krawędź: `MoreVertical` placeholder (visual only)
-  - [ ] Prop `gapBeforeMs?: number` do renderowania "aktywność X"
+- [x] `sleeper-app/src/app/(app)/history.tsx`:
+  - [x] Header: tytuł "Historia" + subtitle "Wszystkie sesje snu" (text-muted)
+  - [x] `SegmentedControl` Lista (`List` icon) / Kalendarz (`Calendar` icon)
+  - [x] Widok kalendarza = placeholder ("Widok kalendarza wkrótce")
+  - [x] Grupowanie po dniach z header: tytuł + agregat "Xg Ym · N sesji" (text-muted)
+  - [x] Karty sesji wewnątrz jednej Card (rounded-card) z separatorem
+  - [x] Linia "aktywność Xg Ym" między sesjami (text-orange-dark, mała czcionka)
+- [x] `sleeper-app/src/lib/session-gaps.ts` — `computeGapsBetweenSessions(sessions)` (gap = `prev.end_at` → `next.start_at`)
+- [x] `sleeper-app/src/components/SessionListItem.tsx`:
+  - [x] Ikona po lewej: `Sun` (nap orange) / `Moon` (night purple) w okrągłym chipie
+  - [x] Środek: zakres "09:30 — 10:41" (font-display bold large)
+  - [x] Pod zakresem: "Drzemka · 1g 11m" + kropka status
+  - [x] Po prawej: `ChevronRight` → link do `/session/[id]` (przez `onPress` z parent lub fallback `router.push`)
+  - [ ] Lewa krawędź: `MoreVertical` placeholder — POMINIETO (odchylenie od planu, patrz kontekst)
+  - [x] Prop `gapBeforeMs?: number` do renderowania "aktywność X"
 
 ### Walidacja
 
-- [ ] Aktywność między sesjami liczona prawidłowo (test: dodać 2 sesje w bliskim odstępie)
-- [ ] Tap na sesję otwiera detal (`/session/[id]`)
-- [ ] Segment "Kalendarz" pokazuje placeholder
-- [ ] Dark mode parity
-- [ ] `npx tsc --noEmit` + `npm run lint` PASS
+- [ ] Aktywność między sesjami liczona prawidłowo (test: dodać 2 sesje w bliskim odstępie) — manual test
+- [ ] Tap na sesję otwiera detal (`/session/[id]`) — manual test
+- [ ] Segment "Kalendarz" pokazuje placeholder — manual test
+- [ ] Dark mode parity — manual test
+- [x] `npx tsc --noEmit` + `npm run lint` PASS (2026-05-28)
 - [ ] Commit: `feat(ui-redesign): faza 4 — historia redesign`
 - [ ] Commit log w `docs/commits/`
 

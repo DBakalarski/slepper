@@ -1,164 +1,188 @@
+import { useRouter } from 'expo-router';
+import { Calendar, List } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, SectionList, Text, View } from 'react-native';
+import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { DatePickerField } from '@/components/DatePickerField';
 import { SessionListItem } from '@/components/SessionListItem';
+import { Card } from '@/components/ui/Card';
+import { SegmentedControl, type SegmentOption } from '@/components/ui/SegmentedControl';
 import { useChildren } from '@/features/children/hooks';
 import { useActiveChild } from '@/features/children/useActiveChild';
 import { useCurrentFamily } from '@/features/family/hooks';
 import { useSessions, type SleepSession } from '@/features/sessions/hooks';
+import { useEffectiveTheme } from '@/features/settings/ThemeProvider';
 import { extractErrorMessage } from '@/lib/extract-error-message';
+import { computeGapsBetweenSessions } from '@/lib/session-gaps';
 import {
   dayKeyInAppTz,
   endOfDayInAppTz,
   formatDateNoYear,
+  formatDuration,
   startOfDayInAppTz,
+  todayDateInAppTz,
 } from '@/lib/time';
 
-// Ile dni wstecz pokazujemy w "wszystkie sesje". 14 dni = realny scope MVP
-// (typowa retencja pamietania snu) bez paginacji.
-const ALL_RANGE_DAYS = 14;
+// Ile dni wstecz pokazujemy. 14 dni = realny scope MVP (typowa retencja
+// pamietania snu) bez paginacji.
+const RANGE_DAYS = 14;
 
-type ViewMode = 'day' | 'all';
+type ViewMode = 'list' | 'calendar';
 
-// Ekran historii. Dwa tryby: konkretny dzien (z pickerem) i ostatnie 14 dni
-// pogrupowane po dniu (sekcje SectionList). Brak paginacji — MVP.
+// Ikony lucide nie konsumuja className cross-platform — HEX z palety tailwind.
+const ICON_COLOR_LIGHT = '#1E1B4B';
+const ICON_COLOR_DARK = '#F5F0E8';
+const ICON_COLOR_MUTED = '#6B6580';
+
+// Ekran historii (screen #2, design.md Faza 4). Header + SegmentedControl
+// (Lista / Kalendarz), widok Lista grupuje sesje po dniach w Card z
+// agregatami i "aktywnościami" miedzy sesjami.
 export default function HistoryScreen() {
+  const router = useRouter();
   const familyQuery = useCurrentFamily();
   const childrenQuery = useChildren(familyQuery.data?.id ?? null);
   const { activeChildId } = useActiveChild();
+  const effectiveTheme = useEffectiveTheme();
 
-  const [mode, setMode] = useState<ViewMode>('day');
-  const [pickedDate, setPickedDate] = useState<Date>(() => new Date());
+  const [view, setView] = useState<ViewMode>('list');
 
-  // Granice okna dla query — zalezne od trybu. Memo zeby nie generowac
-  // nowych Date'ow co render (stabilny queryKey w useSessions).
+  // Granice okna dla query — ostatnie 14 dni do koncu dzisiaj. Memo stabilizuje
+  // referencje (queryKey w useSessions). `useState` na `now` zeby NIE zmienial
+  // sie co render — drift kilkugodzinny nie ma znaczenia (lista zostaje swieza
+  // po ewentualnym pull-to-refresh / nawigacji), za to stabilny zakres unika
+  // refetchu co render.
+  const [createdAt] = useState(() => new Date());
   const range = useMemo(() => {
-    if (mode === 'day') {
-      const start = startOfDayInAppTz(pickedDate);
-      const end = endOfDayInAppTz(pickedDate);
-      return { start, end };
-    }
-    // 'all': cofamy sie ALL_RANGE_DAYS od dzis.
-    const today = new Date();
-    const end = endOfDayInAppTz(today);
-    const startBase = new Date(today);
-    startBase.setDate(startBase.getDate() - (ALL_RANGE_DAYS - 1));
+    const end = endOfDayInAppTz(createdAt);
+    const startBase = new Date(createdAt);
+    startBase.setDate(startBase.getDate() - (RANGE_DAYS - 1));
     const start = startOfDayInAppTz(startBase);
     return { start, end };
-  }, [mode, pickedDate]);
+  }, [createdAt]);
 
   const sessionsQuery = useSessions(activeChildId, range.start, range.end);
   const sessions = sessionsQuery.data ?? [];
 
   const hasChild = (childrenQuery.data ?? []).length > 0;
 
+  const iconColor = effectiveTheme === 'dark' ? ICON_COLOR_DARK : ICON_COLOR_LIGHT;
+  const iconColorMuted = effectiveTheme === 'dark' ? '#B8A8D9' : ICON_COLOR_MUTED;
+
+  const segmentOptions: SegmentOption<ViewMode>[] = useMemo(
+    () => [
+      {
+        value: 'list',
+        label: 'Lista',
+        icon: <List size={16} color={view === 'list' ? iconColor : iconColorMuted} />,
+      },
+      {
+        value: 'calendar',
+        label: 'Kalendarz',
+        icon: (
+          <Calendar size={16} color={view === 'calendar' ? iconColor : iconColorMuted} />
+        ),
+      },
+    ],
+    [view, iconColor, iconColorMuted],
+  );
+
   return (
     <SafeAreaView className="flex-1 bg-cream dark:bg-dark-bg">
-      <View className="px-6 pt-6">
-        <Text className="text-3xl font-semibold text-navy dark:text-cream">Historia</Text>
-        <View className="mt-4 flex-row gap-2">
-          <ModeChip label="Wybierz dzien" selected={mode === 'day'} onPress={() => setMode('day')} />
-          <ModeChip
-            label={`Ostatnie ${ALL_RANGE_DAYS} dni`}
-            selected={mode === 'all'}
-            onPress={() => setMode('all')}
-          />
+      <ScrollView contentContainerClassName="px-6 py-6 gap-4">
+        <View>
+          <Text className="font-display text-3xl font-semibold text-navy dark:text-cream">
+            Historia
+          </Text>
+          <Text className="mt-1 text-base text-text-muted dark:text-cream/70">
+            Wszystkie sesje snu
+          </Text>
         </View>
-        {mode === 'day' ? (
-          <View className="mt-3">
-            <DatePickerField
-              label="Dzien"
-              value={pickedDate}
-              onChange={setPickedDate}
-              maximumDate={new Date()}
-              accessibilityLabel="Wybierz dzien historii"
-            />
-          </View>
-        ) : null}
-      </View>
 
-      <View className="mt-4 flex-1">
+        <SegmentedControl options={segmentOptions} value={view} onChange={setView} />
+
         {!hasChild ? (
-          <View className="flex-1 items-center justify-center px-6">
-            <Text className="text-base text-navy dark:text-cream">Brak dziecka w rodzinie.</Text>
-            <Text className="mt-1 text-xs text-purple dark:text-cream/70">
+          <Card>
+            <Text className="text-base text-navy dark:text-cream">
+              Brak dziecka w rodzinie.
+            </Text>
+            <Text className="mt-1 text-xs text-text-muted dark:text-cream/70">
               Dodaj dziecko na ekranie Dzisiaj, zeby zobaczyc historie.
             </Text>
-          </View>
+          </Card>
+        ) : view === 'calendar' ? (
+          <CalendarPlaceholder iconColor={iconColorMuted} />
         ) : sessionsQuery.isLoading ? (
-          <View className="flex-1 items-center justify-center">
-            <ActivityIndicator color="#1E1B4B" />
+          <View className="items-center justify-center py-12">
+            <ActivityIndicator color={iconColor} />
           </View>
         ) : sessionsQuery.isError ? (
-          <View className="flex-1 items-center justify-center px-6">
-            <Text className="text-base text-navy dark:text-cream">Blad ladowania historii.</Text>
+          <Card>
+            <Text className="text-base text-navy dark:text-cream">
+              Blad ladowania historii.
+            </Text>
             <Text className="mt-1 text-xs text-orange">
               {extractErrorMessage(sessionsQuery.error)}
             </Text>
-          </View>
-        ) : mode === 'all' ? (
-          <GroupedHistoryList sessions={sessions} />
+          </Card>
         ) : (
-          <FlatHistoryList sessions={sessions} />
+          <GroupedHistoryList
+            sessions={sessions}
+            onPressSession={(id) =>
+              router.push({ pathname: '/session/[id]', params: { id } })
+            }
+          />
         )}
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
-interface ModeChipProps {
-  label: string;
-  selected: boolean;
-  onPress: () => void;
+interface CalendarPlaceholderProps {
+  iconColor: string;
 }
 
-function ModeChip({ label, selected, onPress }: ModeChipProps) {
+function CalendarPlaceholder({ iconColor }: CalendarPlaceholderProps) {
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityState={{ selected }}
-      onPress={onPress}
-      className={`rounded-xl px-3 py-2 ${selected ? 'bg-navy dark:bg-dark-surface' : 'bg-white dark:bg-dark-card'}`}>
-      <Text className={`text-xs font-semibold ${selected ? 'text-cream' : 'text-navy dark:text-cream'}`}>
-        {label}
-      </Text>
-    </Pressable>
+    <Card>
+      <View className="items-center justify-center gap-3 py-8">
+        <Calendar size={36} color={iconColor} />
+        <Text className="text-base text-text-muted dark:text-cream/70">
+          Widok kalendarza wkrótce
+        </Text>
+      </View>
+    </Card>
   );
 }
 
-interface ListProps {
-  sessions: SleepSession[];
-}
-
-function FlatHistoryList({ sessions }: ListProps) {
-  if (sessions.length === 0) {
-    return (
-      <View className="flex-1 items-center justify-center px-6">
-        <Text className="text-base text-navy dark:text-cream">Brak sesji tego dnia.</Text>
-      </View>
-    );
-  }
-  return (
-    <View className="flex-1 px-6">
-      <View className="gap-2">
-        {sessions.map((s) => (
-          <SessionListItem key={s.id} session={s} />
-        ))}
-      </View>
-    </View>
-  );
-}
-
-interface DaySection {
+interface DayGroup {
+  dayKey: string;
   title: string;
-  data: SleepSession[];
+  sessions: SleepSession[];
+  totalMs: number;
 }
 
-function groupByDay(sessions: SleepSession[]): DaySection[] {
-  // useSessions zwraca sesje posortowane desc po start_at — zachowujemy
-  // ta kolejnosc w sekcjach (najnowszy dzien najpierw).
+// Polska nazwa "Dzisiaj" / "Wczoraj" / data po polsku (np. "Piatek, 22 maja").
+// Implementacja prosta: dayKey === today/yesterday → label specjalny, w pozostalych
+// uzywamy istniejacego `formatDateNoYear` (DD.MM) z time.ts. Brak date-fns/locale
+// polskiego — unikamy nowej zaleznosci, "Piatek, 22 maja" wymagaloby `pl` locale.
+// MVP: DD.MM dla starszych dni (pattern z poprzedniej implementacji history.tsx).
+function dayTitleFor(dayKey: string, now: Date): string {
+  const todayKey = todayDateInAppTz(now);
+  if (dayKey === todayKey) return 'Dzisiaj';
+
+  const yesterday = new Date(now);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const yesterdayKey = todayDateInAppTz(yesterday);
+  if (dayKey === yesterdayKey) return 'Wczoraj';
+
+  // Reprezentatywny instant w samym srodku dnia (12:00 UTC) — formatter
+  // konwertuje to do app tz i wypisze DD.MM.
+  return formatDateNoYear(new Date(`${dayKey}T12:00:00Z`));
+}
+
+function groupByDay(sessions: SleepSession[], now: Date): DayGroup[] {
+  // Grupowanie wg klucza dnia w app tz. useSessions zwraca posortowane desc po
+  // start_at — zachowujemy ta kolejnosc dni (najnowszy najpierw).
   const groups: Record<string, SleepSession[]> = {};
   const order: string[] = [];
   for (const s of sessions) {
@@ -169,37 +193,101 @@ function groupByDay(sessions: SleepSession[]): DaySection[] {
     }
     groups[key].push(s);
   }
-  return order.map((key) => ({
-    title: formatDateNoYear(new Date(`${key}T12:00:00Z`)),
-    data: groups[key],
-  }));
+  return order.map((key) => {
+    const daySessions = groups[key];
+    const totalMs = daySessions.reduce((acc, s) => {
+      if (!s.end_at) return acc; // sesja w toku — nie wliczamy do agregatu
+      return acc + (new Date(s.end_at).getTime() - new Date(s.start_at).getTime());
+    }, 0);
+    return {
+      dayKey: key,
+      title: dayTitleFor(key, now),
+      sessions: daySessions,
+      totalMs,
+    };
+  });
 }
 
-function GroupedHistoryList({ sessions }: ListProps) {
-  const sections = useMemo(() => groupByDay(sessions), [sessions]);
+interface GroupedHistoryListProps {
+  sessions: SleepSession[];
+  onPressSession: (id: string) => void;
+}
 
-  if (sections.length === 0) {
+function GroupedHistoryList({ sessions, onPressSession }: GroupedHistoryListProps) {
+  const now = useMemo(() => new Date(), []);
+  const groups = useMemo(() => groupByDay(sessions, now), [sessions, now]);
+
+  if (groups.length === 0) {
     return (
-      <View className="flex-1 items-center justify-center px-6">
-        <Text className="text-base text-navy dark:text-cream">Brak sesji w ostatnich {ALL_RANGE_DAYS} dniach.</Text>
-      </View>
+      <Card>
+        <Text className="text-base text-navy dark:text-cream">
+          Brak sesji w historii.
+        </Text>
+      </Card>
     );
   }
 
   return (
-    <SectionList
-      sections={sections}
-      keyExtractor={(item) => item.id}
-      contentContainerClassName="px-6 pb-6 gap-2"
-      renderItem={({ item }) => <SessionListItem session={item} />}
-      renderSectionHeader={({ section }) => (
-        <View className="mt-3 mb-1">
-          <Text className="text-xs font-semibold uppercase tracking-wide text-purple">
-            {section.title}
-          </Text>
-        </View>
-      )}
-      stickySectionHeadersEnabled={false}
-    />
+    <View className="gap-4">
+      {groups.map((group) => (
+        <DayGroupSection
+          key={group.dayKey}
+          group={group}
+          onPressSession={onPressSession}
+        />
+      ))}
+    </View>
+  );
+}
+
+interface DayGroupSectionProps {
+  group: DayGroup;
+  onPressSession: (id: string) => void;
+}
+
+function DayGroupSection({ group, onPressSession }: DayGroupSectionProps) {
+  // Sortuj rosnaco (chronologicznie) wewnatrz dnia — najwczesniejsza u gory,
+  // zeby gapy "aktywnosci" mialy sens kierunkowy (prev.end → next.start).
+  const orderedSessions = useMemo(() => {
+    return [...group.sessions].sort((a, b) => {
+      return new Date(a.start_at).getTime() - new Date(b.start_at).getTime();
+    });
+  }, [group.sessions]);
+
+  const gapMap = useMemo(() => {
+    return computeGapsBetweenSessions(orderedSessions);
+  }, [orderedSessions]);
+
+  const sessionCount = orderedSessions.length;
+
+  return (
+    <View className="gap-2">
+      <View className="flex-row items-end justify-between px-1">
+        <Text className="font-display text-base font-semibold text-navy dark:text-cream">
+          {group.title}
+        </Text>
+        <Text className="text-xs text-text-muted dark:text-cream/70">
+          {formatDuration(group.totalMs)} · {sessionCount}{' '}
+          {sessionCount === 1 ? 'sesja' : 'sesji'}
+        </Text>
+      </View>
+      <Card className="py-0">
+        {orderedSessions.map((session, index) => (
+          <View
+            key={session.id}
+            className={
+              index === 0
+                ? ''
+                : 'border-t border-cream dark:border-dark-surface'
+            }>
+            <SessionListItem
+              session={session}
+              gapBeforeMs={gapMap.get(session.id)}
+              onPress={() => onPressSession(session.id)}
+            />
+          </View>
+        ))}
+      </Card>
+    </View>
   );
 }
