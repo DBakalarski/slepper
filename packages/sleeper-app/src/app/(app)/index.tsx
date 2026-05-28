@@ -20,6 +20,7 @@ import {
   useMyIncomingInvitations,
   type IncomingInvitation,
 } from '@/features/family/hooks';
+import { RecommendationCard } from '@/features/recommendation/RecommendationCard';
 import { BackdatedSessionModal } from '@/features/sessions/components/BackdatedSessionModal';
 import {
   useActiveSession,
@@ -31,6 +32,7 @@ import {
 import { COLORS } from '@/lib/colors';
 import { extractErrorMessage } from '@/lib/extract-error-message';
 import { endOfDayInAppTz, startOfDayInAppTz } from '@/lib/time';
+import { useNow } from '@/lib/useNow';
 
 const TICK_MS = 30 * 1000; // odswiez "now" co 30s dla agregatow / okna
 
@@ -118,25 +120,21 @@ export default function TodayScreen() {
           <AddChildForm familyId={family.id} />
         ) : null}
 
-        {activeChild ? <ActiveChildSection childId={activeChild.id} /> : null}
+        {activeChild ? <ActiveChildSection child={activeChild} /> : null}
       </ScrollView>
     </SafeAreaView>
   );
 }
 
 interface ActiveChildSectionProps {
-  childId: string;
+  child: { id: string; birth_date: string };
 }
 
-function ActiveChildSection({ childId }: ActiveChildSectionProps) {
+function ActiveChildSection({ child }: ActiveChildSectionProps) {
   const router = useRouter();
-  const [now, setNow] = useState<Date>(() => new Date());
+  const childId = child.id;
+  const now = useNow(TICK_MS);
   const [isBackdatedOpen, setBackdatedOpen] = useState(false);
-
-  useEffect(() => {
-    const id = setInterval(() => setNow(new Date()), TICK_MS);
-    return () => clearInterval(id);
-  }, []);
 
   const startOfDay = useMemo(() => startOfDayInAppTz(now), [now]);
   // endOfDay = poczatek nastepnego dnia w app tz (uwzglednia DST, w odroznieniu
@@ -182,6 +180,12 @@ function ActiveChildSection({ childId }: ActiveChildSectionProps) {
         activeSession={activeSession}
         now={now}
         startOfDay={startOfDay}
+      />
+
+      <RecommendationCard
+        childId={childId}
+        birthDateIso={child.birth_date}
+        now={now}
       />
 
       <BigActionButton
