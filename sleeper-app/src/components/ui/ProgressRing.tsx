@@ -62,7 +62,7 @@ export function ProgressRing({
   return (
     <Animated.View
       accessibilityRole="progressbar"
-      accessibilityValue={{ min: 0, max: 1, now: clamped }}
+      accessibilityValue={{ min: 0, max: 100, now: Math.round(clamped * 100) }}
       style={[{ width: size, height: size }, animatedStyle]}
       className="items-center justify-center">
       <Svg width={size} height={size}>

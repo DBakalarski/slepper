@@ -30,7 +30,7 @@ export function ProgressBar({
   return (
     <View
       accessibilityRole="progressbar"
-      accessibilityValue={{ min: 0, max: 1, now: clamp01(value) }}
+      accessibilityValue={{ min: 0, max: 100, now: Math.round(pct) }}
       className={`${trackClassName} ${heightClassName} w-full overflow-hidden rounded-pill`}>
       <View className={`${tintClassName} h-full rounded-pill`} style={{ width: `${pct}%` }} />
     </View>
