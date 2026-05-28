@@ -10,6 +10,7 @@ import { NoFamilyFallback } from '@/features/family/components/NoFamilyFallback'
 import { PendingInvitationsList } from '@/features/family/components/PendingInvitationsList';
 import { useCurrentFamily } from '@/features/family/hooks';
 import { useEffectiveTheme } from '@/features/settings/ThemeProvider';
+import { COLORS } from '@/lib/colors';
 import { supabase } from '@/lib/supabase';
 
 // Ekran Ustawienia — wprowadzony w Fazie 5 ui-redesign jako miejsce dla sekcji
@@ -24,7 +25,7 @@ export default function SettingsScreen() {
   const familyQuery = useCurrentFamily();
   const family = familyQuery.data ?? null;
   const effectiveTheme = useEffectiveTheme();
-  const backIconColor = effectiveTheme === 'dark' ? '#F5F0E8' : '#1E1B4B';
+  const backIconColor = effectiveTheme === 'dark' ? COLORS.cream : COLORS.navy;
 
   async function handleSignOut() {
     await supabase.auth.signOut();
@@ -40,7 +41,9 @@ export default function SettingsScreen() {
             accessibilityRole="button"
             accessibilityLabel="Wroc"
             onPress={() => router.back()}
-            className="w-10 h-10 items-center justify-center rounded-pill -ml-2">
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
+            className="w-11 h-11 items-center justify-center rounded-pill -ml-2">
             <ChevronLeft size={24} color={backIconColor} />
           </Pressable>
           <Text className="text-3xl font-semibold text-navy dark:text-cream">Ustawienia</Text>
@@ -51,7 +54,7 @@ export default function SettingsScreen() {
 
           {familyQuery.isLoading ? (
             <View className="mt-4 items-center">
-              <ActivityIndicator color="#1E1B4B" />
+              <ActivityIndicator color={COLORS.navy} />
             </View>
           ) : familyQuery.error ? (
             <Text className="mt-2 text-sm text-orange">
@@ -82,6 +85,7 @@ export default function SettingsScreen() {
           accessibilityRole="button"
           accessibilityLabel="Wyloguj"
           onPress={handleSignOut}
+          style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
           className="mt-2 items-center justify-center rounded-card border border-orange/40 px-4 py-3">
           <Text className="text-sm font-semibold text-orange">Wyloguj</Text>
         </Pressable>

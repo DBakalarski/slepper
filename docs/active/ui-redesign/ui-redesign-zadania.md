@@ -221,9 +221,9 @@
 
 Review fazy 4 (2026-05-28, raport: `review-faza-4.md`) — severity gate **CZYSTE** (0 P1, 0 P2, 5 P3). Wszystkie pozycje to nity / batch-fix kandydaci do Fazy 6 polish — kontynuacja Fazy 5 odblokowana.
 
-- [ ] 🟡 [nit] **history.tsx:57-58** — `setDate(getDate() - N)` zastapic `addDays(createdAt, -(RANGE_DAYS - 1))` z `date-fns` (spojnosc z `learned-patterns.md` TZ-safe time pattern; Faza 6 batch-fix)
-- [ ] 🟡 [nit] **SessionListItem.tsx:120** — `accessibilityLabel` nie wymienia `gapBeforeMs` gdy `showGap` (VoiceOver kontekst); rozwazyc dolaczenie "po aktywnosci Xg Ym" gdy gap > 0 (Faza 6 a11y batch)
-- [ ] 🟡 [nit] **history.tsx:91 + ScrollView** — przy skalowaniu (`RANGE_DAYS` > 30 lub 200+ sesji) przeniesc na FlatList z `getItemLayout`; obecnie ~70 itemow → bez akcji teraz
+- [x] 🟡 [nit] **history.tsx:57-58** — `setDate(getDate() - N)` zastapic `addDays(createdAt, -(RANGE_DAYS - 1))` z `date-fns` (Faza 6 batch-fix) — DONE
+- [x] 🟡 [nit] **SessionListItem.tsx:120** — `accessibilityLabel` dolacza ", po aktywnosci Xg Ym" gdy showGap (Faza 6 a11y batch) — DONE
+- [ ] 🟡 [nit] **history.tsx:91 + ScrollView** — przy skalowaniu (`RANGE_DAYS` > 30 lub 200+ sesji) przeniesc na FlatList; TODO comment dodany inline (Faza 6 polish), refaktor odlozony
 - [ ] 🟡 [nit] **MoreVertical placeholder** — pominiety w Fazie 4 (visual deviation); rozwazyc dodanie w Fazie 6 polish JESLI manual test S1 wykaze brak parity ze screenem #2
 - [ ] 🟡 [nit] **Cross-midnight session UI** — sesja 23:30 → 01:30 wyswietla "23:30 — 01:30" bez wskazania ze konczy sie nastepnego dnia; manual test S7 zweryfikuje czy UX jest akceptowalny dla MVP
 
@@ -253,14 +253,24 @@ Review fazy 4 (2026-05-28, raport: `review-faza-4.md`) — severity gate **CZYST
 
 ### Walidacja
 
-- [ ] Norma snu poprawnie wyliczona dla roznych wiekow (test: dziecko 6m vs 24m) — manual test
-- [ ] Srednia 7d zgodna z `useSessions` (test manual: sprawdzic ostatnie 7 dni w bazie) — manual test
-- [ ] Toggle Tryb ciemny zmienia cala apke natychmiast — manual test
-- [ ] Persist miedzy restartami — manual test
-- [ ] Dark mode parity — manual test
-- [x] `npx tsc --noEmit` + `npm run lint` PASS (2026-05-28)
+- [ ] Norma snu poprawnie wyliczona dla roznych wiekow (test: dziecko 6m vs 24m) — manual test (patrz `manual-test-faza-5.md` S1)
+- [ ] Srednia 7d zgodna z `useSessions` (test manual: sprawdzic ostatnie 7 dni w bazie) — manual test (patrz `manual-test-faza-5.md` S2)
+- [ ] Toggle Tryb ciemny zmienia cala apke natychmiast — manual test (patrz `manual-test-faza-5.md` S3)
+- [ ] Persist miedzy restartami — manual test (patrz `manual-test-faza-5.md` S3)
+- [ ] Dark mode parity — manual test (patrz `manual-test-faza-5.md` S4)
+- [x] `npx tsc --noEmit` + `npm run lint` PASS (2026-05-28; re-run po review 2026-05-28)
 - [x] Commit: `feat(ui-redesign): faza 5 — profil redesign`
 - [x] Commit log w `docs/commits/`
+
+### Do poprawy po review fazy 5
+
+> Review: ✅ CZYSTE (0 P1, 0 P2, 5 P3). Pełny raport: `review-faza-5.md`. Wszystkie pozycje to **opcjonalne** nity / batch-fix kandydaci do Fazy 6 polish — NIE blokują kontynuacji do Fazy 6. Manual test checklist: `manual-test-faza-5.md` (5 scenariuszy on-device, non-blocking). Sign out flow potwierdzony jako działający.
+
+- [ ] 🟡 [design-question] **sleep-stats.ts:91-99** — `daysCovered = min(RANGE_DAYS, dailyTotals.size)` oznacza "średnia po dniach aktywnych", nie po wszystkich 7 dniach okna. Label "ostatnie N dni" honestyfikuje, ale design.md mówi "ostatnie 7 dni · Y% normy". **Decyzja produktowa** (rozważyć po manual S2): zostawić obecny pattern (fair dla sparse trackera) lub zmienić na `sumMs / RANGE_DAYS` (motywuje codzienny tracking, ale zaniża dla świeżego usera).
+- [x] 🟡 [a11y-nit] **ThemeModeBottomSheet.tsx:61** — `accessible={false}` na inner Pressable (Faza 6 a11y batch) — DONE
+- [x] 🟡 [nit] **ThemeModeBottomSheet.tsx:44-46, profile.tsx:56,80,99,108** — HEX literals → `src/lib/colors.ts` (Faza 6 batch) — DONE: utworzony `COLORS` w `lib/colors.ts`, refaktor _layout/history/profile/HomeHeader/SessionListItem/QuickActions/BigActionButton/IconButton/Switch/settings/ThemeModeBottomSheet/index/ProgressRing (~14 plikow, redukcja z 50 do 22 wystapien — pozostale w auth/family/sessions forms poza scopem UI redesignu).
+- [x] 🟡 [nit] **profile.tsx:232** — `chevronColor` propsem od rodzica zamiast per-row `useEffectiveTheme()` (Faza 6 batch) — DONE
+- [ ] 🟡 [nit] **child-age.ts:31-35** — `new Date(birthDate)` parsuje ISO 'YYYY-MM-DD' jako UTC midnight, intencja to "lokalna data". Dla user w innym TZ skrajne godziny mogą pokazać off-by-one dnia. MVP single-tz OK, Faza 6 jeśli ekspansja geograficzna (`parseAppTzDateTime`).
 
 ---
 
@@ -268,13 +278,13 @@ Review fazy 4 (2026-05-28, raport: `review-faza-4.md`) — severity gate **CZYST
 
 ### Implementacja
 
-- [ ] VoiceOver/TalkBack: wszystkie `IconButton` z `accessibilityLabel`
-- [ ] `Avatar` z `accessibilityRole="image"` + label `{name}`
-- [ ] Touch targets ≥44pt (review wszystkich Pressable)
-- [ ] Tabular nums: timer w `ActiveWindowCard` i `SleepInProgressCard` używa `style={{ fontVariant: ['tabular-nums'] }}`
-- [ ] Pressable feedback: scale 0.97 + opacity 0.85 na press (Reanimated lub `style={({pressed}) => ...}`)
-- [ ] SegmentedControl transition: Reanimated `withTiming` 200ms
-- [ ] ProgressRing fade-in animation
+- [x] VoiceOver/TalkBack: wszystkie `IconButton` z `accessibilityLabel`
+- [x] `Avatar` z `accessibilityRole="image"` + label `{name}`
+- [x] Touch targets ≥44pt (review wszystkich Pressable) — hitSlop w settings back button, IconButton size=sm, `Pokaz wszystkie`
+- [x] Tabular nums: timer w `ActiveWindowCard` i `SleepInProgressCard` używa `style={{ fontVariant: ['tabular-nums'] }}`
+- [x] Pressable feedback: scale 0.97 + opacity 0.85 na press (`style={({pressed}) => ...}`)
+- [x] SegmentedControl transition: Reanimated `withTiming` 200ms (juz bylo z Fazy 4)
+- [x] ProgressRing fade-in animation (opacity 0→1, 300ms, Reanimated)
 
 ### Walidacja końcowa
 

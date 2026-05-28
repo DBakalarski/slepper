@@ -1,5 +1,13 @@
-import { Text, View } from 'react-native';
+import { useEffect } from 'react';
+import { Text } from 'react-native';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 import Svg, { Circle } from 'react-native-svg';
+
+import { COLORS } from '@/lib/colors';
 
 interface ProgressRingProps {
   // 0..1 — wartosci spoza zakresu sa clampowane.
@@ -34,7 +42,7 @@ export function ProgressRing({
   strokeWidth,
   label,
   trackColor = '#E8DEF7',
-  progressColor = '#7C6BAD',
+  progressColor = COLORS.purple,
   labelClassName = 'text-sm font-semibold text-navy dark:text-cream',
 }: ProgressRingProps) {
   const clamped = clamp01(value);
@@ -43,11 +51,19 @@ export function ProgressRing({
   const dashOffset = circumference * (1 - clamped);
   const center = size / 2;
 
+  // Fade-in przy mount (Faza 6 polish): 0 → 1 nad 300ms. Reanimated worklet,
+  // brak re-rendera, gladko po starcie ekranu.
+  const opacity = useSharedValue(0);
+  useEffect(() => {
+    opacity.value = withTiming(1, { duration: 300 });
+  }, [opacity]);
+  const animatedStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
+
   return (
-    <View
+    <Animated.View
       accessibilityRole="progressbar"
       accessibilityValue={{ min: 0, max: 1, now: clamped }}
-      style={{ width: size, height: size }}
+      style={[{ width: size, height: size }, animatedStyle]}
       className="items-center justify-center">
       <Svg width={size} height={size}>
         <Circle
@@ -73,10 +89,14 @@ export function ProgressRing({
         />
       </Svg>
       {label ? (
-        <View className="absolute inset-0 items-center justify-center">
-          <Text className={labelClassName}>{label}</Text>
-        </View>
+        <Animated.View
+          className="absolute inset-0 items-center justify-center"
+          style={animatedStyle}>
+          <Text className={labelClassName} style={{ fontVariant: ['tabular-nums'] }}>
+            {label}
+          </Text>
+        </Animated.View>
       ) : null}
-    </View>
+    </Animated.View>
   );
 }

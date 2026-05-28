@@ -47,7 +47,7 @@ export function ActiveWindowCard({
       {sinceMs === null ? (
         <>
           <Text
-            className="mt-3 font-display text-6xl font-semibold text-navy dark:text-navy"
+            className="mt-3 font-display text-6xl font-semibold text-navy"
             style={{ fontVariant: ['tabular-nums'] }}>
             Nowy dzień
           </Text>
@@ -56,7 +56,7 @@ export function ActiveWindowCard({
       ) : (
         <>
           <Text
-            className="mt-3 font-display text-6xl font-semibold text-navy dark:text-navy"
+            className="mt-3 font-display text-6xl font-semibold text-navy"
             style={{ fontVariant: ['tabular-nums'] }}>
             {formatDuration(sinceMs)}
           </Text>

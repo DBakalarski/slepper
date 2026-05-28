@@ -1,3 +1,4 @@
+import { addDays } from 'date-fns';
 import { useRouter } from 'expo-router';
 import { Calendar, List } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
@@ -12,6 +13,7 @@ import { useActiveChild } from '@/features/children/useActiveChild';
 import { useCurrentFamily } from '@/features/family/hooks';
 import { useSessions, type SleepSession } from '@/features/sessions/hooks';
 import { useEffectiveTheme } from '@/features/settings/ThemeProvider';
+import { COLORS } from '@/lib/colors';
 import { extractErrorMessage } from '@/lib/extract-error-message';
 import { computeGapsBetweenSessions } from '@/lib/session-gaps';
 import {
@@ -28,11 +30,6 @@ import {
 const RANGE_DAYS = 14;
 
 type ViewMode = 'list' | 'calendar';
-
-// Ikony lucide nie konsumuja className cross-platform — HEX z palety tailwind.
-const ICON_COLOR_LIGHT = '#1E1B4B';
-const ICON_COLOR_DARK = '#F5F0E8';
-const ICON_COLOR_MUTED = '#6B6580';
 
 // Ekran historii (screen #2, design.md Faza 4). Header + SegmentedControl
 // (Lista / Kalendarz), widok Lista grupuje sesje po dniach w Card z
@@ -53,10 +50,10 @@ export default function HistoryScreen() {
   // refetchu co render.
   const [createdAt] = useState(() => new Date());
   const range = useMemo(() => {
+    // TZ-safe: addDays z date-fns operuje na ms, NIE na device tz `setDate`
+    // (zgodnie z `learned-patterns.md` TZ-safe time pattern, batch-fix Fazy 6).
     const end = endOfDayInAppTz(createdAt);
-    const startBase = new Date(createdAt);
-    startBase.setDate(startBase.getDate() - (RANGE_DAYS - 1));
-    const start = startOfDayInAppTz(startBase);
+    const start = startOfDayInAppTz(addDays(createdAt, -(RANGE_DAYS - 1)));
     return { start, end };
   }, [createdAt]);
 
@@ -65,8 +62,8 @@ export default function HistoryScreen() {
 
   const hasChild = (childrenQuery.data ?? []).length > 0;
 
-  const iconColor = effectiveTheme === 'dark' ? ICON_COLOR_DARK : ICON_COLOR_LIGHT;
-  const iconColorMuted = effectiveTheme === 'dark' ? '#B8A8D9' : ICON_COLOR_MUTED;
+  const iconColor = effectiveTheme === 'dark' ? COLORS.cream : COLORS.navy;
+  const iconColorMuted = effectiveTheme === 'dark' ? COLORS.purpleLight : COLORS.textMuted;
 
   const segmentOptions: SegmentOption<ViewMode>[] = useMemo(
     () => [
@@ -88,6 +85,9 @@ export default function HistoryScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-cream dark:bg-dark-bg">
+      {/* TODO Faza future: zamienic ScrollView na FlatList przy >100 sesji.
+          RANGE_DAYS=14 ogranicza skale do typowego MVP; refaktor wymaga
+          flat-listy z section headers (np. SectionList z dayKey -> sessions). */}
       <ScrollView contentContainerClassName="px-6 py-6 gap-4">
         <View>
           <Text className="font-display text-3xl font-semibold text-navy dark:text-cream">
@@ -170,8 +170,7 @@ function dayTitleFor(dayKey: string, now: Date): string {
   const todayKey = todayDateInAppTz(now);
   if (dayKey === todayKey) return 'Dzisiaj';
 
-  const yesterday = new Date(now);
-  yesterday.setDate(yesterday.getDate() - 1);
+  const yesterday = addDays(now, -1);
   const yesterdayKey = todayDateInAppTz(yesterday);
   if (dayKey === yesterdayKey) return 'Wczoraj';
 

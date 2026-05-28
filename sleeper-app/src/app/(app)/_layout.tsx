@@ -7,15 +7,16 @@ import { useAuth } from '@/features/auth/AuthProvider';
 import { useActiveChild } from '@/features/children/useActiveChild';
 import { useEffectiveTheme } from '@/features/settings/ThemeProvider';
 import { useRealtimeSessions } from '@/features/sessions/useRealtimeSessions';
+import { COLORS } from '@/lib/colors';
 
 // Faza 2 ui-redesign: tab bar z ikonami lucide + outlined chip dla active.
 // Kolory pochodza z palety tailwind (purple-light/navy/cream/text-muted).
 // Decyzja: bazuje na `useEffectiveTheme()` (nie raw `useColorScheme()`) — tab
 // bar respektuje manual override z `useThemeStore` (Faza 1).
-const ACTIVE_LIGHT = '#1E1B4B'; // navy
-const ACTIVE_DARK = '#F5F0E8'; // cream
-const INACTIVE_LIGHT = '#6B6580'; // text-muted
-const INACTIVE_DARK = '#B8A8D9'; // purple-light
+const ACTIVE_LIGHT = COLORS.navy;
+const ACTIVE_DARK = COLORS.cream;
+const INACTIVE_LIGHT = COLORS.textMuted;
+const INACTIVE_DARK = COLORS.purpleLight;
 
 type LucideIcon = ComponentType<{ color: string; size: number; strokeWidth?: number }>;
 
@@ -23,10 +24,9 @@ interface TabIconProps {
   Icon: LucideIcon;
   focused: boolean;
   color: string;
-  isDark: boolean;
 }
 
-function TabIcon({ Icon, focused, color, isDark }: TabIconProps) {
+function TabIcon({ Icon, focused, color }: TabIconProps) {
   // Outlined chip dla focused (rounded-pill + border w kolorze active).
   // Bez focused: ikona bez ramki.
   if (!focused) {
@@ -46,7 +46,6 @@ function TabIcon({ Icon, focused, color, isDark }: TabIconProps) {
         borderRadius: 999,
         paddingHorizontal: 14,
         paddingVertical: 6,
-        backgroundColor: isDark ? 'transparent' : 'transparent',
       }}>
       <Icon color={color} size={22} strokeWidth={2.25} />
     </View>
@@ -94,7 +93,7 @@ export default function AppTabsLayout() {
         options={{
           title: 'Dzisiaj',
           tabBarIcon: ({ focused, color }) => (
-            <TabIcon Icon={Home} focused={focused} color={color} isDark={isDark} />
+            <TabIcon Icon={Home} focused={focused} color={color} />
           ),
         }}
       />
@@ -103,7 +102,7 @@ export default function AppTabsLayout() {
         options={{
           title: 'Historia',
           tabBarIcon: ({ focused, color }) => (
-            <TabIcon Icon={Calendar} focused={focused} color={color} isDark={isDark} />
+            <TabIcon Icon={Calendar} focused={focused} color={color} />
           ),
         }}
       />
@@ -112,7 +111,7 @@ export default function AppTabsLayout() {
         options={{
           title: 'Statystyki',
           tabBarIcon: ({ focused, color }) => (
-            <TabIcon Icon={BarChart3} focused={focused} color={color} isDark={isDark} />
+            <TabIcon Icon={BarChart3} focused={focused} color={color} />
           ),
         }}
       />
@@ -121,7 +120,7 @@ export default function AppTabsLayout() {
         options={{
           title: 'Profil',
           tabBarIcon: ({ focused, color }) => (
-            <TabIcon Icon={User} focused={focused} color={color} isDark={isDark} />
+            <TabIcon Icon={User} focused={focused} color={color} />
           ),
         }}
       />

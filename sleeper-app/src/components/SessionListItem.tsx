@@ -4,6 +4,7 @@ import { Pressable, Text, View } from 'react-native';
 
 import type { SleepSession } from '@/features/sessions/hooks';
 import { useEffectiveTheme } from '@/features/settings/ThemeProvider';
+import { COLORS } from '@/lib/colors';
 import { formatDuration, formatTime } from '@/lib/time';
 
 interface SessionListItemProps {
@@ -27,10 +28,10 @@ const TYPE_LABELS: Record<SleepSession['type'], string> = {
 // Paleta dla chipa ikony (Sun = drzemka pomaranczowa, Moon = sen fioletowy).
 // HEX z tailwind tokens — lucide nie konsumuje className cross-platform (pattern
 // ustalony w Fazach 2/3, np. HomeHeader/QuickActions).
-const NAP_ICON_COLOR = '#E08B6F';
-const NIGHT_ICON_COLOR = '#7C6BAD';
-const CHEVRON_LIGHT = '#6B6580';
-const CHEVRON_DARK = '#B8A8D9';
+const NAP_ICON_COLOR = COLORS.orange;
+const NIGHT_ICON_COLOR = COLORS.purple;
+const CHEVRON_LIGHT = COLORS.textMuted;
+const CHEVRON_DARK = COLORS.purpleLight;
 
 // Pojedynczy wiersz historii sesji (screen #2, design.md Faza 4).
 // - Lewo: okragly chip z ikona Sun/Moon
@@ -114,11 +115,15 @@ export function SessionListItem({
 
   if (!isPressable) return content;
 
+  // VoiceOver/TalkBack: dolacz kontekst gapu "po aktywnosci Xg Ym" jesli widoczny
+  // nad sesja (P3 a11y batch Fazy 6).
+  const gapSuffix = showGap ? `, po aktywnosci ${formatDuration(gapBeforeMs)}` : '';
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`Otworz sesje ${TYPE_LABELS[session.type]} ${rangeLabel}`}
-      onPress={handlePress}>
+      accessibilityLabel={`Otworz sesje ${TYPE_LABELS[session.type]} ${rangeLabel}${gapSuffix}`}
+      onPress={handlePress}
+      style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}>
       {content}
     </Pressable>
   );

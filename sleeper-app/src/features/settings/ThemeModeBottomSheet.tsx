@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useEffectiveTheme } from '@/features/settings/ThemeProvider';
 import { useThemeStore, type ThemeMode } from '@/features/settings/useThemeStore';
+import { COLORS } from '@/lib/colors';
 
 // Tri-state bottom sheet do wyboru trybu motywu (System / Light / Dark).
 // Decyzja Fazy 0: tri-state (nie binary toggle) — iOS-idiomatic, jasne ze
@@ -41,9 +42,9 @@ export function ThemeModeBottomSheet({ visible, onClose }: ThemeModeBottomSheetP
   }
 
   // Kolor ikon (lucide nie czyta className cross-platform — pattern z Fazy 2).
-  const iconColor = isDark ? '#F5F0E8' : '#1E1B4B';
-  const checkColor = isDark ? '#F5F0E8' : '#1E1B4B';
-  const mutedIconColor = isDark ? '#B8A8D9' : '#6B6580';
+  const iconColor = isDark ? COLORS.cream : COLORS.navy;
+  const checkColor = isDark ? COLORS.cream : COLORS.navy;
+  const mutedIconColor = isDark ? COLORS.purpleLight : COLORS.textMuted;
 
   return (
     <Modal
@@ -57,8 +58,10 @@ export function ThemeModeBottomSheet({ visible, onClose }: ThemeModeBottomSheetP
         accessibilityLabel="Zamknij wybor motywu"
         onPress={onClose}
         className="flex-1 bg-black/40 justify-end">
-        {/* Stop-propagation: tap na sam sheet NIE powinien zamykac modala. */}
-        <Pressable onPress={() => {}}>
+        {/* Stop-propagation: tap na sam sheet NIE powinien zamykac modala.
+            accessible={false} — VoiceOver/TalkBack nie ogloszaja sztucznego
+            "przycisku", uzytkownik widzi i czyta same opcje motywu (P3 Fazy 6). */}
+        <Pressable accessible={false} onPress={() => {}}>
           <SafeAreaView edges={['bottom']} className="bg-cream dark:bg-dark-card rounded-t-card">
             <View className="px-6 pt-5 pb-3">
               <Text className="text-base font-semibold text-navy dark:text-cream">

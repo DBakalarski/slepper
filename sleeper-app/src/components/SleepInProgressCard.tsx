@@ -24,8 +24,16 @@ export function SleepInProgressCard({ startAt, type }: SleepInProgressCardProps)
       <Text className="text-xs font-semibold uppercase tracking-wide text-cream/70">
         {TYPE_LABELS[type]}
       </Text>
-      <Text className="mt-2 font-mono text-4xl font-semibold text-cream">{display}</Text>
-      <Text className="mt-1 text-sm text-cream/80">{short}</Text>
+      <Text
+        className="mt-2 font-mono text-4xl font-semibold text-cream"
+        style={{ fontVariant: ['tabular-nums'] }}>
+        {display}
+      </Text>
+      <Text
+        className="mt-1 text-sm text-cream/80"
+        style={{ fontVariant: ['tabular-nums'] }}>
+        {short}
+      </Text>
 
       <Link
         href="/sleep-fullscreen"

@@ -5,6 +5,7 @@ import { Avatar } from '@/components/ui/Avatar';
 import { IconButton } from '@/components/ui/IconButton';
 import type { Child } from '@/features/children/hooks';
 import { useEffectiveTheme } from '@/features/settings/ThemeProvider';
+import { COLORS } from '@/lib/colors';
 import { useNotificationDot } from '@/lib/useNotificationDot';
 
 interface HomeHeaderProps {
@@ -34,9 +35,7 @@ export function HomeHeader({ child, now }: HomeHeaderProps) {
   const greeting = greetingForHour(referenceNow.getHours());
   // ChevronDown z lucide bierze HEX przez prop `color` (nie className) — pattern
   // ustalony w Fazie 2 (TabIcon). Dark navy w light, cream w dark.
-  const chevronColor = effectiveTheme === 'dark' ? '#F5F0E8' : '#1E1B4B';
-  // Bell icon kolor — spojny z tab bar i IconButton default (navy/cream).
-  const bellIconColor = effectiveTheme === 'dark' ? '#F5F0E8' : '#1E1B4B';
+  const tintColor = effectiveTheme === 'dark' ? COLORS.cream : COLORS.navy;
 
   return (
     <View className="flex-row items-center justify-between">
@@ -49,14 +48,14 @@ export function HomeHeader({ child, now }: HomeHeaderProps) {
               {child.name}
             </Text>
           </Text>
-          <ChevronDown size={18} color={chevronColor} />
+          <ChevronDown size={18} color={tintColor} />
         </View>
       </View>
       <IconButton
         icon={Bell}
         accessibilityLabel="Powiadomienia"
         showDot={dotVisible}
-        iconColor={bellIconColor}
+        iconColor={tintColor}
       />
     </View>
   );

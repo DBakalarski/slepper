@@ -3,6 +3,7 @@ import { Moon } from 'lucide-react-native';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 
 import type { SessionType } from '@/features/sessions/hooks';
+import { COLORS } from '@/lib/colors';
 
 interface BigActionButtonProps {
   mode: 'start' | 'stop';
@@ -41,17 +42,23 @@ export function BigActionButton({
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityLabel={label}
       accessibilityState={{ disabled: isDisabled, busy: isPending }}
       onPress={handlePress}
       disabled={isDisabled}
+      style={({ pressed }) =>
+        pressed && !isDisabled
+          ? { transform: [{ scale: 0.97 }], opacity: 0.85 }
+          : null
+      }
       className={`flex-row items-center justify-center gap-2 rounded-card px-6 py-5 ${
         isDisabled ? 'bg-navy/50 dark:bg-purple/40' : 'bg-navy dark:bg-purple'
       }`}>
       {isPending ? (
-        <ActivityIndicator color="#F5F0E8" />
+        <ActivityIndicator color={COLORS.cream} />
       ) : (
         <View className="flex-row items-center gap-2">
-          {showMoonIcon ? <Moon size={20} color="#F5F0E8" /> : null}
+          {showMoonIcon ? <Moon size={20} color={COLORS.cream} /> : null}
           <Text className="text-lg font-semibold text-cream">{label}</Text>
         </View>
       )}

@@ -119,11 +119,10 @@ export function TodayStatsCard({
 
   // Stacked bar: udzialy doby (24h) — Sen nocny + Drzemki + Aktywnosc (longest).
   // Reszta doby (= sen utajony / brak sesji) zostawiamy jako puste track.
-  const dayMs = MS_PER_DAY;
   const segments = [
-    { value: agg.nightSleepMs / dayMs, className: 'bg-purple' },
-    { value: agg.napsMs / dayMs, className: 'bg-orange' },
-    { value: agg.longestAwakeMs / dayMs, className: 'bg-success' },
+    { value: agg.nightSleepMs / MS_PER_DAY, className: 'bg-purple' },
+    { value: agg.napsMs / MS_PER_DAY, className: 'bg-orange' },
+    { value: agg.longestAwakeMs / MS_PER_DAY, className: 'bg-success' },
   ];
 
   return (

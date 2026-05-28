@@ -1,6 +1,8 @@
 import type { LucideIcon } from 'lucide-react-native';
 import { Pressable, View } from 'react-native';
 
+import { COLORS } from '@/lib/colors';
+
 export type IconButtonSize = 'sm' | 'md' | 'lg';
 export type IconButtonVariant = 'default' | 'ghost';
 
@@ -38,17 +40,24 @@ export function IconButton({
   variant = 'default',
   showDot = false,
   bgClassName,
-  iconColor = '#1E1B4B',
+  iconColor = COLORS.navy,
 }: IconButtonProps) {
   const sizing = SIZE_TO_CLASSES[size];
   const bg =
     bgClassName ??
     (variant === 'ghost' ? 'bg-transparent' : 'bg-white dark:bg-dark-card');
+  // hitSlop dla `sm` (36pt = ponizej 44pt a11y target) — pozostale rozmiary
+  // wynosza 44pt+. Pressable feedback: scale 0.97 + opacity 0.85 (Faza 6 polish).
+  const hitSlop = size === 'sm' ? { top: 6, bottom: 6, left: 6, right: 6 } : undefined;
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
       onPress={onPress}
+      hitSlop={hitSlop}
+      style={({ pressed }) =>
+        pressed ? { transform: [{ scale: 0.97 }], opacity: 0.85 } : null
+      }
       className={`${sizing.wrapper} ${bg} items-center justify-center rounded-pill`}>
       <View>
         <Icon size={sizing.icon} color={iconColor} />

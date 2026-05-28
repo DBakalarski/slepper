@@ -28,6 +28,7 @@ import {
   useSessions,
   useStartSession,
 } from '@/features/sessions/hooks';
+import { COLORS } from '@/lib/colors';
 import { extractErrorMessage } from '@/lib/extract-error-message';
 import { endOfDayInAppTz, startOfDayInAppTz } from '@/lib/time';
 
@@ -217,7 +218,9 @@ function ActiveChildSection({ childId }: ActiveChildSectionProps) {
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Pokaz wszystkie sesje"
-              onPress={() => router.push('/history')}>
+              onPress={() => router.push('/history')}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}>
               <Text className="text-xs font-semibold text-navy underline dark:text-cream">
                 Pokaz wszystkie
               </Text>
@@ -269,13 +272,19 @@ function InvitationRow({ invitation, onAccept, isProcessing, errorMessage }: Inv
         </View>
         <Pressable
           accessibilityRole="button"
+          accessibilityLabel={`Dolacz do rodziny ${invitation.family_name}`}
           disabled={isProcessing}
           onPress={onAccept}
+          style={({ pressed }) =>
+            pressed && !isProcessing
+              ? { transform: [{ scale: 0.97 }], opacity: 0.85 }
+              : null
+          }
           className={`items-center justify-center rounded-xl px-3 py-2 ${
             isProcessing ? 'bg-navy/40' : 'bg-navy'
           }`}>
           {isProcessing ? (
-            <ActivityIndicator color="#F5F0E8" size="small" />
+            <ActivityIndicator color={COLORS.cream} size="small" />
           ) : (
             <Text className="text-xs font-semibold text-cream">Dolacz</Text>
           )}

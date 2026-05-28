@@ -15,6 +15,7 @@ import { ThemeModeBottomSheet } from '@/features/settings/ThemeModeBottomSheet';
 import { useEffectiveTheme } from '@/features/settings/ThemeProvider';
 import { useThemeStore } from '@/features/settings/useThemeStore';
 import { formatChildAge } from '@/lib/child-age';
+import { COLORS } from '@/lib/colors';
 import { getNormForChild } from '@/lib/sleep-norms';
 import {
   avgSleepPercentOfNorm,
@@ -53,7 +54,11 @@ export default function ProfileScreen() {
   const themeMode = useThemeStore((s) => s.mode);
   const [themeSheetVisible, setThemeSheetVisible] = useState(false);
 
-  const gearIconColor = effectiveTheme === 'dark' ? '#F5F0E8' : '#1E1B4B';
+  const isDark = effectiveTheme === 'dark';
+  const gearIconColor = isDark ? COLORS.cream : COLORS.navy;
+  // chevronColor wyciagniete z `ShortcutRow` (P3 Fazy 6: per-row
+  // `useEffectiveTheme()` powodowal duplikujace sie subskrypcje).
+  const chevronColor = isDark ? COLORS.purpleLight : COLORS.textMuted;
 
   return (
     <SafeAreaView className="flex-1 bg-cream dark:bg-dark-bg">
@@ -77,7 +82,7 @@ export default function ProfileScreen() {
         {/* Karta aktywnego dziecka */}
         {familyQuery.isLoading || childrenQuery.isLoading ? (
           <View className="items-center py-6">
-            <ActivityIndicator color="#1E1B4B" />
+            <ActivityIndicator color={COLORS.navy} />
           </View>
         ) : activeChild ? (
           <ActiveChildCard child={activeChild} />
@@ -94,7 +99,8 @@ export default function ProfileScreen() {
             <ShortcutRow
               icon={Bell}
               iconBgClassName="bg-orange-soft dark:bg-orange/20"
-              iconColor="#E08B6F"
+              iconColor={COLORS.orange}
+              chevronColor={chevronColor}
               label="Przypomnienia"
               value="Wlaczone"
               onPress={() => {
@@ -105,7 +111,8 @@ export default function ProfileScreen() {
             <ShortcutRow
               icon={Moon}
               iconBgClassName="bg-purple-soft dark:bg-purple/30"
-              iconColor="#7C6BAD"
+              iconColor={COLORS.purple}
+              chevronColor={chevronColor}
               label="Tryb ciemny"
               value={modeLabel(themeMode)}
               onPress={() => setThemeSheetVisible(true)}
@@ -214,6 +221,9 @@ interface ShortcutRowProps {
   icon: React.ComponentType<{ size?: number; color?: string }>;
   iconBgClassName: string;
   iconColor: string;
+  // chevronColor jest propsem od rodzica — zeby nie wolac `useEffectiveTheme()`
+  // per row (P3 batch-fix Fazy 6, redukcja subskrypcji theme store o N rows).
+  chevronColor: string;
   label: string;
   value: string;
   onPress: () => void;
@@ -224,19 +234,19 @@ function ShortcutRow({
   icon: Icon,
   iconBgClassName,
   iconColor,
+  chevronColor,
   label,
   value,
   onPress,
   isLast,
 }: ShortcutRowProps) {
-  const effectiveTheme = useEffectiveTheme();
-  const chevronColor = effectiveTheme === 'dark' ? '#B8A8D9' : '#6B6580';
   const separator = isLast ? '' : 'border-b border-cream dark:border-dark-surface';
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={`${label}, ${value}`}
       onPress={onPress}
+      style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
       className={`flex-row items-center px-4 py-4 ${separator}`}>
       <View
         className={`w-10 h-10 items-center justify-center rounded-pill ${iconBgClassName}`}>

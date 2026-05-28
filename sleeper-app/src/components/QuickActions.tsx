@@ -2,6 +2,8 @@ import type { LucideIcon } from 'lucide-react-native';
 import { Moon, Plus, Sun } from 'lucide-react-native';
 import { Pressable, Text, View } from 'react-native';
 
+import { COLORS } from '@/lib/colors';
+
 interface QuickActionsProps {
   onStartNap: () => void;
   onStartNight: () => void;
@@ -22,7 +24,7 @@ export function QuickActions({
     <View className="flex-row gap-2">
       <ActionCard
         icon={Sun}
-        iconColor="#E08B6F"
+        iconColor={COLORS.orange}
         chipClassName="bg-orange-soft"
         label="Drzemka"
         onPress={onStartNap}
@@ -30,7 +32,7 @@ export function QuickActions({
       />
       <ActionCard
         icon={Moon}
-        iconColor="#7C6BAD"
+        iconColor={COLORS.purple}
         chipClassName="bg-purple-soft"
         label="Sen"
         onPress={onStartNight}
@@ -38,7 +40,7 @@ export function QuickActions({
       />
       <ActionCard
         icon={Plus}
-        iconColor="#6B6580"
+        iconColor={COLORS.textMuted}
         chipClassName="bg-cream dark:bg-dark-surface"
         label="Dodaj wstecz"
         onPress={onAddBackdated}
@@ -73,6 +75,11 @@ function ActionCard({
       accessibilityLabel={label}
       onPress={onPress}
       disabled={disabled}
+      style={({ pressed }) =>
+        pressed && !disabled
+          ? { transform: [{ scale: 0.97 }], opacity: 0.85 }
+          : null
+      }
       className={`flex-1 items-center justify-center rounded-card bg-white p-4 shadow-card dark:bg-dark-card ${
         disabled ? 'opacity-50' : ''
       }`}>
