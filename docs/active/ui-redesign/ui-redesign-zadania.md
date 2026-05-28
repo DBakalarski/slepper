@@ -288,15 +288,25 @@ Review fazy 4 (2026-05-28, raport: `review-faza-4.md`) — severity gate **CZYST
 
 ### Walidacja końcowa
 
-- [ ] `npx tsc --noEmit` PASS
-- [ ] `npm run lint` PASS
-- [ ] DevTools accessibility inspector: WCAG AA na każdym ekranie (light + dark)
-- [ ] Commit: `feat(ui-redesign): faza 6 — polish + a11y`
-- [ ] Commit log w `docs/commits/`
+- [x] `npx tsc --noEmit` PASS
+- [x] `npm run lint` PASS
+- [ ] DevTools accessibility inspector: WCAG AA na każdym ekranie (light + dark) — manual test (patrz `manual-test-faza-6.md`)
+- [x] Commit: `feat(ui-redesign): faza 6 — polish + a11y`
+- [x] Commit log w `docs/commits/`
+
+### Do poprawy po review fazy 6
+
+Review fazy 6 (2026-05-28, raport: `review-faza-6.md`) — severity gate **✅ CZYSTE** (0 P1, 0 P2, 3 P3). Wszystkie pozycje to **opcjonalne** nity — NIE blokują kontynuacji do Fazy 7 (manual test).
+
+- [ ] 🟡 [nit] **Switch.tsx:18, ProgressRing.tsx:44** — `#E8DEF7` (purple-soft) pozostał inline w 2 plikach; rozważyć dodanie `purpleSoft` do `COLORS` przy następnej modyfikacji palety (redukcja 22→20)
+- [ ] 🟡 [nit] **ThemeModeBottomSheet.tsx:64** — stop-propagation `Pressable` z `accessible={false}` + no-op `onPress`; bardziej idiomatyczny byłby `View` + `onStartShouldSetResponder={() => true}` (niski ROI, current pattern poprawny)
+- [ ] 🟡 [nit] **SessionListItem.tsx:126, profile.tsx:249, settings.tsx:45,88** — opacity-only pressable feedback (bez scale) — dopisać krótki komentarz inline lub w `ui-redesign-kontekst.md` regułę "scale dla CTA/cards, opacity dla list rows/secondary"
 
 ---
 
 ## Faza 7 — Manual test (skill `expo-rn-testing`)
+
+- [x] Checklist wygenerowany — patrz [manual-test-master.md](./manual-test-master.md) (manual test pending — user wykonuje on-device po sesji)
 
 Checklist na Expo Go (iOS + Android):
 
