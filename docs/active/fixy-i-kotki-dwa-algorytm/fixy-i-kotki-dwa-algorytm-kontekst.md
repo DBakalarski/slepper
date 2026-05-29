@@ -36,7 +36,7 @@
 
 ### Commit
 
-TBD — zostanie dodany po commit.
+`b37d99e` — feat(fixy-i-kotki-dwa-algorytm): nowy package sleeper-machine-kotki — lookup-based recommender Kotki Dwa
 
 ---
 
