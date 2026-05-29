@@ -1,0 +1,203 @@
+import { makeMinutes } from 'sleeper-machine';
+import type {
+  ChildProfile,
+  Minutes,
+  PlanEntry,
+  Recommendation,
+  State,
+  TimeOfDay,
+} from 'sleeper-machine';
+import { pickBucket } from './lookup.js';
+import { forwardPass } from './forwardPass.js';
+
+const MS_PER_DAY = 86_400_000;
+const MS_PER_MIN = 60_000;
+const MS_PER_HOUR = 3_600_000;
+
+function validateInput(state: State, profile: ChildProfile): void {
+  if (!(state.now instanceof Date) || Number.isNaN(state.now.getTime())) {
+    throw new Error('recommendKotkiDwa: state.now must be a valid Date');
+  }
+  if (!(profile.dateOfBirth instanceof Date) || Number.isNaN(profile.dateOfBirth.getTime())) {
+    throw new Error('recommendKotkiDwa: profile.dateOfBirth must be a valid Date');
+  }
+  if (profile.targetWakeTime !== undefined) {
+    const { hour, minute } = profile.targetWakeTime;
+    if (hour < 0 || hour > 23 || minute < 0 || minute > 59) {
+      throw new Error(
+        `recommendKotkiDwa: invalid targetWakeTime (${hour}:${minute})`,
+      );
+    }
+  }
+  if (profile.preferredNapsCount !== undefined) {
+    const n = profile.preferredNapsCount;
+    if (!Number.isInteger(n) || n < 0 || n > 5) {
+      throw new Error(
+        `recommendKotkiDwa: preferredNapsCount must be integer 0-5 (got ${n})`,
+      );
+    }
+  }
+  if (profile.preferredBedtime !== undefined) {
+    const { hour, minute } = profile.preferredBedtime;
+    if (hour < 0 || hour > 23 || minute < 0 || minute > 59) {
+      throw new Error(
+        `recommendKotkiDwa: invalid preferredBedtime (${hour}:${minute})`,
+      );
+    }
+  }
+  for (const s of state.history) {
+    if (s.end.getTime() <= s.start.getTime()) {
+      throw new Error(
+        `recommendKotkiDwa: SleepSession end (${s.end.toISOString()}) must be after start (${s.start.toISOString()})`,
+      );
+    }
+  }
+}
+
+function sameCalendarDay(a: Date, b: Date): boolean {
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  );
+}
+
+function napsDoneToday(history: State['history'], now: Date): State['history'][number][] {
+  return history.filter(
+    (s) => s.type === 'NAP' && sameCalendarDay(s.start, now) && s.end.getTime() <= now.getTime(),
+  );
+}
+
+function buildMorningWake(now: Date, wakeTime: TimeOfDay): Date {
+  return new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate(),
+    wakeTime.hour,
+    wakeTime.minute,
+    0,
+    0,
+  );
+}
+
+export function recommendKotkiDwa(state: State, profile: ChildProfile): Recommendation {
+  validateInput(state, profile);
+
+  const wakeTime: TimeOfDay = profile.targetWakeTime ?? { hour: 7, minute: 0 };
+
+  // Wiek w miesiącach (przybliżony przez 30.4 dni/miesiąc)
+  const ageMonths = Math.floor(
+    (state.now.getTime() - profile.dateOfBirth.getTime()) / (30.4 * MS_PER_DAY),
+  );
+
+  const bucket = pickBucket(ageMonths, profile.preferredNapsCount ?? null);
+
+  const morningWake = buildMorningWake(state.now, wakeTime);
+
+  // Długość drzemki = maxTotalDayNapHours / typicalNaps (lub maxNapHours, whichever is lower)
+  const napLengthHours =
+    bucket.typicalNaps > 0
+      ? Math.min(bucket.maxNapHours, bucket.maxTotalDayNapHours / bucket.typicalNaps)
+      : 0;
+
+  let plan: PlanEntry[] = forwardPass(morningWake, bucket, napLengthHours);
+
+  // Override preferredBedtime → nadpisz ostatni NIGHT entry
+  let bedtimeOverride: Date | null = null;
+  if (profile.preferredBedtime !== undefined) {
+    const { hour, minute } = profile.preferredBedtime;
+    bedtimeOverride = new Date(
+      state.now.getFullYear(),
+      state.now.getMonth(),
+      state.now.getDate(),
+      hour,
+      minute,
+      0,
+      0,
+    );
+    const idx = plan.length - 1;
+    const last = plan[idx];
+    if (last !== undefined && last.type === 'NIGHT') {
+      const replaced: PlanEntry =
+        last.plannedEnd !== undefined
+          ? { plannedStart: bedtimeOverride, plannedEnd: last.plannedEnd, type: 'NIGHT' }
+          : { plannedStart: bedtimeOverride, type: 'NIGHT' };
+      const mutable = [...plan];
+      mutable[idx] = replaced;
+      plan = mutable;
+    }
+  }
+
+  // Krok 8 — currentWakeWindowDuration + nextSleepAt + remainingNapsToday
+  const napsDone = napsDoneToday(state.history, state.now);
+  const i = Math.min(napsDone.length, bucket.wakeWindowsHours.length - 1);
+  const currentWwHours = bucket.wakeWindowsHours[i] ?? bucket.wakeWindowsHours[bucket.wakeWindowsHours.length - 1]!;
+  const currentWakeWindowDuration = makeMinutes(currentWwHours * 60);
+
+  // lastWake = morningWake lub koniec ostatniej drzemki dziś
+  let lastWakeMs = morningWake.getTime();
+  for (const nap of napsDone) {
+    if (nap.end.getTime() > lastWakeMs) {
+      lastWakeMs = nap.end.getTime();
+    }
+  }
+
+  let nextSleepAt: Date | null = new Date(lastWakeMs + currentWakeWindowDuration * MS_PER_MIN);
+
+  // Gdy bedtimeOverride i wszystkie drzemki zrobione — nextSleepAt = bedtime
+  if (bedtimeOverride !== null && napsDone.length >= bucket.typicalNaps) {
+    nextSleepAt = bedtimeOverride;
+  }
+
+  const remainingNapsToday = plan.filter(
+    (e) => e.plannedStart.getTime() > state.now.getTime(),
+  );
+
+  // Warnings
+  const warnings: string[] = [];
+  const elapsedMin = (state.now.getTime() - lastWakeMs) / MS_PER_MIN;
+  if (currentWakeWindowDuration > 0 && elapsedMin > 1.2 * currentWakeWindowDuration) {
+    warnings.push('ryzyko przemęczenia');
+  }
+
+  // Sprawdź czy preferredBedtime powoduje za krótką lub za długą noc
+  if (profile.preferredBedtime !== undefined && profile.targetWakeTime !== undefined) {
+    const bedMin = profile.preferredBedtime.hour * 60 + profile.preferredBedtime.minute;
+    const wakeMin = profile.targetWakeTime.hour * 60 + profile.targetWakeTime.minute;
+    const nightMin = wakeMin > bedMin ? wakeMin - bedMin : wakeMin + 24 * 60 - bedMin;
+    const nightH = nightMin / 60;
+    const [nightMin_, nightMax_] = bucket.nightHoursRange;
+    if (nightH < (nightMin_ ?? 10) - 0.5 || nightH > (nightMax_ ?? 12) + 0.5) {
+      warnings.push(
+        `preferowana godzina nocnego snu daje niezdrową długość nocy (${nightH.toFixed(1)}h) względem targetWakeTime`,
+      );
+    }
+  }
+
+  // Walidacja merytoryczna: plan czasów nocnych (czy napLength nie przekracza max)
+  if (napLengthHours > 0 && napLengthHours > bucket.maxNapHours) {
+    warnings.push(
+      `długość drzemki (${napLengthHours.toFixed(2)}h) przekracza maksimum dla tego wieku (${bucket.maxNapHours}h)`,
+    );
+  }
+
+  return {
+    nextSleepAt,
+    currentWakeWindowDuration,
+    remainingNapsToday,
+    confidence: 'high',
+    warnings,
+  };
+}
+
+// Eksportuj pomocniczo — używane w testach do debugowania czasów planu
+export function _buildMorningWakeForTest(now: Date, wakeTime: TimeOfDay): Date {
+  return buildMorningWake(now, wakeTime);
+}
+
+// Eksportuj ageMonths helper dla testów
+export function _computeAgeMonths(now: Date, dateOfBirth: Date): number {
+  return Math.floor(
+    (now.getTime() - dateOfBirth.getTime()) / (30.4 * MS_PER_DAY),
+  );
+}

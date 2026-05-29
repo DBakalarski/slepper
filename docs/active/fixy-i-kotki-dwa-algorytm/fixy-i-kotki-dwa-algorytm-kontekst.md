@@ -1,7 +1,58 @@
 # Kontekst: fixy-i-kotki-dwa-algorytm
 
 **Branch:** `feature/fixy-i-kotki-dwa-algorytm`
-**Ostatnia aktualizacja:** 2026-05-29 (Faza 3 ukończona)
+**Ostatnia aktualizacja:** 2026-05-29 (Faza 4 ukończona)
+
+## Faza 4 — UKOŃCZONA (2026-05-29)
+
+### Zmiany wprowadzone
+
+- `packages/sleeper-machine-kotki/` (NOWY package) — lookup-based recommender dla Kotki Dwa.
+  - `package.json` — `name: sleeper-machine-kotki`, dep `sleeper-machine: workspace:*`, devDeps typescript/vitest/@types/node.
+  - `tsconfig.json` — `extends ../sleeper-machine/tsconfig.json`.
+  - `vitest.config.ts` — vitest v2, include `tests/**/*.test.ts`.
+  - `README.md` — filozofia: opinionated guidebook vs Galland.
+  - `CLAUDE.md` — zasady packagu (lookup-based; bez EWMA).
+  - `src/index.ts` — eksport `recommendKotkiDwa` + re-eksport typów z `sleeper-machine`.
+  - `src/lookup.ts` — `AgeBucket` type + `BUCKETS` constant (11 buckets: 5m, 6m-3naps, 6m-2naps, 7m, 8m, 9m, 10m, 11m, 12m-2naps, 12m-1nap, 18m+) + `pickBucket(ageMonths, preferredNaps)`.
+  - `src/forwardPass.ts` — czysta funkcja: `(morningWake, bucket, napLengthHours) → PlanEntry[]`.
+  - `src/recommender.ts` — orchestrator: validate → pickBucket → forwardPass → bedtimeOverride → currentWakeWindowDuration/nextSleepAt/warnings → Recommendation.
+  - `tests/lookup.test.ts` — 17 testów (struktury + selekcja bucket).
+  - `tests/forwardPass.test.ts` — 8 testów (PDF-paired, przesunięcia, edge cases).
+  - `tests/recommender.test.ts` — 18 testów (PDF s.13 + s.18, 6m×2/3, bedtimeOverride, targetWakeTime, WW po 0/1/2 naps, walidacja, smoke check).
+
+### Decyzje
+
+- `Minutes` jest branded type w `sleeper-machine` eksportowany przez `makeMinutes` (wartość) a nie `Minutes` (tylko typ). Użyto `makeMinutes(n)` w recommender.ts.
+- Dla 12m bez override — `pickBucket` preferuje `12m-2naps` (7-13m → 2 drzemki domyślnie), a dla 14m+ → `12m-1nap` (1 drzemka). Logika: `clampedAge <= 13 → znajdź typicalNaps === 2`.
+- `napLengthHours = min(maxNapHours, maxTotalDayNapHours / typicalNaps)` — żadna drzemka nie przekracza limitu jednostkowego ani łącznego.
+- Export `_buildMorningWakeForTest` i `_computeAgeMonths` z recommender.ts — pomocnicze dla ewentualnych przyszłych testów. Bez underscore-prefix nie byłyby widoczne jako "helper-only".
+
+### Walidacja
+
+- `pnpm install` — workspace zarejestrowany (nowy package sleeper-machine-kotki widoczny w node_modules).
+- `pnpm --filter sleeper-machine-kotki test` — 43/43 PASS (lookup: 17, forwardPass: 8, recommender: 18).
+- `pnpm --filter sleeper-machine-kotki build` — dist/index.js + dist/index.d.ts emitowane bez błędów.
+
+### Commit
+
+TBD — zostanie dodany po commit.
+
+---
+
+## Faza 3 — UKOŃCZONA + REVIEW PASS (2026-05-29)
+
+### Review fazy 3 (2026-05-29)
+
+Przeprowadzono 5-perspektywowy code review. Wynik: **CZYSTE** — P1=0, P2=0, P3=2 (nity nieblokujące).
+
+**P3-1 (ARCH):** `0011_children_algorithm.sql` bez komentarza nagłówkowego — niezgodność z konwencją poprzednich migracji.
+**P3-2 (SEC):** `.gitignore` komentarz wymienia nazwisko autorki — bez ryzyka technicznego, kosmetyczne.
+
+CLI: tsc PASS (exit 0), lint PASS (exit 0). `data-book/` poprawnie gitignorowany (nie tracked). Manual operator: `supabase local up` — do weryfikacji przez usera.
+Raport: `review-faza-3.md`.
+
+---
 
 ## Faza 3 — UKOŃCZONA (2026-05-29)
 

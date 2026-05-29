@@ -78,9 +78,14 @@ Każdy commit kodu = follow-up commit `docs/commits/YYYY-MM-DD-<hash>-<slug>.md`
 
 ### Weryfikacja:
 
-- [ ] Weryfikacja: `git status` po commit nie pokazuje `data-book/przewodnik_sen.pdf`.
-- [ ] Weryfikacja: `pnpm --filter sleeper-app exec tsc --noEmit` — 0 błędów (po regen typów).
-- [ ] Weryfikacja: Supabase local up → migracja przechodzi bez błędów.
+- [x] Weryfikacja: `git status` po commit nie pokazuje `data-book/przewodnik_sen.pdf`.
+- [x] Weryfikacja: `pnpm --filter sleeper-app exec tsc --noEmit` — 0 błędów (po regen typów).
+- [ ] Weryfikacja: Supabase local up → migracja przechodzi bez błędów. — wymaga operatora (checklist)
+
+## Do poprawy po review fazy 3
+
+- [ ] 🟡 [nit] **0011_children_algorithm.sql:1** — brak komentarza nagłówkowego; poprzednie migracje mają 3-8 linii opisu decyzji (wzorzec z 0010). Dodać `-- Migracja 0011: kolumna wyboru algorytmu per dziecko.` z krótkim uzasadnieniem.
+- [ ] 🟡 [nit] **.gitignore:23** — komentarz wymienia nazwisko autorki (`Marta Stam / Kotki Dwa`); rozważyć anonimizację przy ewentualnym upublicznieniu repo.
 
 ---
 
@@ -91,35 +96,35 @@ Każdy commit kodu = follow-up commit `docs/commits/YYYY-MM-DD-<hash>-<slug>.md`
 
 ### Implementacja
 
-- [ ] `packages/sleeper-machine-kotki/package.json` (NOWY) — `name: sleeper-machine-kotki`, `dep: sleeper-machine: workspace:*`, devDeps (`typescript ^5.9`, `vitest ^2.0`, `@types/node ^22.0`).
-- [ ] `packages/sleeper-machine-kotki/tsconfig.json` (NOWY) — `extends ../sleeper-machine/tsconfig.json`.
-- [ ] `packages/sleeper-machine-kotki/vitest.config.ts` (NOWY).
-- [ ] `packages/sleeper-machine-kotki/README.md` (NOWY) — filozofia: opinionated guidebook (Kotki Dwa).
-- [ ] `packages/sleeper-machine-kotki/CLAUDE.md` (NOWY) — zasady packagu (lookup-based; nie wprowadzać EWMA tutaj).
-- [ ] `packages/sleeper-machine-kotki/src/index.ts` — export `recommendKotkiDwa` + re-eksport typów z `sleeper-machine`.
-- [ ] `packages/sleeper-machine-kotki/src/lookup.ts` — typ + tabela buckets (5m, 6m-3naps, 6m-2naps, 7m, 8m, 9m, 10m, 11m, 12m-2naps, 12m-1nap, 18m+); każdy bucket: `minMonths`, `maxMonths`, `typicalNaps`, `wakeWindowsHours[]` (długość = naps + 1), `maxNapHours`, `maxTotalDayNapHours`, `nightHoursRange`. `pickBucket(ageMonths, preferredNaps)` — z uwzględnieniem override.
-- [ ] `packages/sleeper-machine-kotki/src/forwardPass.ts` — funkcja czysta: `(morningWake: Date, bucket: AgeBucket, napLengthHours: number) → PlanEntry[]`.
-- [ ] `packages/sleeper-machine-kotki/src/recommender.ts` — orchestrator: walidacja inputu, `wakeTime = profile.targetWakeTime ?? {hour:7,minute:0}`, `ageMonths = floor((now - dob) / (30.4 * MS_PER_DAY))`, `bucket = pickBucket(...)`, `morningWake` TZ-safe, override `preferredBedtime`, `currentWakeWindowDuration`, `nextSleepAt`, `confidence='high'`, warnings przy `elapsedMin > 1.2 * WW`.
-- [ ] `packages/sleeper-machine-kotki/tests/lookup.test.ts` (NOWY).
-- [ ] `packages/sleeper-machine-kotki/tests/forwardPass.test.ts` (NOWY).
-- [ ] `packages/sleeper-machine-kotki/tests/recommender.test.ts` (NOWY).
+- [x] `packages/sleeper-machine-kotki/package.json` (NOWY) — `name: sleeper-machine-kotki`, `dep: sleeper-machine: workspace:*`, devDeps (`typescript ^5.9`, `vitest ^2.0`, `@types/node ^22.0`).
+- [x] `packages/sleeper-machine-kotki/tsconfig.json` (NOWY) — `extends ../sleeper-machine/tsconfig.json`.
+- [x] `packages/sleeper-machine-kotki/vitest.config.ts` (NOWY).
+- [x] `packages/sleeper-machine-kotki/README.md` (NOWY) — filozofia: opinionated guidebook (Kotki Dwa).
+- [x] `packages/sleeper-machine-kotki/CLAUDE.md` (NOWY) — zasady packagu (lookup-based; nie wprowadzać EWMA tutaj).
+- [x] `packages/sleeper-machine-kotki/src/index.ts` — export `recommendKotkiDwa` + re-eksport typów z `sleeper-machine`.
+- [x] `packages/sleeper-machine-kotki/src/lookup.ts` — typ + tabela buckets (5m, 6m-3naps, 6m-2naps, 7m, 8m, 9m, 10m, 11m, 12m-2naps, 12m-1nap, 18m+); każdy bucket: `minMonths`, `maxMonths`, `typicalNaps`, `wakeWindowsHours[]` (długość = naps + 1), `maxNapHours`, `maxTotalDayNapHours`, `nightHoursRange`. `pickBucket(ageMonths, preferredNaps)` — z uwzględnieniem override.
+- [x] `packages/sleeper-machine-kotki/src/forwardPass.ts` — funkcja czysta: `(morningWake: Date, bucket: AgeBucket, napLengthHours: number) → PlanEntry[]`.
+- [x] `packages/sleeper-machine-kotki/src/recommender.ts` — orchestrator: walidacja inputu, `wakeTime = profile.targetWakeTime ?? {hour:7,minute:0}`, `ageMonths = floor((now - dob) / (30.4 * MS_PER_DAY))`, `bucket = pickBucket(...)`, `morningWake` TZ-safe, override `preferredBedtime`, `currentWakeWindowDuration`, `nextSleepAt`, `confidence='high'`, warnings przy `elapsedMin > 1.2 * WW`.
+- [x] `packages/sleeper-machine-kotki/tests/lookup.test.ts` (NOWY).
+- [x] `packages/sleeper-machine-kotki/tests/forwardPass.test.ts` (NOWY).
+- [x] `packages/sleeper-machine-kotki/tests/recommender.test.ts` (NOWY).
 
 ### Test:
 
-- [ ] Test: 5m, 3 drzemki, wake 07:00, brak historii → harmonogram zbliżony do PDF s.13 (08:45 / 12:30 / 16:15 / 19:00).
-- [ ] Test: 9m, 2 drzemki, wake 07:00 → zbliżony do PDF s.18 (10:00 / 14:30 / 19:30).
-- [ ] Test: 6m, `preferredNapsCount=2` vs `3` → różne buckets, różne harmonogramy.
-- [ ] Test: `preferredBedtime={hour:18,minute:30}` → ostatni NIGHT entry o 18:30.
-- [ ] Test: `targetWakeTime={hour:06,minute:30}` → cały dzień przesunięty o 30min wcześniej.
-- [ ] Test: `currentWakeWindowDuration` po 0 / 1 / 2 drzemkach w historii dnia.
-- [ ] Test: walidacja inputu — invalid `targetWakeTime` → throw.
-- [ ] Test: smoke check — import `recommendKotkiDwa` z innego packagu działa (TS rozumie typy).
+- [x] Test: 5m, 3 drzemki, wake 07:00, brak historii → harmonogram zbliżony do PDF s.13 (08:45 / 12:30 / 16:15 / 19:00).
+- [x] Test: 9m, 2 drzemki, wake 07:00 → zbliżony do PDF s.18 (10:00 / 14:30 / 19:30).
+- [x] Test: 6m, `preferredNapsCount=2` vs `3` → różne buckets, różne harmonogramy.
+- [x] Test: `preferredBedtime={hour:18,minute:30}` → ostatni NIGHT entry o 18:30.
+- [x] Test: `targetWakeTime={hour:06,minute:30}` → cały dzień przesunięty o 30min wcześniej.
+- [x] Test: `currentWakeWindowDuration` po 0 / 1 / 2 drzemkach w historii dnia.
+- [x] Test: walidacja inputu — invalid `targetWakeTime` → throw.
+- [x] Test: smoke check — import `recommendKotkiDwa` z innego packagu działa (TS rozumie typy).
 
 ### Weryfikacja:
 
-- [ ] Weryfikacja: `pnpm install` w roocie — workspace zarejestrowany.
-- [ ] Weryfikacja: `pnpm --filter sleeper-machine-kotki test` — wszystkie testy zielone (>= 8 testów per moduł).
-- [ ] Weryfikacja: `pnpm --filter sleeper-machine-kotki build` — `dist/index.js` + `dist/index.d.ts` wyemitowane.
+- [x] Weryfikacja: `pnpm install` w roocie — workspace zarejestrowany.
+- [x] Weryfikacja: `pnpm --filter sleeper-machine-kotki test` — wszystkie testy zielone (43/43).
+- [x] Weryfikacja: `pnpm --filter sleeper-machine-kotki build` — `dist/index.js` + `dist/index.d.ts` wyemitowane.
 
 ---
 
