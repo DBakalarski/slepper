@@ -152,9 +152,16 @@ Każdy commit kodu = follow-up commit `docs/commits/YYYY-MM-DD-<hash>-<slug>.md`
 
 - [x] Weryfikacja: `pnpm --filter sleeper-app exec tsc --noEmit` — 0 błędów.
 - [x] Weryfikacja: `pnpm --filter sleeper-app lint` — PASS.
-- [ ] Weryfikacja: Manual w Expo Go — EditChildForm dla 9m dziecka → switch na Kotki Dwa → zapisz → wróć do "Dzisiaj" → `currentWakeWindowDuration` zmienia się (Galland = adapted ~3h±, Kotki Dwa = 3h fixed).
-- [ ] Weryfikacja: Manual — switch z powrotem na Galland → wartości wracają.
-- [ ] Weryfikacja: Manual — toggle persist w bazie (refresh app, wartość zostaje).
+- [ ] Weryfikacja: Manual w Expo Go — EditChildForm dla 9m dziecka → switch na Kotki Dwa → zapisz → wróć do "Dzisiaj" → `currentWakeWindowDuration` zmienia się (Galland = adapted ~3h±, Kotki Dwa = 3h fixed). — manual test (patrz manual-test-faza-5.md)
+- [ ] Weryfikacja: Manual — switch z powrotem na Galland → wartości wracają. — manual test (patrz manual-test-faza-5.md)
+- [ ] Weryfikacja: Manual — toggle persist w bazie (refresh app, wartość zostaje). — manual test (patrz manual-test-faza-5.md)
+
+## Do poprawy po review fazy 5
+
+- [ ] 🟡 [nit] **index.tsx:130-138** — `ActiveChildSectionProps.child` inline type duplikuje `ChildForRecommendation`; zaimportować i użyć eksportowanego typu
+- [ ] 🟡 [nit] **EditChildForm.tsx:154-186** — chipy algorytmu bez `accessibilityState={{ selected }}`; dodać lub zamienić na komponent `Chip` (który już ma ten atrybut)
+- [ ] 🟡 [nit] **EditChildForm.tsx:151-191** — odchylenie od planu: inline `Pressable` zamiast komponent `Chip`; rozważyć refaktor przy okazji cleanup
+- [ ] 🟡 [nit] **useSleepRecommendation.ts:77-89** — render-time throw z `useMemo` bez `ErrorBoundary` (pre-existing + nowa ścieżka `recommendKotkiDwa`); rozważyć `try/catch` w `useMemo` + zwracanie `null` zamiast throw
 
 ---
 
@@ -165,10 +172,10 @@ Każdy commit kodu = follow-up commit `docs/commits/YYYY-MM-DD-<hash>-<slug>.md`
 
 ### Implementacja
 
-- [ ] `CLAUDE.md` (root) — sekcja "Layout repozytorium": dodać `packages/sleeper-machine-kotki/` z krótkim opisem.
-- [ ] `CLAUDE.md` (root) — sekcja "Stack": wzmianka o dwóch algorytmach, wybór per dziecko.
-- [ ] `package.json` (root) — proxy scripty (opcjonalne): `"machine-kotki:test"`, `"machine-kotki:build"`.
-- [ ] `pnpm-workspace.yaml` — sprawdzić, że `packages/*` obejmuje nowy katalog (najprawdopodobniej już tak).
+- [x] `CLAUDE.md` (root) — sekcja "Layout repozytorium": dodać `packages/sleeper-machine-kotki/` z krótkim opisem.
+- [x] `CLAUDE.md` (root) — sekcja "Stack": wzmianka o dwóch algorytmach, wybór per dziecko.
+- [x] `package.json` (root) — proxy scripty (opcjonalne): `"machine-kotki:test"`, `"machine-kotki:build"`.
+- [x] `pnpm-workspace.yaml` — sprawdzić, że `packages/*` obejmuje nowy katalog (już tak — bez zmian).
 
 ### Weryfikacja:
 

@@ -1,7 +1,42 @@
 # Kontekst: fixy-i-kotki-dwa-algorytm
 
 **Branch:** `feature/fixy-i-kotki-dwa-algorytm`
-**Ostatnia aktualizacja:** 2026-05-29 (Faza 5 ukończona)
+**Ostatnia aktualizacja:** 2026-05-29 (Faza 6 ukończona)
+
+## Faza 6 — UKOŃCZONA (2026-05-29)
+
+### Zmiany wprowadzone
+
+- `CLAUDE.md` (root) — sekcja "Layout repozytorium": zmieniono `sleeper-machine/` na odrębną linię z opisem ("algorytm Galland, EWMA"), dodano `sleeper-machine-kotki/` z opisem ("algorytm Kotki Dwa, lookup table per wiek"). Sekcja "Wazne": rozszerzono wzmiankę o `sleeper-machine` o Galland i dodano opis `sleeper-machine-kotki` z komendami + wzmiankę o wyborze algorytmu per dziecko. Sekcja "Stack": algorytm podzielony na dwa wiersze (Galland 0.1.0 EWMA / Kotki Dwa 0.1.0 lookup table). Sekcja "Aktualny stan": zaktualizowana do 2026-05-29, branch `feature/fixy-i-kotki-dwa-algorytm`, Faza 6 w toku.
+- `package.json` (root) — dodane proxy scripty: `"machine-kotki:test": "pnpm --filter sleeper-machine-kotki test"`, `"machine-kotki:build": "pnpm --filter sleeper-machine-kotki build"`.
+- `pnpm-workspace.yaml` — bez zmian (`packages/*` już obejmuje `packages/sleeper-machine-kotki/`).
+
+### Walidacja
+
+- `pnpm --filter sleeper-machine-kotki test` z roota — PASS (43/43).
+- `pnpm machine-kotki:test` (proxy) — PASS (43/43).
+- `git status` — `data-book/` nie pojawia się w output (poprawnie ignorowany).
+
+---
+
+## Faza 5 — UKOŃCZONA + REVIEW PASS (2026-05-29)
+
+### Review fazy 5 (2026-05-29)
+
+Przeprowadzono 5-perspektywowy code review. Wynik: **CZYSTE** — P1=0, P2=0, P3=4 (nity nieblokujące).
+
+**P3-1 (ARCH):** `index.tsx:130-138` — `ActiveChildSectionProps.child` inline type duplikuje `ChildForRecommendation`; zaimportować i użyć eksportowanego typu.
+**P3-2 (A11Y):** `EditChildForm.tsx:154-186` — chipy algorytmu bez `accessibilityState={{ selected }}`; VoiceOver nie informuje o zaznaczeniu.
+**P3-3 (ARCH):** `EditChildForm.tsx:151-191` — inline `Pressable` zamiast `Chip` komponent (odchylenie od planu; spójny z nap selection).
+**P3-4 (PERF/ARCH):** `useSleepRecommendation.ts:77-89` — render-time throw z `useMemo` bez `ErrorBoundary` (pre-existing, rozszerzone na `recommendKotkiDwa`).
+
+CLI: tsc PASS (exit 0), lint PASS (exit 0), sleeper-machine-kotki tests 43/43 PASS.
+Security: RLS pokrywa nowe pole `algorithm`, DB CHECK constraint blokuje nieznane wartości.
+Performance: brak N+1, prawidłowy cache invalidation flow po update `algorithm`.
+Manual: checklist w `manual-test-faza-5.md`.
+Raport: `review-faza-5.md`.
+
+---
 
 ## Faza 5 — UKOŃCZONA (2026-05-29)
 

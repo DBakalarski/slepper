@@ -35,22 +35,27 @@ sleeper/                                  # ← root (TEN katalog)
     │   ├── src/app/                      # routes (expo-router, file-based)
     │   ├── src/components/, src/features/, src/lib/
     │   └── supabase/{config.toml,migrations/}
-    └── sleeper-machine/                  # ← biblioteka algorytmu (TS, vitest)
-        └── src/, dist/, scripts/smoke-test.ts
+    ├── sleeper-machine/                  # ← algorytm Galland (TS, vitest) — naukowy, EWMA
+    │   └── src/, dist/, scripts/smoke-test.ts
+    └── sleeper-machine-kotki/            # ← algorytm Kotki Dwa (TS, vitest) — lookup table per wiek
+        └── src/, dist/, tests/
 ```
 
 **Wazne:**
 - Kod aplikacji zyje w `packages/sleeper-app/`. Komendy `expo/tsc/lint` uruchamiaj z tego katalogu **lub** przez `pnpm --filter sleeper-app <skrypt>` z roota.
-- Algorytm w `packages/sleeper-machine/` — importowany w app jako `sleeper-machine` (workspace link). Komendy: `pnpm --filter sleeper-machine test|build|smoke`.
+- Algorytm Galland w `packages/sleeper-machine/` — importowany jako `sleeper-machine`. Komendy: `pnpm --filter sleeper-machine test|build|smoke`.
+- Algorytm Kotki Dwa w `packages/sleeper-machine-kotki/` — importowany jako `sleeper-machine-kotki`. Komendy: `pnpm --filter sleeper-machine-kotki test|build`. Proxy: `pnpm machine-kotki:test|build`.
+- Wybor algorytmu per dziecko — pole `children.algorithm` ('galland' | 'kotki_dwa', default 'galland').
 - `docs/` i `.claude/` zostaja w roocie i sa wspolne.
 
-## Aktualny stan (2026-05-28)
+## Aktualny stan (2026-05-29)
 
-- **Branch:** `main`
-- **Aktualne zadanie:** `active-window-machine` — integracja biblioteki `sleeper-machine` z UI (ActiveWindowCard). Fazy 1-3 ukonczone, typecheck/lint PASS. Plan: `docs/active/active-window-machine/`.
+- **Branch:** `feature/fixy-i-kotki-dwa-algorytm`
+- **Aktualne zadanie:** `fixy-i-kotki-dwa-algorytm` — cross-day editing, progress bar fix, algorytm Kotki Dwa. Fazy 1-5 ukonczone, Faza 6 w toku. Plan: `docs/active/fixy-i-kotki-dwa-algorytm/`.
 - **Ukonczone:**
   - MVP sleep tracker → `docs/completed/mvp-sleep-tracker/`
   - UI redesign → `docs/completed/ui-redesign/`
+  - active-window-machine → `docs/completed/` (po merge)
 
 ## Stack (zainstalowany — sprawdzone w `packages/sleeper-app/package.json`)
 
@@ -66,7 +71,8 @@ sleeper/                                  # ← root (TEN katalog)
 | Animacje | react-native-reanimated + worklets | ~4.1 / 0.5 |
 | Ikony | lucide-react-native | ^1.17 |
 | Notyfikacje / wake | expo-notifications, expo-keep-awake | ~0.32 / ~15.0 |
-| Algorytm | `sleeper-machine` (workspace) | 0.1.0 (vitest, build do `dist/`) |
+| Algorytm (Galland) | `sleeper-machine` (workspace) | 0.1.0 (vitest, EWMA — naukowy) |
+| Algorytm (Kotki Dwa) | `sleeper-machine-kotki` (workspace) | 0.1.0 (vitest, lookup table per wiek) |
 | TS | strict ON | path alias `@/*` -> `./src/*` |
 
 **Uwaga ws. struktury routingu:** plan w `PLAN.md` zaklada `app/` w roocie, ale template SDK trzyma routes w `packages/sleeper-app/src/app/`. Funkcjonalnie identyczne, alias `@/*` to obsluguje.

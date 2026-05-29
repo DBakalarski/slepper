@@ -6,6 +6,8 @@
   "scripts": {
     "test": "pnpm --filter sleeper-machine test",
     "build": "pnpm --filter sleeper-machine build",
+    "machine-kotki:test": "pnpm --filter sleeper-machine-kotki test",
+    "machine-kotki:build": "pnpm --filter sleeper-machine-kotki build",
     "app:dev": "pnpm --filter sleeper-app start",
     "app:ios": "pnpm --filter sleeper-app ios",
     "app:android": "pnpm --filter sleeper-app android"
