@@ -15,9 +15,9 @@ Każdy commit kodu = follow-up commit `docs/commits/YYYY-MM-DD-<hash>-<slug>.md`
 
 ### Implementacja
 
-- [ ] `packages/sleeper-app/src/features/recommendation/useSleepRecommendation.ts` — `dayKey = useMemo(() => dayKeyInAppTz(now), [])` (raz na mount); `rangeStart`/`rangeEnd` derived z `dayKey`; `useFocusEffect` invalidate `['sessions']` przy zmianie `dayKeyInAppTz(new Date())`.
-- [ ] `packages/sleeper-app/src/features/sessions/hooks.ts` — queryKey używa `dayKeyInAppTz(rangeStart)` + `dayKeyInAppTz(rangeEnd)` zamiast `.toISOString()`. `.toISOString()` zostaje wewnątrz `queryFn` jako filtr Supabase.
-- [ ] `packages/sleeper-app/src/components/ActiveWindowCard.tsx` — wrapper kontener progress baru z `minHeight ≥ 8` (h-2). Progress widoczny tylko gdy `progressValue !== null`, ale wrapper trzyma wysokość zawsze.
+- [x] `packages/sleeper-app/src/features/recommendation/useSleepRecommendation.ts` — `dayKey = useMemo(() => dayKeyInAppTz(now), [])` (raz na mount); `rangeStart`/`rangeEnd` derived z `dayKey`; `useFocusEffect` invalidate `['sessions']` przy zmianie `dayKeyInAppTz(new Date())`.
+- [x] `packages/sleeper-app/src/features/sessions/hooks.ts` — queryKey używa `dayKeyInAppTz(rangeStart)` + `dayKeyInAppTz(rangeEnd)` zamiast `.toISOString()`. `.toISOString()` zostaje wewnątrz `queryFn` jako filtr Supabase.
+- [x] `packages/sleeper-app/src/components/ActiveWindowCard.tsx` — wrapper kontener progress baru z `minHeight ≥ 8` (h-2). Progress widoczny tylko gdy `progressValue !== null`, ale wrapper trzyma wysokość zawsze.
 
 ### Weryfikacja:
 

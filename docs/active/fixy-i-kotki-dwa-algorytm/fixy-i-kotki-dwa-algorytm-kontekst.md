@@ -3,6 +3,24 @@
 **Branch:** `feature/fixy-i-kotki-dwa-algorytm`
 **Ostatnia aktualizacja:** 2026-05-29
 
+## Faza 2 — UKOŃCZONA (2026-05-29)
+
+### Zmiany wprowadzone
+
+- `useSleepRecommendation.ts`: `dayKey` memoizowany raz na mount (`useMemo([], [])`); `rangeStart`/`rangeEnd` derived z `dayKey`; `useFocusEffect` invaliduje `['sessions', childId]` gdy ekran wróci na nowy dzień.
+- `hooks.ts`: queryKey w `useSessions` używa `dayKeyInAppTz(rangeStart/rangeEnd)` zamiast `.toISOString()`. `.toISOString()` zostaje w `queryFn` jako filtr Supabase.
+- `ActiveWindowCard.tsx`: wrapper `<View className="mt-4 h-2">` trzyma stałą wysokość; ProgressBar renderowany inside (conditional) bez zmiany min-height obszaru.
+
+### Decyzje
+
+- `rangeEnd` = `endOfDayInAppTz(dayKey)` zamiast `now` — akceptowalne, sesje z bieżącego dnia zawsze w zakresie (end of day >> now).
+- Import `endOfDayInAppTz` z `@/lib/time` — funkcja już istniała.
+- `eslint-disable react-hooks/exhaustive-deps` na linii dayKey — świadoma decyzja (intentionally empty deps).
+
+### Commit
+
+`8e04e13` — fix(fixy-i-kotki-dwa-algorytm): stabilizacja queryKey progress bar — brak refetch loop
+
 ## Powiązane pliki
 
 | Plik | Faza | Zakres |
