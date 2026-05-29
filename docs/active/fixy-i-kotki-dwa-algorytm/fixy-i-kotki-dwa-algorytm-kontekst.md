@@ -1,7 +1,31 @@
 # Kontekst: fixy-i-kotki-dwa-algorytm
 
 **Branch:** `feature/fixy-i-kotki-dwa-algorytm`
-**Ostatnia aktualizacja:** 2026-05-29 (Faza 1 ukończona)
+**Ostatnia aktualizacja:** 2026-05-29 (Faza 3 ukończona)
+
+## Faza 3 — UKOŃCZONA (2026-05-29)
+
+### Zmiany wprowadzone
+
+- `packages/sleeper-app/supabase/migrations/0011_children_algorithm.sql` (NOWY) — `ALTER TABLE public.children ADD COLUMN algorithm text NOT NULL DEFAULT 'galland' CHECK (algorithm IN ('galland', 'kotki_dwa'))`.
+- `packages/sleeper-app/src/lib/database.types.ts` — ręcznie dodano pole `algorithm: string` do `Row` (required) oraz `algorithm?: string` do `Insert` i `Update` (optional) w sekcji `children`.
+- `.gitignore` (root) — dodana sekcja `# Materialy referencyjne — copyright (Marta Stam / Kotki Dwa)` + linia `data-book/`.
+
+### Decyzje
+
+- Manual update `database.types.ts` zamiast regen przez CLI Supabase — lokalna baza Supabase nie jest konieczna w tej fazie; regen wymagałby `supabase db pull` z działającą instancją.
+- `algorithm` w `Row` jako `string` (nie union type `'galland' | 'kotki_dwa'`) — zgodnie z wzorcem reszty tabeli (np. `type: string` w `sessions`). Węższy typ `'galland' | 'kotki_dwa'` pojawi się w warstwie `features/children/hooks.ts` (Faza 5).
+
+### Commit
+
+`098c7f4` — feat(fixy-i-kotki-dwa-algorytm): migracja algorithm + gitignore data-book
+
+### Walidacja
+
+- tsc PASS, lint PASS.
+- `git status` — `data-book/` nie pojawia się w output.
+
+---
 
 ## Faza 2 — UKOŃCZONA + REVIEW PASS (2026-05-29)
 
@@ -30,6 +54,28 @@ Przeprowadzono 5-agentowy code review. Wynik: **PASS** — P1=0, P2=0, P3=2 (nit
 
 CLI: tsc PASS, lint PASS. Manual testing: checklist w `manual-test-faza-2.md`.
 Raport: `review-faza-2.md`.
+
+## Faza 1 — UKOŃCZONA + REVIEW PASS (2026-05-29)
+
+### Review fazy 1 cykl 2 (2026-05-29)
+
+Ponowny review po fix cyklu 1. Wynik: **CZYSTE** — P1=0, P2=0, P3=2 (nity bez zmian, opcjonalne).
+
+Poprzedni P2 (TEST-01: brakujący test addDaysInAppTz) — **NAPRAWIONY**. Commit `790e837` dodał 14 testów (vitest): happy path, DST boundary Europe/Warsaw, invalid input. Wszystkie testy zielone. Vitest dodany jako devDependency sleeper-app.
+
+CLI: tsc PASS, lint PASS, vitest 14/14 PASS. Raport: `review-faza-1.md` (zaktualizowany).
+
+### Review fazy 1 cykl 1 (2026-05-29)
+
+Przeprowadzono 5-agentowy code review. Wynik: **ZASTRZEŻENIA** — P1=0, P2=1, P3=3.
+
+**P2-1 (TEST):** Brakujący unit test dla nowego eksportowanego helpera `addDaysInAppTz` w `lib/time.ts`. Reguła `coding-rules.md §6` — każda nowa funkcja publiczna ma test. Wymaga dodania testów (n=1, n=-1, DST boundary, niepoprawny format).
+**P3-1 (ARCH):** `addDaysInAppTz` bez walidacji formatu wejściowego `dayKey` — silent NaN error. Opcja: JSDoc lub guard.
+**P3-2 (ARCH):** Safety net `if (end <= start)` w handleSubmit bez komentarza kontekstu.
+**P3-3 (SECURITY):** `parseTimeMinutes` bez walidacji — zwraca 0 dla niepoprawnego wejścia (niekrytyczne, bo TIME_REGEX waliduje przed wywołaniem).
+
+CLI: tsc PASS, lint PASS. Manual testing: checklist w `manual-test-faza-1.md`.
+Raport: `review-faza-1.md`.
 
 ## Faza 1 — UKOŃCZONA (2026-05-29)
 

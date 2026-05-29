@@ -68,9 +68,9 @@ Każdy commit kodu = follow-up commit `docs/commits/YYYY-MM-DD-<hash>-<slug>.md`
 
 ### Implementacja
 
-- [ ] `packages/sleeper-app/supabase/migrations/0011_children_algorithm.sql` (NOWY) — `alter table public.children add column algorithm text not null default 'galland' check (algorithm in ('galland', 'kotki_dwa'));`
-- [ ] `packages/sleeper-app/src/lib/database.types.ts` — regen (lub manual update) po migracji.
-- [ ] `.gitignore` (root) — dodać sekcję:
+- [x] `packages/sleeper-app/supabase/migrations/0011_children_algorithm.sql` (NOWY) — `alter table public.children add column algorithm text not null default 'galland' check (algorithm in ('galland', 'kotki_dwa'));`
+- [x] `packages/sleeper-app/src/lib/database.types.ts` — regen (lub manual update) po migracji.
+- [x] `.gitignore` (root) — dodać sekcję:
   ```
   # Materialy referencyjne — copyright (Marta Stam / Kotki Dwa)
   data-book/
