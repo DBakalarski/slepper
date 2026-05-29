@@ -1,12 +1,13 @@
 // React hook wrapping sleeper-machine.recommend() with the app's
 // data layer (react-query useSessions + child birth_date).
 
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
+import { useFocusEffect } from 'expo-router';
+import { useQueryClient } from '@tanstack/react-query';
 import { recommend, type Recommendation, type TimeOfDay } from 'sleeper-machine';
 import { useSessions } from '@/features/sessions/hooks';
+import { dayKeyInAppTz, startOfDayInAppTz, endOfDayInAppTz } from '@/lib/time';
 import { toLibSessions, toLibProfile } from './adapter';
-
-const MS_PER_DAY = 86_400_000;
 
 export type UseSleepRecommendationResult = {
   readonly recommendation: Recommendation | null;
@@ -30,14 +31,46 @@ export type ChildForRecommendation = {
  * - Skips active session (`end_at === null`) at adapter layer.
  * - Re-computes on each render (recommend is <1 ms; memoized on inputs).
  * - Returns `null` while sessions are loading or child is null.
+ *
+ * queryKey stabilization: dayKey computed ONCE on mount (useMemo with []).
+ * Cross-midnight refresh handled by useFocusEffect invalidating ['sessions']
+ * when dayKeyInAppTz(new Date()) differs from the mounted dayKey.
  */
 export function useSleepRecommendation(
   child: ChildForRecommendation | null,
   now: Date,
   targetWakeTime?: TimeOfDay,
 ): UseSleepRecommendationResult {
-  const rangeStart = useMemo(() => new Date(now.getTime() - 14 * MS_PER_DAY), [now]);
-  const sessionsQuery = useSessions(child?.id ?? null, rangeStart, now);
+  const queryClient = useQueryClient();
+
+  // dayKey stabilized once on mount — prevents refetch loop caused by
+  // now ticking every 30s producing a new toISOString() in queryKey.
+  // See: docs/solutions/performance-issues/2026-05-28-usememo-querykey-refetch-loop.md
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const dayKey = useMemo(() => dayKeyInAppTz(now), []);
+
+  // rangeStart = start of the day 14 days ago; rangeEnd = end of today.
+  // Both derived from stable dayKey — stable across 30s ticks.
+  const rangeStart = useMemo(() => {
+    const todayStart = startOfDayInAppTz(new Date(dayKey));
+    return new Date(todayStart.getTime() - 14 * 86_400_000);
+  }, [dayKey]);
+
+  const rangeEnd = useMemo(() => endOfDayInAppTz(new Date(dayKey)), [dayKey]);
+
+  // Cross-midnight: when screen regains focus on a new day, invalidate
+  // sessions so fresh data is loaded. This triggers a re-mount of the
+  // hook's consumer which will compute a new dayKey.
+  useFocusEffect(
+    useCallback(() => {
+      const currentDayKey = dayKeyInAppTz(new Date());
+      if (currentDayKey !== dayKey && child?.id) {
+        void queryClient.invalidateQueries({ queryKey: ['sessions', child.id] });
+      }
+    }, [dayKey, child?.id, queryClient]),
+  );
+
+  const sessionsQuery = useSessions(child?.id ?? null, rangeStart, rangeEnd);
 
   const recommendation = useMemo<Recommendation | null>(() => {
     if (!child) return null;

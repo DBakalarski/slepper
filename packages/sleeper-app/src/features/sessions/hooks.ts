@@ -14,6 +14,7 @@ import {
 } from '@/features/sessions/schedule-nap-side-effects';
 import { translateSessionError } from '@/features/sessions/translate-session-error';
 import { supabase } from '@/lib/supabase';
+import { dayKeyInAppTz } from '@/lib/time';
 
 export type SessionType = 'nap' | 'night_sleep';
 
@@ -66,7 +67,15 @@ export function useSessions(
   rangeEnd: Date,
 ): UseQueryResult<SleepSession[]> {
   return useQuery({
-    queryKey: [...sessionsByChildKey(childId ?? 'none'), rangeStart.toISOString(), rangeEnd.toISOString()],
+    // Use dayKey strings (YYYY-MM-DD) instead of toISOString() to keep the key
+    // stable across re-renders triggered by useNow tick. toISOString() would
+    // produce a new string every 30s causing refetch loops.
+    // See: docs/solutions/performance-issues/2026-05-28-usememo-querykey-refetch-loop.md
+    queryKey: [
+      ...sessionsByChildKey(childId ?? 'none'),
+      dayKeyInAppTz(rangeStart),
+      dayKeyInAppTz(rangeEnd),
+    ],
     enabled: Boolean(childId),
     queryFn: async (): Promise<SleepSession[]> => {
       if (!childId) return [];

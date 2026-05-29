@@ -64,15 +64,17 @@ export function ActiveWindowCard({
             style={{ fontVariant: ['tabular-nums'] }}>
             {formatDuration(sinceMs)}
           </Text>
-          {progressValue !== null ? (
-            <View className="mt-4">
+          {/* Wrapper holds space (h-2 = 8pt) even when progressValue is null,
+              preventing layout shift when recommendation loads/unloads. */}
+          <View className="mt-4 h-2">
+            {progressValue !== null ? (
               <ProgressBar
                 value={progressValue}
                 tintClassName="bg-orange"
                 trackClassName="bg-white/70"
               />
-            </View>
-          ) : null}
+            ) : null}
+          </View>
           {lastSleepEndAt ? (
             <View className="mt-4 flex-row items-center justify-between">
               <Text className="text-sm text-text-muted">
