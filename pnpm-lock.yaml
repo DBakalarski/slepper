@@ -118,6 +118,9 @@ importers:
       sleeper-machine:
         specifier: workspace:*
         version: link:../sleeper-machine
+      sleeper-machine-kotki:
+        specifier: workspace:*
+        version: link:../sleeper-machine-kotki
       zustand:
         specifier: ^5.0.13
         version: 5.0.14(@types/react@19.1.17)(react@19.1.0)

@@ -4,7 +4,8 @@
 import { useCallback, useMemo } from 'react';
 import { useFocusEffect } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
-import { recommend, type Recommendation, type TimeOfDay } from 'sleeper-machine';
+import { recommend as recommendGalland, type Recommendation, type TimeOfDay } from 'sleeper-machine';
+import { recommendKotkiDwa } from 'sleeper-machine-kotki';
 import { useSessions } from '@/features/sessions/hooks';
 import { dayKeyInAppTz, startOfDayInAppTz, endOfDayInAppTz } from '@/lib/time';
 import { toLibSessions, toLibProfile } from './adapter';
@@ -22,6 +23,7 @@ export type ChildForRecommendation = {
   readonly birth_date: string;
   readonly preferred_naps_per_day: number | null;
   readonly preferred_bedtime: string | null;
+  readonly algorithm: 'galland' | 'kotki_dwa';
 };
 
 /**
@@ -82,7 +84,8 @@ export function useSleepRecommendation(
       child.preferred_bedtime,
     );
     const state = { now, history: toLibSessions(sessionsQuery.data) };
-    return recommend(state, profile);
+    const fn = child.algorithm === 'kotki_dwa' ? recommendKotkiDwa : recommendGalland;
+    return fn(state, profile);
   }, [child, now, targetWakeTime, sessionsQuery.data]);
 
   return {

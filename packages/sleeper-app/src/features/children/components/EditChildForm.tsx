@@ -35,6 +35,7 @@ export function EditChildForm({ child, onSuccess, onCancel }: EditChildFormProps
   const [name, setName] = useState(child.name);
   const [birthDate, setBirthDate] = useState(child.birth_date);
   const [avatarColor, setAvatarColor] = useState<string>(child.avatar_color);
+  const [algorithm, setAlgorithm] = useState<'galland' | 'kotki_dwa'>(child.algorithm);
   const [preferredNaps, setPreferredNaps] = useState<number | null>(
     child.preferred_naps_per_day,
   );
@@ -76,6 +77,7 @@ export function EditChildForm({ child, onSuccess, onCancel }: EditChildFormProps
         name: trimmedName,
         birthDate,
         avatarColor,
+        algorithm,
         preferredNapsPerDay: preferredNaps,
         preferredBedtime: preferredBedtime.length > 0 ? `${preferredBedtime}:00` : null,
       },
@@ -144,6 +146,48 @@ export function EditChildForm({ child, onSuccess, onCancel }: EditChildFormProps
               );
             })}
           </View>
+        </View>
+
+        <View>
+          <Text className="text-xs font-semibold text-purple">Algorytm rekomendacji</Text>
+          <View className="mt-2 flex-row gap-2">
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Algorytm Naukowy Galland"
+              onPress={() => setAlgorithm('galland')}
+              disabled={isPending}
+              className={`flex-1 items-center justify-center rounded-xl border px-3 py-2 ${
+                algorithm === 'galland' ? 'border-navy bg-navy' : 'border-purple/30 bg-transparent'
+              }`}>
+              <Text
+                className={`text-sm font-semibold ${
+                  algorithm === 'galland' ? 'text-cream' : 'text-navy dark:text-cream'
+                }`}>
+                Naukowy (Galland)
+              </Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Algorytm Kotki Dwa"
+              onPress={() => setAlgorithm('kotki_dwa')}
+              disabled={isPending}
+              className={`flex-1 items-center justify-center rounded-xl border px-3 py-2 ${
+                algorithm === 'kotki_dwa'
+                  ? 'border-navy bg-navy'
+                  : 'border-purple/30 bg-transparent'
+              }`}>
+              <Text
+                className={`text-sm font-semibold ${
+                  algorithm === 'kotki_dwa' ? 'text-cream' : 'text-navy dark:text-cream'
+                }`}>
+                Kotki Dwa
+              </Text>
+            </Pressable>
+          </View>
+          <Text className="mt-1 text-xs text-purple">
+            Naukowy: okna pochodne z norm Galland 2012 + adaptacja z historii.
+            Kotki Dwa: stale okna z lookup table per wiek, pobudka 07:00 (lub preferowana).
+          </Text>
         </View>
 
         <View>
