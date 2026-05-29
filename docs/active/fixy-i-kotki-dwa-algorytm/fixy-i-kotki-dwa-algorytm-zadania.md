@@ -126,6 +126,13 @@ Każdy commit kodu = follow-up commit `docs/commits/YYYY-MM-DD-<hash>-<slug>.md`
 - [x] Weryfikacja: `pnpm --filter sleeper-machine-kotki test` — wszystkie testy zielone (43/43).
 - [x] Weryfikacja: `pnpm --filter sleeper-machine-kotki build` — `dist/index.js` + `dist/index.d.ts` wyemitowane.
 
+## Do poprawy po review fazy 4
+
+- [ ] 🟡 [nit] **recommender.ts:194-203** — `_buildMorningWakeForTest` i `_computeAgeMonths` eksportowane z modułu produkcyjnego, ale nieużywane w żadnym teście; usunąć oba eksporty (over-specification — anty-wzorzec §5)
+- [ ] 🟡 [nit] **recommender.ts:177-182** — dead code: warunek `napLengthHours > bucket.maxNapHours` nigdy nie triggeruje bo `napLengthHours = min(maxNapHours, ...)` z definicji; usunąć blok
+- [ ] 🟡 [nit] **lookup.test.ts:110-116** — osłabiona asercja w teście fallback (tylko `toBeDefined()` + zakresowy check); dodać `expect(b.typicalNaps).toBe(2)` lub `expect(b.id).toBe('9m')`
+- [ ] 🟡 [nit] **recommender.ts:163-174 / recommender.test.ts** — brakujący test dla warning "preferowana godzina nocnego snu daje niezdrową długość nocy"; dodać scenariusz (np. 9m, bedtime=23:00, wake=07:00 → nightH=8h → warning)
+
 ---
 
 ## Faza 5: Integracja z sleeper-app — adapter + toggle UI (M)
@@ -135,16 +142,16 @@ Każdy commit kodu = follow-up commit `docs/commits/YYYY-MM-DD-<hash>-<slug>.md`
 
 ### Implementacja
 
-- [ ] `packages/sleeper-app/package.json` — dodać `"sleeper-machine-kotki": "workspace:*"`.
-- [ ] `packages/sleeper-app/src/features/children/hooks.ts` — rozszerzyć `Child` i `UpdateChildInput` o `algorithm: 'galland' | 'kotki_dwa'`; update `rowToChild`, `CHILD_SELECT` (dodać `algorithm`), `patch` w `useUpdateChild`.
-- [ ] `packages/sleeper-app/src/features/children/components/EditChildForm.tsx` — nowa sekcja "Algorytm rekomendacji" po "Kolor", przed "Preferowana liczba drzemek": 2 chipy (Naukowy (Galland) / Kotki Dwa) + opis ("Naukowy: okna pochodne z norm Galland 2012 + adaptacja z historii. Kotki Dwa: stałe okna z lookup table per wiek, pobudka 07:00 (lub preferowana).") + state `algorithm` + przekazanie do `updateChild.mutate`.
-- [ ] `packages/sleeper-app/src/features/recommendation/useSleepRecommendation.ts` — import `recommendGalland` z `sleeper-machine` i `recommendKotkiDwa` z `sleeper-machine-kotki`; `ChildForRecommendation` rozszerzony o `algorithm`; wybór funkcji: `const fn = child.algorithm === 'kotki_dwa' ? recommendKotkiDwa : recommendGalland`.
-- [ ] `packages/sleeper-app/src/app/(app)/index.tsx` (+ inne consumery przez `grep useSleepRecommendation`) — przekazanie `child.algorithm`.
+- [x] `packages/sleeper-app/package.json` — dodać `"sleeper-machine-kotki": "workspace:*"`.
+- [x] `packages/sleeper-app/src/features/children/hooks.ts` — rozszerzyć `Child` i `UpdateChildInput` o `algorithm: 'galland' | 'kotki_dwa'`; update `rowToChild`, `CHILD_SELECT` (dodać `algorithm`), `patch` w `useUpdateChild`.
+- [x] `packages/sleeper-app/src/features/children/components/EditChildForm.tsx` — nowa sekcja "Algorytm rekomendacji" po "Kolor", przed "Preferowana liczba drzemek": 2 chipy (Naukowy (Galland) / Kotki Dwa) + opis ("Naukowy: okna pochodne z norm Galland 2012 + adaptacja z historii. Kotki Dwa: stałe okna z lookup table per wiek, pobudka 07:00 (lub preferowana).") + state `algorithm` + przekazanie do `updateChild.mutate`.
+- [x] `packages/sleeper-app/src/features/recommendation/useSleepRecommendation.ts` — import `recommendGalland` z `sleeper-machine` i `recommendKotkiDwa` z `sleeper-machine-kotki`; `ChildForRecommendation` rozszerzony o `algorithm`; wybór funkcji: `const fn = child.algorithm === 'kotki_dwa' ? recommendKotkiDwa : recommendGalland`.
+- [x] `packages/sleeper-app/src/app/(app)/index.tsx` (+ inne consumery przez `grep useSleepRecommendation`) — przekazanie `child.algorithm`.
 
 ### Weryfikacja:
 
-- [ ] Weryfikacja: `pnpm --filter sleeper-app exec tsc --noEmit` — 0 błędów.
-- [ ] Weryfikacja: `pnpm --filter sleeper-app lint` — PASS.
+- [x] Weryfikacja: `pnpm --filter sleeper-app exec tsc --noEmit` — 0 błędów.
+- [x] Weryfikacja: `pnpm --filter sleeper-app lint` — PASS.
 - [ ] Weryfikacja: Manual w Expo Go — EditChildForm dla 9m dziecka → switch na Kotki Dwa → zapisz → wróć do "Dzisiaj" → `currentWakeWindowDuration` zmienia się (Galland = adapted ~3h±, Kotki Dwa = 3h fixed).
 - [ ] Weryfikacja: Manual — switch z powrotem na Galland → wartości wracają.
 - [ ] Weryfikacja: Manual — toggle persist w bazie (refresh app, wartość zostaje).

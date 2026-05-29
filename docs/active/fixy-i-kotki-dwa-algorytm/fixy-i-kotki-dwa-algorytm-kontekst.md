@@ -1,7 +1,51 @@
 # Kontekst: fixy-i-kotki-dwa-algorytm
 
 **Branch:** `feature/fixy-i-kotki-dwa-algorytm`
-**Ostatnia aktualizacja:** 2026-05-29 (Faza 4 ukończona)
+**Ostatnia aktualizacja:** 2026-05-29 (Faza 5 ukończona)
+
+## Faza 5 — UKOŃCZONA (2026-05-29)
+
+### Zmiany wprowadzone
+
+- `packages/sleeper-app/package.json` — dodano `"sleeper-machine-kotki": "workspace:*"` w `dependencies`. `pnpm install` zarejestrował workspace link.
+- `features/children/hooks.ts` — `Child` interface rozszerzony o `algorithm: 'galland' | 'kotki_dwa'`; `UpdateChildInput` o `algorithm?: 'galland' | 'kotki_dwa'`; `CHILD_SELECT` dodaje `algorithm`; `ChildRow` dodaje `algorithm: string`; `rowToChild` narrowuje `string → union` przez explicit guard; `useUpdateChild` patch dodaje `if (algorithm !== undefined) patch.algorithm = algorithm`.
+- `features/children/components/EditChildForm.tsx` — nowa sekcja "Algorytm rekomendacji" (po Kolor, przed Preferowana liczba drzemek): 2 chipy Pressable (Naukowy Galland / Kotki Dwa) + opis + state `algorithm` inicjalizowany z `child.algorithm` + przekazanie do `updateChild.mutate`.
+- `features/recommendation/useSleepRecommendation.ts` — `recommend` zaliasowany jako `recommendGalland`; nowy import `recommendKotkiDwa` z `sleeper-machine-kotki`; `ChildForRecommendation` rozszerzony o `algorithm`; w `useMemo` wybór fn: `child.algorithm === 'kotki_dwa' ? recommendKotkiDwa : recommendGalland`.
+- `app/(app)/index.tsx` — `ActiveChildSectionProps.child` rozszerzony o `algorithm: 'galland' | 'kotki_dwa'` (spójność z `ChildForRecommendation`).
+
+### Decyzje
+
+- Tylko jeden consumer `useSleepRecommendation` (index.tsx) — grep potwierdził brak innych miejsc.
+- `ChildRow.algorithm` jako `string` (zgodnie z wzorcem DB row w projekcie) z narrowingiem w `rowToChild` — bez type assertion.
+- Opis algorytmów w UI bez cytatów z PDF — tylko techniczne parafrazy.
+
+### Walidacja
+
+- `pnpm install` — workspace link sleeper-machine-kotki zarejestrowany.
+- `pnpm --filter sleeper-app exec tsc --noEmit` — PASS (0 błędów).
+- `pnpm --filter sleeper-app lint` — PASS.
+
+### Commit
+
+`5117f73` — feat(fixy-i-kotki-dwa-algorytm): integracja sleeper-machine-kotki z sleeper-app — adapter + toggle UI
+
+---
+
+## Faza 4 — UKOŃCZONA + REVIEW PASS (2026-05-29)
+
+### Review fazy 4 (2026-05-29)
+
+Przeprowadzono 5-perspektywowy code review. Wynik: **CZYSTE** — P1=0, P2=0, P3=4 (nity nieblokujące).
+
+**P3-1 (ARCH):** `recommender.ts:194-203` — `_buildMorningWakeForTest`/`_computeAgeMonths` eksportowane z prod modułu ale nieużywane w testach (over-specification).
+**P3-2 (ARCH):** `recommender.ts:177-182` — dead code: warning `napLengthHours > maxNapHours` nigdy nie triggeruje z powodu wcześniejszego `min()`.
+**P3-3 (TEST):** `lookup.test.ts:110-116` — osłabiona asercja w fallback teście (tylko `toBeDefined()`, brak asercji na `typicalNaps`).
+**P3-4 (TEST):** Brakujący test dla warning "niezdrowa długość nocy" (`recommender.ts:163-174`).
+
+CLI: test 43/43 PASS, build PASS, workspace zarejestrowany (`pnpm list -r`). Brak mobile checkboxów (biblioteka, nie UI).
+Raport: `review-faza-4.md`.
+
+---
 
 ## Faza 4 — UKOŃCZONA (2026-05-29)
 
