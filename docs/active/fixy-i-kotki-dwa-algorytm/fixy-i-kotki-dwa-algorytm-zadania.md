@@ -48,10 +48,16 @@ Każdy commit kodu = follow-up commit `docs/commits/YYYY-MM-DD-<hash>-<slug>.md`
 
 ### Weryfikacja:
 
-- [ ] Weryfikacja: `pnpm --filter sleeper-app exec tsc --noEmit` — 0 błędów.
-- [ ] Weryfikacja: `pnpm --filter sleeper-app lint` — PASS.
-- [ ] Weryfikacja: Manual w Expo Go — "Dodaj sesje wstecz" → Sen nocny → data dziś, 22:00 → 06:30 → zapisz → sesja widoczna od dziś 22:00 do jutro 06:30.
-- [ ] Weryfikacja: Manual — same-day drzemka 09:00 → 10:30 nadal działa bez zmian.
+- [x] Weryfikacja: `pnpm --filter sleeper-app exec tsc --noEmit` — 0 błędów.
+- [x] Weryfikacja: `pnpm --filter sleeper-app lint` — PASS.
+- [ ] Weryfikacja: Manual w Expo Go — "Dodaj sesje wstecz" → Sen nocny → data dziś, 22:00 → 06:30 → zapisz → sesja widoczna od dziś 22:00 do jutro 06:30. — manual test (patrz manual-test-faza-1.md)
+- [ ] Weryfikacja: Manual — same-day drzemka 09:00 → 10:30 nadal działa bez zmian. — manual test (patrz manual-test-faza-1.md)
+
+## Do poprawy po review fazy 1
+
+- [x] 🟠 [important] **time.ts:addDaysInAppTz** — brakujący unit test dla nowej publicznej funkcji; dodać do `packages/sleeper-app/src/lib/__tests__/time.test.ts` (happy path: n=1, n=-1; DST boundary; niepoprawny format dayKey)
+- [ ] 🟡 [nit] **time.ts:138** — `addDaysInAppTz` bez walidacji wejściowego dayKey; dodać JSDoc z `@param dayKey - musi być YYYY-MM-DD` lub guard na początku funkcji
+- [ ] 🟡 [nit] **BackdatedSessionModal.tsx:96** — safety net `if (end <= start)` bez komentarza kontekstu; dodać `// safety net: np. identyczne czasy 00:00 → 00:00`
 
 ---
 
