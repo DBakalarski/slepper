@@ -21,11 +21,16 @@ Każdy commit kodu = follow-up commit `docs/commits/YYYY-MM-DD-<hash>-<slug>.md`
 
 ### Weryfikacja:
 
-- [ ] Weryfikacja: `pnpm --filter sleeper-app exec tsc --noEmit` — 0 błędów.
-- [ ] Weryfikacja: `pnpm --filter sleeper-app lint` — PASS.
-- [ ] Weryfikacja: Manual w Expo Go — ekran "Dzisiaj" przez 5 minut → progress bar stabilny, brak skoków layoutu.
-- [ ] Weryfikacja: DevTools Network → brak refetch `sessions` co 30s w spoczynku.
-- [ ] Weryfikacja: (opcjonalnie) Cross-midnight test — zmień TZ urządzenia na ~23:55, poczekaj na 00:00 → query invaliduje się raz.
+- [x] Weryfikacja: `pnpm --filter sleeper-app exec tsc --noEmit` — 0 błędów.
+- [x] Weryfikacja: `pnpm --filter sleeper-app lint` — PASS.
+- [ ] Weryfikacja: Manual w Expo Go — ekran "Dzisiaj" przez 5 minut → progress bar stabilny, brak skoków layoutu. — manual test (patrz manual-test-faza-2.md)
+- [ ] Weryfikacja: DevTools Network → brak refetch `sessions` co 30s w spoczynku. — manual test (patrz manual-test-faza-2.md)
+- [ ] Weryfikacja: (opcjonalnie) Cross-midnight test — zmień TZ urządzenia na ~23:55, poczekaj na 00:00 → query invaliduje się raz. — manual test (patrz manual-test-faza-2.md)
+
+## Do poprawy po review fazy 2
+
+- [ ] 🟡 [nit] **useRealtimeSessions.ts:36** — stale comment opisuje stary format queryKey (`startISO`/`endISO`); po Fazie 2 klucz to `dayKey` YYYY-MM-DD. Zaktualizować komentarz.
+- [ ] 🟡 [nit] **index.tsx:145-148** — `startOfDay`/`endOfDay` memoizowane z `[now]` (tick co 30s); semantycznie ok (dayKeyInAppTz stabilizuje queryKey), ale można uprościć analogicznie do `useSleepRecommendation`. Opcjonalne.
 
 ---
 
@@ -36,10 +41,10 @@ Każdy commit kodu = follow-up commit `docs/commits/YYYY-MM-DD-<hash>-<slug>.md`
 
 ### Implementacja
 
-- [ ] `packages/sleeper-app/src/lib/time.ts` — helper `parseTimeMinutes(hhmm: string): number` (lokalny w modal lub w lib) i ewentualnie `addDaysInAppTz(dayKey: string, n: number): string` (przez `date-fns/addDays` na `toZonedTime`/`fromZonedTime`, TZ-safe).
-- [ ] `packages/sleeper-app/src/features/sessions/components/BackdatedSessionModal.tsx` — w `handleSubmit`: dla `type==='night_sleep'`, jeśli `parseTimeMinutes(endTime) <= parseTimeMinutes(startTime)`, end liczony jako `addDays(date, 1)`.
-- [ ] BackdatedSessionModal — domyślne wartości przy switchu chipa na `night_sleep`: `startTime='19:30'`, `endTime='06:30'`.
-- [ ] BackdatedSessionModal — hint widoczny tylko gdy `type==='night_sleep'`: "Jeśli koniec ≤ start, zapis na następny dzień (np. 22:00 → 06:30)".
+- [x] `packages/sleeper-app/src/lib/time.ts` — helper `parseTimeMinutes(hhmm: string): number` (lokalny w modal lub w lib) i ewentualnie `addDaysInAppTz(dayKey: string, n: number): string` (przez `date-fns/addDays` na `toZonedTime`/`fromZonedTime`, TZ-safe).
+- [x] `packages/sleeper-app/src/features/sessions/components/BackdatedSessionModal.tsx` — w `handleSubmit`: dla `type==='night_sleep'`, jeśli `parseTimeMinutes(endTime) <= parseTimeMinutes(startTime)`, end liczony jako `addDays(date, 1)`.
+- [x] BackdatedSessionModal — domyślne wartości przy switchu chipa na `night_sleep`: `startTime='19:30'`, `endTime='06:30'`.
+- [x] BackdatedSessionModal — hint widoczny tylko gdy `type==='night_sleep'`: "Jeśli koniec ≤ start, zapis na następny dzień (np. 22:00 → 06:30)".
 
 ### Weryfikacja:
 

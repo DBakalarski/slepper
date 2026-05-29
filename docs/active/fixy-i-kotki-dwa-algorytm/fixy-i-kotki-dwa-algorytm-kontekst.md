@@ -1,9 +1,9 @@
 # Kontekst: fixy-i-kotki-dwa-algorytm
 
 **Branch:** `feature/fixy-i-kotki-dwa-algorytm`
-**Ostatnia aktualizacja:** 2026-05-29
+**Ostatnia aktualizacja:** 2026-05-29 (Faza 1 ukończona)
 
-## Faza 2 — UKOŃCZONA (2026-05-29)
+## Faza 2 — UKOŃCZONA + REVIEW PASS (2026-05-29)
 
 ### Zmiany wprowadzone
 
@@ -20,6 +20,33 @@
 ### Commit
 
 `8e04e13` — fix(fixy-i-kotki-dwa-algorytm): stabilizacja queryKey progress bar — brak refetch loop
+
+### Review fazy 2 (2026-05-29)
+
+Przeprowadzono 5-agentowy code review. Wynik: **PASS** — P1=0, P2=0, P3=2 (nity).
+
+**P3-1:** Stale comment w `useRealtimeSessions.ts:36` — opisuje stary format `startISO`/`endISO` zamiast `dayKey`.
+**P3-2:** `index.tsx:145-148` — `startOfDay`/`endOfDay` memoizowane z `[now]` (semantycznie ok, queryKey stabilny przez dayKeyInAppTz).
+
+CLI: tsc PASS, lint PASS. Manual testing: checklist w `manual-test-faza-2.md`.
+Raport: `review-faza-2.md`.
+
+## Faza 1 — UKOŃCZONA (2026-05-29)
+
+### Zmiany wprowadzone
+
+- `lib/time.ts`: dodany `addDaysInAppTz(dayKey: string, n: number): string` — przesuwa klucz dnia YYYY-MM-DD o n dni TZ-safe (przez `addDays` z date-fns + `fromZonedTime`/`toZonedTime`).
+- `BackdatedSessionModal.tsx`: dodany lokalny `parseTimeMinutes(hhmm)` do porównania godzin bez tworzenia obiektów Date. W `handleSubmit` dla `type==='night_sleep'` jeśli `parseTimeMinutes(endTime) <= parseTimeMinutes(startTime)` → `endDate = addDaysInAppTz(date, 1)` (cross-day). Dodany `handleTypeChange` zamiast `setType` inline — przy switchu na `night_sleep` ustawia domyślne `19:30`/`06:30`, przy powrocie do `nap` resetuje na `09:00`/`10:30`. Hint cross-day widoczny tylko gdy `type === 'night_sleep'`.
+
+### Decyzje
+
+- `parseTimeMinutes` implementowana lokalnie w modalu (nie w `lib/time.ts`) — używana tylko tutaj, brak uzasadnienia dla eksportu.
+- `addDaysInAppTz` dodany do `lib/time.ts` jako eksportowany helper — może być potrzebny w SessionEditForm lub innych edytorach w przyszłości.
+- Walidacja `end <= start` (linia 96) pozostaje jako siatka bezpieczeństwa — po cross-day korekcie nie powinna nigdy wejść dla `night_sleep`, ale chroni przed edge case (np. oba czasy identyczne, np. 00:00 → 00:00).
+
+### Commit
+
+`21b5deb` — fix(fixy-i-kotki-dwa-algorytm): cross-day editing sesji nocnej w BackdatedSessionModal
 
 ## Powiązane pliki
 
