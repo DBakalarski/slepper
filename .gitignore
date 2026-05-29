@@ -19,3 +19,6 @@ coverage/
 .claude/settings.local.json
 
 # Per-package ignores are also enforced by packages/*/.gitignore
+
+# Materialy referencyjne — copyright (Marta Stam / Kotki Dwa)
+data-book/

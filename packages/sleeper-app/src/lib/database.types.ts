@@ -41,6 +41,7 @@ export type Database = {
     Tables: {
       children: {
         Row: {
+          algorithm: string
           avatar_color: string
           birth_date: string
           created_at: string
@@ -51,6 +52,7 @@ export type Database = {
           preferred_naps_per_day: number | null
         }
         Insert: {
+          algorithm?: string
           avatar_color?: string
           birth_date: string
           created_at?: string
@@ -61,6 +63,7 @@ export type Database = {
           preferred_naps_per_day?: number | null
         }
         Update: {
+          algorithm?: string
           avatar_color?: string
           birth_date?: string
           created_at?: string
