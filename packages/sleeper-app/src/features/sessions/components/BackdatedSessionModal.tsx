@@ -14,7 +14,7 @@ import {
 import { Chip } from '@/components/Chip';
 import { useInsertBackdatedSession, type SessionType } from '@/features/sessions/hooks';
 import { extractErrorMessage } from '@/lib/extract-error-message';
-import { parseAppTzDateTime, todayDateInAppTz } from '@/lib/time';
+import { addDaysInAppTz, parseAppTzDateTime, todayDateInAppTz } from '@/lib/time';
 
 interface BackdatedSessionModalProps {
   visible: boolean;
@@ -24,6 +24,13 @@ interface BackdatedSessionModalProps {
 
 const TIME_REGEX = /^([01]\d|2[0-3]):([0-5]\d)$/;
 const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
+
+// Zwraca liczbe minut od polnocy dla czasu "HH:MM" (np. "22:00" -> 1320).
+// Uzywane do porownania start/end bez tworzenia obiektow Date.
+function parseTimeMinutes(hhmm: string): number {
+  const [hh, mm] = hhmm.split(':').map(Number);
+  return (hh ?? 0) * 60 + (mm ?? 0);
+}
 
 function parseAppTzInput(date: string, time: string): Date | null {
   if (!DATE_REGEX.test(date) || !TIME_REGEX.test(time)) return null;
@@ -54,6 +61,18 @@ export function BackdatedSessionModal({
     setValidationError(null);
   }
 
+  function handleTypeChange(newType: SessionType) {
+    setType(newType);
+    setValidationError(null);
+    if (newType === 'night_sleep') {
+      setStartTime('19:30');
+      setEndTime('06:30');
+    } else {
+      setStartTime('09:00');
+      setEndTime('10:30');
+    }
+  }
+
   function handleClose() {
     resetForm();
     insertSession.reset();
@@ -63,7 +82,13 @@ export function BackdatedSessionModal({
   function handleSubmit() {
     setValidationError(null);
     const start = parseAppTzInput(date, startTime);
-    const end = parseAppTzInput(date, endTime);
+    // Dla snu nocnego: jesli koniec <= start, koniec liczymy jako nastepny dzien
+    // (np. 22:00 → 06:30 = start N, end N+1). Dla drzemek walidacja klasyczna.
+    const endDate =
+      type === 'night_sleep' && parseTimeMinutes(endTime) <= parseTimeMinutes(startTime)
+        ? addDaysInAppTz(date, 1)
+        : date;
+    const end = parseAppTzInput(endDate, endTime);
     if (!start || !end) {
       setValidationError('Sprawdz format daty i godzin (YYYY-MM-DD, HH:MM)');
       return;
@@ -116,12 +141,12 @@ export function BackdatedSessionModal({
                 <Chip
                   label="Drzemka"
                   selected={type === 'nap'}
-                  onPress={() => setType('nap')}
+                  onPress={() => handleTypeChange('nap')}
                 />
                 <Chip
                   label="Sen nocny"
                   selected={type === 'night_sleep'}
-                  onPress={() => setType('night_sleep')}
+                  onPress={() => handleTypeChange('night_sleep')}
                 />
               </View>
             </View>
@@ -174,6 +199,12 @@ export function BackdatedSessionModal({
                 />
               </View>
             </View>
+
+            {type === 'night_sleep' ? (
+              <Text className="text-xs text-purple/70">
+                Jesli koniec ≤ start, zapis na nastepny dzien (np. 22:00 → 06:30)
+              </Text>
+            ) : null}
 
             {validationError ? (
               <Text className="text-sm text-orange">{validationError}</Text>

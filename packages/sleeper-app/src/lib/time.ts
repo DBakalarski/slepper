@@ -132,6 +132,14 @@ export function combineDateAndTimeInAppTz(datePart: Date, timePart: Date): Date 
   return fromZonedTime(`${dayKey}T${timeKey}:00`, APP_TIMEZONE);
 }
 
+// Przesuwa klucz dnia "YYYY-MM-DD" o `n` dni w strefie aplikacji.
+// Uzywaj zamiast recznie dodawac ms do Date — addDays z date-fns poprawnie
+// obsluguje DST (23/25h doby), a format w app tz daje stabilny string.
+export function addDaysInAppTz(dayKey: string, n: number): string {
+  const base = fromZonedTime(`${dayKey}T00:00:00`, APP_TIMEZONE);
+  return format(toZonedTime(addDays(base, n), APP_TIMEZONE), 'yyyy-MM-dd');
+}
+
 // Tabela referencyjna okien aktywnosci wg wieku dziecka. Wartosci w minutach,
 // uzywane do schedulowania powiadomienia "Drzemka za ~15min" (Faza 5).
 // Zrodlo: typowe wartosci z poradnikow snu niemowlecego (np. Precious Little
