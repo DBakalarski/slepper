@@ -32,6 +32,7 @@ import {
 } from '@/features/sessions/hooks';
 import { COLORS } from '@/lib/colors';
 import { extractErrorMessage } from '@/lib/extract-error-message';
+import { computeGapsBetweenSessions } from '@/lib/session-gaps';
 import { endOfDayInAppTz, startOfDayInAppTz } from '@/lib/time';
 import { useNow } from '@/lib/useNow';
 
@@ -157,11 +158,21 @@ function ActiveChildSection({ child }: ActiveChildSectionProps) {
 
   const activeSession = activeSessionQuery.data ?? null;
   const lastEnded = lastEndedQuery.data ?? null;
-  const todaySessions = todaySessionsQuery.data ?? [];
+  // useMemo stabilizuje referencje pustej tablicy miedzy renderami —
+  // bez tego useMemo(gapMap) widzialby nowy `todaySessions` co render.
+  const todaySessions = useMemo(
+    () => todaySessionsQuery.data ?? [],
+    [todaySessionsQuery.data],
+  );
 
   // Rekomendacja age-based liczona raz na poziomie sekcji — single source of truth
   // dla ActiveWindowCard (badge "Drzemka za") i RecommendationCard ("Nastepny sen").
   const { recommendation } = useSleepRecommendation(child, now);
+
+  // Mapa gapow miedzy sesjami (czas aktywnosci) — render w "Sesje dzisiaj"
+  // identycznie jak na ekranie Historia. Helper sortuje ASC wewnetrznie,
+  // wiec dziala niezaleznie od DESC ordering z `useSessions`.
+  const gapMap = useMemo(() => computeGapsBetweenSessions(todaySessions), [todaySessions]);
 
   function handleStart(type: 'nap' | 'night_sleep') {
     if (activeSession) return;
@@ -231,7 +242,11 @@ function ActiveChildSection({ child }: ActiveChildSectionProps) {
             </Pressable>
           </View>
           {todaySessions.slice(0, 5).map((session) => (
-            <SessionListItem key={session.id} session={session} />
+            <SessionListItem
+              key={session.id}
+              session={session}
+              gapBeforeMs={gapMap.get(session.id)}
+            />
           ))}
         </View>
       ) : null}
