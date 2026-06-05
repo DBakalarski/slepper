@@ -1,7 +1,7 @@
 # Kontekst: fixy-edycja-aktywnosc-smart-start
 
 **Branch:** `feature/fixy-edycja-aktywnosc-smart-start`
-**Ostatnia aktualizacja:** 2026-06-05 (Faza 2 done)
+**Ostatnia aktualizacja:** 2026-06-05 (Faza 3 done)
 
 ## Postep
 
@@ -27,6 +27,42 @@
 - Typecheck PASS (0 bledow), lint PASS (0 warningow).
 - Manual on-device test pending (Expo Go iOS+Android — 7 scenariuszy zdefiniowanych w `*-zadania.md`).
 - Zmiana to 14 LOC dodanych w 1 pliku (`src/app/(app)/index.tsx`), zero nowych deps, zero modyfikacji komponentow.
+
+### Review fazy 2 (2026-06-05)
+- Raport: `review-faza-2.md`. Severity: ✅ GOTOWE DO KONTYNUACJI.
+- Liczniki: P1=0, P2=0, P3=2, info=1.
+- Manual test checklist: `manual-test-faza-2.md` (7 scenariuszy + cross-device + edge cases opcjonalne).
+- Kluczowe findingi:
+  - 🟡 P3 (kod): `smartSessionType()` wywolane 2× per render (prop+arrow) — sugestia ekstrakcji do `nextType`. Mikro-perf, opcjonalne.
+  - 🟡 P3 (doc): opis Test UX w zadaniach nieprecyzyjny — label `BigActionButton` jest staly, zmienia sie tylko ikona Moon.
+  - ⚪ info: `BigActionButton.tsx:29` label zawsze "Rozpocznij sen", ikona Moon prepend dla `sessionType==='night_sleep'` — zgodne z planem (Faza 3 design.md). Realnie tylko ikona jest reactive.
+- Walidacja: typecheck PASS (exit 0), lint PASS (exit 0), zero nowych deps, type safety domknieta (`SleepType` -> `SessionType` discriminated union), determinizm OK (recommendation memoized w hooku).
+- Rekomendacja: KONTYNUUJ do Fazy 3 (Modal picker iOS — najwieksza zmiana strukturalna). P3-nity opcjonalne do naprawy ad-hoc, nie blokuja merge'a.
+
+### Faza 3 — Fix 1: wheel picker minut, iOS Modal (DONE 2026-06-05)
+- Rozbito galaz iOS / Android w `TimePickerField`:
+  - **iOS:** `<Modal transparent animationType="fade">` z bottom-sheet `SafeAreaView edges={['bottom']}` + `bg-cream dark:bg-navy rounded-t-2xl`. Backdrop `flex-1 bg-black/50` z `Pressable.onPress = handleClose` (tap = Anuluj). Stop-propagation wrapper `<Pressable accessible={false} onPress={() => {}}>` zeby tap na sam sheet nie zamykal modala (wzorzec ThemeModeBottomSheet).
+  - **Android:** zachowano natywny system dialog (`display="default"` poza Modalem) bez zmian.
+- Lokalny state `tempValue: Date` (init z `value` przy `handleOpen`). `handleIosChange` aktualizuje tylko `tempValue`. `onChange(parent)` woluje sie dopiero przy `handleConfirm` ("Gotowe") — eliminuje spam `onChange` podczas scroll spinnera.
+- Header bottom-sheet: `Anuluj` (lewo) | `{label}` (srodek, font-semibold) | `Gotowe` (prawo). `accessibilityRole="button"` + polskie `accessibilityLabel` na wszystkich 3 Pressable. `hitSlop={{top:12,bottom:12,left:12,right:12}}` na Anuluj/Gotowe (visual `px-2 py-2` ~36pt + hitSlop = >44pt, zgodne z `[[hitslop-vs-padding-for-touch-targets]]`).
+- DateTimePicker `display="spinner"` `is24Hour` w pelnej szerokosci kontenera (`px-4 pb-2`, bez `flex-1` parent crop'ujacego MM).
+- **Zero nowych dependencji** — `Modal` z `react-native` (built-in), `SafeAreaView` z `react-native-safe-area-context@~5.6.0` (juz w `package.json`).
+- Typecheck PASS, lint PASS (0 warningow).
+- Manual on-device test pending (Expo Go iOS — 7 scenariuszy krytycznych + Android 2 scenariusze sanity check; `manual-test-faza-3.md`).
+- Zmiana to 87 insertions / 9 deletions w 1 pliku (`src/components/TimePickerField.tsx`).
+
+### Review fazy 3 (2026-06-05)
+- Raport: `review-faza-3.md`. Severity: ✅ GOTOWE DO KONTYNUACJI.
+- Liczniki: P1=0, P2=0, P3=3.
+- Manual test checklist: `manual-test-faza-3.md` (9 scenariuszy: 7 iOS krytyczne + 2 Android sanity).
+- Walidacja: typecheck PASS (exit 0), lint PASS (exit 0), zero nowych deps, API komponentu niezmienione (call-sites w `SessionEditForm.tsx` bez zmian).
+- Aspekty krytyczne (per dev-autopilot system-reminder): wszystkie ✅ — Modal lifecycle (re-init `tempValue` w `handleOpen`), backdrop tap close (stop-propagation jak ThemeModeBottomSheet), memory leaks (brak timerów), dark mode (`bg-cream dark:bg-navy` = #F5F0E8/#1E1B4B), a11y (polskie labels VoiceOver/TalkBack), Android no-regression (gałąź `display="default"` + immediate commit zachowana), type safety (interface niezmienione), hitSlop (borderline 40x32pt formalnie, line-height tekstu podbija do ~46pt — efektywnie OK).
+- Kluczowe findingi P3:
+  - 🟡 `tempValue` `useState` initializer może być stale gdy parent zmieni `value` przy zamknietym Modalu — defensive `useEffect` opcjonalny (dziś nieblokujący bo `handleOpen` zawsze resetuje).
+  - 🟡 `animationType="fade"` zamiast `slide` (zgodnie z planem, ale `ThemeModeBottomSheet` używa `slide`) — UX cosmetic.
+  - 🟡 `HIT_SLOP=12` na granicy 44pt — sugestia podbicia do 16.
+- Wzorzec Modal + stop-propagation skopiowany 1:1 z `ThemeModeBottomSheet.tsx` (proven od UI redesign) — minimal risk.
+- Rekomendacja: KONTYNUUJ do Fazy 4 (e2e sanity check + merge). P3-nity opcjonalne ad-hoc.
 
 ## Cel
 
