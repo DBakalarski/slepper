@@ -1,9 +1,6 @@
 import { addDays } from 'date-fns';
 import { useMemo } from 'react';
 
-// FAZA 2 (IU5): import z @/features/sessions/hooks świadomie niedziałający do kopii features/sessions/.
-// Patrz docs/active/sleeper-web-pwa/sleeper-web-pwa-kontekst.md sekcja "Faza 1 — znane TS errors (deferred do IU5)".
-// eslint-disable-next-line import/no-unresolved
 import { useSessions, type SleepSession } from '@/features/sessions/hooks';
 import { dayKeyInAppTz, endOfDayInAppTz, startOfDayInAppTz } from '@/lib/time';
 
