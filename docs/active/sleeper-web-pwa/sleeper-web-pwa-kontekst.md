@@ -1,13 +1,88 @@
 ---
 title: Sleeper Web — PWA — kontekst implementacyjny
 branch: feature/sleeper-web-pwa
-ostatnia_aktualizacja: 2026-06-05 (Faza 2 ukończona)
+ostatnia_aktualizacja: 2026-06-05 (Faza 3 ukończona)
 ---
 
 # Sleeper Web — PWA — kontekst implementacyjny
 
 **Branch:** `feature/sleeper-web-pwa`
-**Ostatnia aktualizacja:** 2026-06-05 (Faza 2 ukończona)
+**Ostatnia aktualizacja:** 2026-06-05 (Faza 3 ukończona)
+
+## Status: Faza 3 ukończona (2026-06-05)
+
+**IU8-IU10 wykonane:** UI components (17 kopii 1:1 + 2 NEW web pickers) + auth gate + 9 routes + 8 feature components.
+
+### Stan `packages/sleeper-web/src/` po Fazie 3
+
+```
+src/
+├── app/
+│   ├── _layout.tsx (sync 1:1 z sleeper-app — queryClient, setupFocusManager,
+│   │                 configureNotificationHandler no-op)
+│   ├── (auth)/_layout.tsx (auth gate: signed_in → / )
+│   ├── (auth)/{sign-in,sign-up}.tsx
+│   └── (app)/
+│       ├── _layout.tsx (Tabs + auth gate: signed_out → /sign-in + useRealtimeSessions)
+│       ├── index.tsx (Main dashboard, kopia 1:1)
+│       ├── history.tsx, profile.tsx, settings.tsx, stats.tsx (kopia 1:1)
+│       ├── sleep-fullscreen.tsx (kopia + USUNIETY expo-keep-awake import)
+│       ├── child/[id]/edit.tsx (kopia 1:1)
+│       └── session/[id].tsx (kopia 1:1)
+├── components/
+│   ├── ui/ (9 plikow, kopia 1:1)
+│   ├── 8 base/, kopia 1:1
+│   ├── TimePickerField.tsx (NEW web HTML5 input type=time)
+│   ├── DatePickerField.tsx (NEW web HTML5 input type=date)
+│   └── __tests__/pickers.test.ts (17 testow)
+├── features/
+│   ├── sessions/components/ (BackdatedSessionModal, SessionEditForm — kopia 1:1)
+│   ├── children/components/ (AddChildForm, EditChildForm — kopia 1:1)
+│   └── family/components/ (4 plikow — kopia 1:1)
+└── lib/ (Faza 1+2)
+```
+
+### Faza 3 — decyzje implementacyjne
+
+- **NEW web pickers (TimePickerField/DatePickerField)** — wrappery wokol HTML5 `<input type="time">` i `<input type="date">`. iOS Safari renderuje natywny wheel picker minut (rozwiazuje crop bug znany z mobile fix `docs/active/fixy-edycja-aktywnosc-smart-start/`). Konwersja tz przez `parseAppTzDateTime` + `combineDateAndTimeInAppTz` (learned-pattern TZ-safe time). Font-size 16px zapobiega iOS auto-zoom. Min-height 44pt (HIG/WCAG).
+- **Re-add native deps usunietych w Fazie 1 P1.3** — `react-native-reanimated@~4.1.1`, `react-native-worklets@0.5.1`, `expo-haptics@~15.0.8`. Powod: ProgressRing animation, SegmentedControl, BigActionButton scale faktycznie ich uzywaja po skopiowaniu Faza 3. `expo-haptics` ma wbudowany web fallback (Vibration API), bez no-op mocka.
+- **`sleep-fullscreen.tsx` — usuniety import `expo-keep-awake`** — native-only excluded per kontekst. Wake Lock API jako post-MVP feature (deferred do IU11). Komentarz w pliku + manual test pending dla iOS Safari OS timeout behavior.
+- **Root `_layout.tsx` sync 1:1 z sleeper-app** — `queryClient` z `lib/query-client` (stabilne module-level vs `new QueryClient()` per render — adresuje review-faza-1 P2.3), `setupFocusManager` w useEffect, `configureNotificationHandler` modulowo (no-op na web).
+- **Usuniety placeholder `src/app/index.tsx`** — `(app)/index.tsx` staje sie root route (jak w sleeper-app). Adresuje review-faza-1 P2.6.
+- **Auth gate dwustronny** — `(auth)/_layout.tsx`: signed_in → /, `(app)/_layout.tsx`: signed_out → /sign-in. Parytet z sleeper-app.
+- **Parytet 1:1 wszystkich 28 plikow** zweryfikowany `diff` — z wyjatkiem `sleep-fullscreen.tsx` (swiadoma adaptacja web).
+- **`useFocusEffect` cross-midnight web edge** (review-faza-2 P2.1) — pozostawione bez fallbacku, do manual verify w manual-test Fazy 3.
+
+### Faza 3 — System-Wide Test Check (sekcja 4.5)
+
+1. **Typecheck bez nowych błędów:** ✅ (0 errors)
+2. **Istniejące testy przechodzą:** ✅ (82/82 PASS, w tym 17 nowych dla pickers)
+3. **Nowe testy pokrywają happy path:** ✅ (static invariants + DST-safe conversion pipeline)
+4. **Nowe importy nie łamią modułów:** ✅ (sleeper-app regression PASS)
+5. **Build przechodzi:** ✅ (`pnpm --filter sleeper-web build` exit 0 — dist/index.html + 4.42MB JS bundle)
+
+### Faza 3 — commits
+
+- `7f6b22c` IU8 UI components (kopia 1:1 + web pickers HTML5) + log `b11a7d9`
+- `ba2fc38` IU9 Auth gate + root layout sync + log `b648777`
+- `e952e19` IU10 Main screens (9 routes + 8 feature components) + log `43aea50`
+
+### Faza 3 — manual test pending (operator checklist Fazy 3)
+
+Lista do operatora po deployment IU11+IU12 (lub lokalnie przez `pnpm --filter sleeper-web start --web` + ngrok dla iOS Safari):
+- TimePicker iOS wheel minute scroll (parytet z mobile fix)
+- DatePicker iOS natywny calendar
+- BigActionButton scale animation (Reanimated lub Pressable style fallback)
+- ProgressRing SVG fade-in
+- Auth gate dwustronny (signed_out → /sign-in, signed_in → /)
+- Main dashboard, history, stats, profile, settings, child edit, session edit
+- Cross-device sync via Realtime (PWA ↔ sleeper-app)
+- Cross-day night sleep (22:00 → 06:00) z poprawnym zapisem
+- Backdated insert prefill + walidacja
+- `useFocusEffect` cross-midnight — czy dziala via visibilitychange?
+- sleep-fullscreen — czy ekran sie blokuje po OS timeout (Wake Lock decision dla IU11)
+
+---
 
 ## Status: Faza 2 ukończona (2026-06-05)
 

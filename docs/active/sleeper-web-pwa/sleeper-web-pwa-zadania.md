@@ -1,13 +1,13 @@
 ---
 title: Sleeper Web — PWA — checklista zadań
 branch: feature/sleeper-web-pwa
-ostatnia_aktualizacja: 2026-06-05 (Faza 2 ukończona)
+ostatnia_aktualizacja: 2026-06-05 (Faza 3 ukończona)
 ---
 
 # Sleeper Web — PWA — checklista zadań
 
 **Branch:** `feature/sleeper-web-pwa`
-**Ostatnia aktualizacja:** 2026-06-05 (Faza 2 ukończona)
+**Ostatnia aktualizacja:** 2026-06-05 (Faza 3 ukończona)
 
 Pełne szczegóły IU w `docs/plans/2026-06-05-001-feat-sleeper-web-pwa-plan.md`.
 
@@ -15,8 +15,13 @@ Pełne szczegóły IU w `docs/plans/2026-06-05-001-feat-sleeper-web-pwa-plan.md`
 
 - ✅ **Faza 1: Bootstrap & Foundation** (IU1-IU4) — ukończono 2026-06-05
 - ✅ **Faza 2: Data Layer** (IU5-IU7) — ukończono 2026-06-05
-- ⬜ Faza 3: UI & Routes (IU8-IU10)
+- ✅ **Faza 3: UI & Routes** (IU8-IU10) — ukończono 2026-06-05
 - ⬜ Faza 4: PWA & Deploy (IU11-IU12)
+
+**Faza 3 — commits:**
+- `7f6b22c` IU8 UI components (kopia 1:1 + web pickers HTML5) + log `b11a7d9`
+- `ba2fc38` IU9 Auth gate + root layout sync + log `b648777`
+- `e952e19` IU10 Main screens (9 routes + 8 feature components) + log `43aea50`
 
 **Faza 1 — commits:**
 - `440d5cc` IU1 Bootstrap + `7f2615c` log
@@ -292,39 +297,41 @@ Pełne szczegóły IU w `docs/plans/2026-06-05-001-feat-sleeper-web-pwa-plan.md`
 
 ---
 
-## Faza 3: UI & Routes
+## Faza 3: UI & Routes ✅
 
-### IU8: UI components (base + feature + web pickers)
+### IU8: UI components (base + feature + web pickers) ✅
 
-**Delegate to:** feature-builder-ui | **Estymata:** L | **Wymagania:** R3, R4, R10 | **Zależności:** IU1, IU4
+**Delegate to:** feature-builder-ui | **Estymata:** L | **Wymagania:** R3, R4, R10 | **Zależności:** IU1, IU4 | **Commits:** `7f6b22c` + log `b11a7d9`
 
 **Implementacja:**
-- [ ] Stwórz `packages/sleeper-web/src/components/ui/Avatar.tsx` (kopia 1:1)
-- [ ] Stwórz `packages/sleeper-web/src/components/ui/Badge.tsx` (kopia 1:1)
-- [ ] Stwórz `packages/sleeper-web/src/components/ui/Card.tsx` (kopia 1:1)
-- [ ] Stwórz `packages/sleeper-web/src/components/ui/IconButton.tsx` (kopia 1:1)
-- [ ] Stwórz `packages/sleeper-web/src/components/ui/ProgressBar.tsx` (kopia 1:1)
-- [ ] Stwórz `packages/sleeper-web/src/components/ui/ProgressBarStacked.tsx` (kopia 1:1)
-- [ ] Stwórz `packages/sleeper-web/src/components/ui/ProgressRing.tsx` (kopia 1:1)
-- [ ] Stwórz `packages/sleeper-web/src/components/ui/SegmentedControl.tsx` (kopia 1:1)
-- [ ] Stwórz `packages/sleeper-web/src/components/ui/Switch.tsx` (kopia 1:1)
-- [ ] Stwórz `packages/sleeper-web/src/components/ActiveWindowCard.tsx` (kopia 1:1)
-- [ ] Stwórz `packages/sleeper-web/src/components/BigActionButton.tsx` (kopia, scale fallback gotów)
-- [ ] Stwórz `packages/sleeper-web/src/components/Chip.tsx` (kopia 1:1)
-- [ ] Stwórz `packages/sleeper-web/src/components/HomeHeader.tsx` (kopia 1:1)
-- [ ] Stwórz `packages/sleeper-web/src/components/QuickActions.tsx` (kopia 1:1)
-- [ ] Stwórz `packages/sleeper-web/src/components/SessionListItem.tsx` (kopia 1:1)
-- [ ] Stwórz `packages/sleeper-web/src/components/SleepInProgressCard.tsx` (kopia 1:1)
-- [ ] Stwórz `packages/sleeper-web/src/components/TodayStatsCard.tsx` (kopia 1:1)
-- [ ] Stwórz `packages/sleeper-web/src/components/TimePickerField.tsx` (**NEW — HTML5 input type=time wrapper**)
-- [ ] Stwórz `packages/sleeper-web/src/components/DatePickerField.tsx` (**NEW — HTML5 input type=date wrapper**)
+- [x] Stwórz `packages/sleeper-web/src/components/ui/Avatar.tsx` (kopia 1:1)
+- [x] Stwórz `packages/sleeper-web/src/components/ui/Badge.tsx` (kopia 1:1)
+- [x] Stwórz `packages/sleeper-web/src/components/ui/Card.tsx` (kopia 1:1)
+- [x] Stwórz `packages/sleeper-web/src/components/ui/IconButton.tsx` (kopia 1:1)
+- [x] Stwórz `packages/sleeper-web/src/components/ui/ProgressBar.tsx` (kopia 1:1)
+- [x] Stwórz `packages/sleeper-web/src/components/ui/ProgressBarStacked.tsx` (kopia 1:1)
+- [x] Stwórz `packages/sleeper-web/src/components/ui/ProgressRing.tsx` (kopia 1:1)
+- [x] Stwórz `packages/sleeper-web/src/components/ui/SegmentedControl.tsx` (kopia 1:1)
+- [x] Stwórz `packages/sleeper-web/src/components/ui/Switch.tsx` (kopia 1:1)
+- [x] Stwórz `packages/sleeper-web/src/components/ActiveWindowCard.tsx` (kopia 1:1)
+- [x] Stwórz `packages/sleeper-web/src/components/BigActionButton.tsx` (kopia 1:1; Pressable style scale fallback dla web)
+- [x] Stwórz `packages/sleeper-web/src/components/Chip.tsx` (kopia 1:1)
+- [x] Stwórz `packages/sleeper-web/src/components/HomeHeader.tsx` (kopia 1:1)
+- [x] Stwórz `packages/sleeper-web/src/components/QuickActions.tsx` (kopia 1:1)
+- [x] Stwórz `packages/sleeper-web/src/components/SessionListItem.tsx` (kopia 1:1)
+- [x] Stwórz `packages/sleeper-web/src/components/SleepInProgressCard.tsx` (kopia 1:1)
+- [x] Stwórz `packages/sleeper-web/src/components/TodayStatsCard.tsx` (kopia 1:1)
+- [x] Stwórz `packages/sleeper-web/src/components/TimePickerField.tsx` (**NEW — HTML5 input type=time wrapper, tz-safe**)
+- [x] Stwórz `packages/sleeper-web/src/components/DatePickerField.tsx` (**NEW — HTML5 input type=date wrapper, tz-safe**)
+- [x] Re-add deps: react-native-reanimated@~4.1.1, react-native-worklets@0.5.1, expo-haptics@~15.0.8 (uzywane przez ProgressRing/SegmentedControl/BigActionButton)
+- [x] Test: `pickers.test.ts` — 17 testow (13 static invariants + 4 conversion pipeline DST-safe)
 
 **Testy:**
-- [ ] Test: [Manual-mobile] wszystkie komponenty renderują się w Safari iOS bez console errors
-- [ ] Test: [Manual-mobile] TimePickerField tap → iOS native wheel picker minutes scroll OK
-- [ ] Test: [Manual-mobile] DatePickerField tap → iOS native date picker
-- [ ] Test: [Manual-mobile] BigActionButton press → scale animation (Reanimated lub CSS fallback)
-- [ ] Test: [Manual-mobile] ProgressRing renderuje SVG poprawnie
+- [ ] Test: [Manual-mobile] wszystkie komponenty renderują się w Safari iOS bez console errors, manual test pending
+- [ ] Test: [Manual-mobile] TimePickerField tap → iOS native wheel picker minutes scroll OK, manual test pending
+- [ ] Test: [Manual-mobile] DatePickerField tap → iOS native date picker, manual test pending
+- [ ] Test: [Manual-mobile] BigActionButton press → scale animation (Reanimated lub CSS fallback), manual test pending
+- [ ] Test: [Manual-mobile] ProgressRing renderuje SVG poprawnie, manual test pending
 
 **Weryfikacja:**
 - [ ] Weryfikacja: `pnpm --filter sleeper-web exec tsc --noEmit` exit code 0
@@ -337,18 +344,20 @@ Pełne szczegóły IU w `docs/plans/2026-06-05-001-feat-sleeper-web-pwa-plan.md`
 
 ---
 
-### IU9: Routes (auth) — auth gate
+### IU9: Routes (auth) — auth gate ✅
 
-**Delegate to:** feature-builder-fullstack | **Estymata:** S | **Wymagania:** R8 | **Zależności:** IU3
+**Delegate to:** feature-builder-fullstack | **Estymata:** S | **Wymagania:** R8 | **Zależności:** IU3 | **Commits:** `ba2fc38` + log `b648777`
 
 **Implementacja:**
-- [ ] Modyfikuj `packages/sleeper-web/src/app/(auth)/_layout.tsx` (doprecyzowanie routing)
-- [ ] Modyfikuj `packages/sleeper-web/src/app/_layout.tsx` (auth gate: signed_out + path nie `(auth)` → redirect /sign-in)
+- [x] `(auth)/_layout.tsx` — auth gate `signed_in` → Redirect `/` (z IU3 1:1)
+- [x] `(app)/_layout.tsx` — auth gate `signed_out` → Redirect `/sign-in` (z IU10 kopia 1:1)
+- [x] Modyfikuj `packages/sleeper-web/src/app/_layout.tsx` (sync 1:1 z sleeper-app: queryClient z lib/query-client, setupFocusManager, configureNotificationHandler no-op na web)
+- [x] Usun placeholder `src/app/index.tsx` ("Coming soon") — (app)/index.tsx staje sie root route
 
 **Testy:**
-- [ ] Test: [Manual-mobile] niezalogowany user otwiera `/` → redirect /sign-in
-- [ ] Test: [Manual-mobile] zalogowany user otwiera `/sign-in` → redirect `/`
-- [ ] Test: [Manual-mobile] `/sign-up` URL działa standalone
+- [ ] Test: [Manual-mobile] niezalogowany user otwiera `/` → redirect /sign-in, manual test pending
+- [ ] Test: [Manual-mobile] zalogowany user otwiera `/sign-in` → redirect `/`, manual test pending
+- [ ] Test: [Manual-mobile] `/sign-up` URL działa standalone, manual test pending
 
 **Weryfikacja:**
 - [ ] Weryfikacja: `pnpm --filter sleeper-web exec tsc --noEmit` exit code 0
@@ -356,34 +365,34 @@ Pełne szczegóły IU w `docs/plans/2026-06-05-001-feat-sleeper-web-pwa-plan.md`
 
 ---
 
-### IU10: Routes (app) — main screens
+### IU10: Routes (app) — main screens ✅
 
-**Delegate to:** feature-builder-fullstack | **Estymata:** XL | **Wymagania:** R3, R4, R5, R10 | **Zależności:** IU5-IU9
+**Delegate to:** feature-builder-fullstack | **Estymata:** XL | **Wymagania:** R3, R4, R5, R10 | **Zależności:** IU5-IU9 | **Commits:** `e952e19` + log `43aea50`
 
 **Implementacja:**
-- [ ] Stwórz `packages/sleeper-web/src/app/(app)/_layout.tsx` (kopia)
-- [ ] Stwórz `packages/sleeper-web/src/app/(app)/index.tsx` (kopia 1:1)
-- [ ] Stwórz `packages/sleeper-web/src/app/(app)/history.tsx` (kopia 1:1)
-- [ ] Stwórz `packages/sleeper-web/src/app/(app)/profile.tsx` (kopia 1:1)
-- [ ] Stwórz `packages/sleeper-web/src/app/(app)/settings.tsx` (kopia 1:1)
-- [ ] Stwórz `packages/sleeper-web/src/app/(app)/stats.tsx` (kopia 1:1)
-- [ ] Stwórz `packages/sleeper-web/src/app/(app)/sleep-fullscreen.tsx` (kopia — expo-keep-awake → no-op)
-- [ ] Stwórz `packages/sleeper-web/src/app/(app)/child/[id].tsx` (kopia 1:1)
-- [ ] Stwórz `packages/sleeper-web/src/app/(app)/session/[id].tsx` (kopia 1:1)
-- [ ] Stwórz `packages/sleeper-web/src/features/sessions/components/` (BackdatedSessionModal, EditSessionForm, itp.)
-- [ ] Stwórz `packages/sleeper-web/src/features/children/components/`
-- [ ] Stwórz `packages/sleeper-web/src/features/family/components/`
+- [x] Stwórz `packages/sleeper-web/src/app/(app)/_layout.tsx` (kopia 1:1)
+- [x] Stwórz `packages/sleeper-web/src/app/(app)/index.tsx` (kopia 1:1)
+- [x] Stwórz `packages/sleeper-web/src/app/(app)/history.tsx` (kopia 1:1)
+- [x] Stwórz `packages/sleeper-web/src/app/(app)/profile.tsx` (kopia 1:1)
+- [x] Stwórz `packages/sleeper-web/src/app/(app)/settings.tsx` (kopia 1:1)
+- [x] Stwórz `packages/sleeper-web/src/app/(app)/stats.tsx` (kopia 1:1)
+- [x] Stwórz `packages/sleeper-web/src/app/(app)/sleep-fullscreen.tsx` (kopia — `expo-keep-awake` USUNIETY, Wake Lock API deferred do IU11+)
+- [x] Stwórz `packages/sleeper-web/src/app/(app)/child/[id]/edit.tsx` (kopia 1:1 — istnieje tylko edit.tsx w sleeper-app)
+- [x] Stwórz `packages/sleeper-web/src/app/(app)/session/[id].tsx` (kopia 1:1)
+- [x] Stwórz `packages/sleeper-web/src/features/sessions/components/` (BackdatedSessionModal, SessionEditForm) — kopia 1:1
+- [x] Stwórz `packages/sleeper-web/src/features/children/components/` (AddChildForm, EditChildForm) — kopia 1:1
+- [x] Stwórz `packages/sleeper-web/src/features/family/components/` (FamilyMembersList, InviteMemberForm, NoFamilyFallback, PendingInvitationsList) — kopia 1:1
 
 **Testy:**
-- [ ] Test: [Manual-mobile] Main dashboard `/` — ostatnia aktywność, smart-start, BigActionButton START
-- [ ] Test: [Manual-mobile] Start sesji → optimistic UI → cross-device sync via Realtime
-- [ ] Test: [Manual-mobile] History `/history` — grupowanie per dzień w app tz
-- [ ] Test: [Manual-mobile] Edit session `/session/[id]` — TimePicker + cross-day night sleep
-- [ ] Test: [Manual-mobile] Stats `/stats` — wykresy 7 dni
-- [ ] Test: [Manual-mobile] Settings `/settings` — theme toggle + sign-out
-- [ ] Test: [Manual-mobile] Profile `/profile` — edycja
-- [ ] Test: [Manual-mobile] Child detail `/child/[id]` — zmiana algorytmu → recommendation refresh
-- [ ] Test: [Manual-mobile] Backdated insert — prefill `todayDateInAppTz`, walidacja endAt>startAt
+- [ ] Test: [Manual-mobile] Main dashboard `/` — ostatnia aktywność, smart-start, BigActionButton START, manual test pending
+- [ ] Test: [Manual-mobile] Start sesji → optimistic UI → cross-device sync via Realtime, manual test pending
+- [ ] Test: [Manual-mobile] History `/history` — grupowanie per dzień w app tz, manual test pending
+- [ ] Test: [Manual-mobile] Edit session `/session/[id]` — TimePicker + cross-day night sleep, manual test pending
+- [ ] Test: [Manual-mobile] Stats `/stats` — wykresy 7 dni, manual test pending
+- [ ] Test: [Manual-mobile] Settings `/settings` — theme toggle + sign-out, manual test pending
+- [ ] Test: [Manual-mobile] Profile `/profile` — edycja, manual test pending
+- [ ] Test: [Manual-mobile] Child detail `/child/[id]/edit` — zmiana algorytmu → recommendation refresh, manual test pending
+- [ ] Test: [Manual-mobile] Backdated insert — prefill `todayDateInAppTz`, walidacja endAt>startAt, manual test pending
 
 **Weryfikacja:**
 - [ ] Weryfikacja: `pnpm --filter sleeper-web exec tsc --noEmit` exit code 0
@@ -476,7 +485,7 @@ Pełne szczegóły IU w `docs/plans/2026-06-05-001-feat-sleeper-web-pwa-plan.md`
 
 - [x] **Faza 1: Bootstrap & Foundation** (IU1-IU4) ✅ 2026-06-05
 - [x] **Faza 2: Data Layer** (IU5-IU7) ✅ 2026-06-05
-- [ ] **Faza 3: UI & Routes** (IU8-IU10)
+- [x] **Faza 3: UI & Routes** (IU8-IU10) ✅ 2026-06-05
 - [ ] **Faza 4: PWA & Deploy** (IU11-IU12)
 
 ## Końcowe kryteria akceptacji
