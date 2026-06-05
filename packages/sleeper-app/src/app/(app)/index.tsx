@@ -184,6 +184,18 @@ function ActiveChildSection({ child }: ActiveChildSectionProps) {
     endSession.mutate({ sessionId: activeSession.id, childId });
   }
 
+  // Smart typ sesji: czyta `recommendation.remainingNapsToday[0].type` z hooka.
+  // - next NAP / NIGHT -> mapuje na 'nap' / 'night_sleep'.
+  // - recommendation !== null, ale plan pusty -> wszystkie drzemki dnia zrobione -> night.
+  // - recommendation === null (cold start, brak kotwicy/loading) -> fallback 'nap'.
+  // Override przez QuickActions ("Drzemka" / "Sen nocny") pozostaje bez zmian.
+  function smartSessionType(): 'nap' | 'night_sleep' {
+    const next = recommendation?.remainingNapsToday[0];
+    if (next) return next.type === 'NIGHT' ? 'night_sleep' : 'nap';
+    if (recommendation) return 'night_sleep';
+    return 'nap';
+  }
+
   return (
     <>
       {activeSession ? (
@@ -201,8 +213,8 @@ function ActiveChildSection({ child }: ActiveChildSectionProps) {
 
       <BigActionButton
         mode={activeSession ? 'stop' : 'start'}
-        sessionType={activeSession?.type ?? 'nap'}
-        onPress={activeSession ? handleStop : () => handleStart('nap')}
+        sessionType={activeSession?.type ?? smartSessionType()}
+        onPress={activeSession ? handleStop : () => handleStart(smartSessionType())}
         isPending={startSession.isPending || endSession.isPending}
       />
 
