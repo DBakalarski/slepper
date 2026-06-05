@@ -19,9 +19,10 @@ sleeper/                                  # ← root (TEN katalog)
 ├── package.json                          # root: scripts proxy do filtrow pnpm
 ├── pnpm-workspace.yaml                   # packages/*
 ├── docs/
-│   ├── active/active-window-machine/     # kontekst + plan + zadania aktualnego zadania
+│   ├── active/                           # kontekst + plan + zadania aktualnych zadan
 │   ├── completed/mvp-sleep-tracker/      # archiwum ukonczonego MVP
 │   ├── completed/ui-redesign/            # archiwum ukonczonego redesignu UI
+│   ├── completed/fixy-i-kotki-dwa-algorytm/ # archiwum: cross-day edit + progress bar + kotki dwa
 │   ├── commits/                          # log commitow (jeden plik per commit, OBOWIAZKOWE)
 │   └── solutions/                        # baza wiedzy (zarzadzana przez /dev-compound)
 ├── .claude/
@@ -51,11 +52,11 @@ sleeper/                                  # ← root (TEN katalog)
 ## Aktualny stan (2026-05-29)
 
 - **Branch:** `feature/fixy-i-kotki-dwa-algorytm`
-- **Aktualne zadanie:** `fixy-i-kotki-dwa-algorytm` — cross-day editing, progress bar fix, algorytm Kotki Dwa. Fazy 1-5 ukonczone, Faza 6 w toku. Plan: `docs/active/fixy-i-kotki-dwa-algorytm/`.
+- **Aktualne zadanie:** brak (branch `feature/fixy-i-kotki-dwa-algorytm` — oczekuje na merge do main).
 - **Ukonczone:**
   - MVP sleep tracker → `docs/completed/mvp-sleep-tracker/`
   - UI redesign → `docs/completed/ui-redesign/`
-  - active-window-machine → `docs/completed/` (po merge)
+  - fixy-i-kotki-dwa-algorytm → `docs/completed/fixy-i-kotki-dwa-algorytm/`
 
 ## Stack (zainstalowany — sprawdzone w `packages/sleeper-app/package.json`)
 
@@ -93,8 +94,10 @@ Z roota (przez pnpm filter):
 ```bash
 pnpm --filter sleeper-app exec tsc --noEmit   # typecheck app — 0 bledow
 pnpm --filter sleeper-app lint                # expo lint
-pnpm --filter sleeper-machine test            # vitest (algorytm)
+pnpm --filter sleeper-machine test            # vitest (algorytm Galland)
 pnpm --filter sleeper-machine build           # tsc -> dist/ (gdy app importuje typy)
+pnpm --filter sleeper-machine-kotki test      # vitest (algorytm Kotki Dwa)
+pnpm --filter sleeper-machine-kotki build     # tsc -> dist/
 ```
 
 Alternatywnie wejdz do `packages/sleeper-app/` i uzyj `npx tsc --noEmit` / `pnpm lint` lokalnie.

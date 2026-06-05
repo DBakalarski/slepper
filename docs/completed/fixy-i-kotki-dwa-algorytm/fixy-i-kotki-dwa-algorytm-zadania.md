@@ -179,8 +179,13 @@ Każdy commit kodu = follow-up commit `docs/commits/YYYY-MM-DD-<hash>-<slug>.md`
 
 ### Weryfikacja:
 
-- [ ] Weryfikacja: `pnpm --filter sleeper-machine-kotki test` działa z roota.
-- [ ] Weryfikacja: `git status` po commit — wszystkie pliki śledzone, `data-book/` zignorowany.
+- [x] Weryfikacja: `pnpm --filter sleeper-machine-kotki test` działa z roota.
+- [x] Weryfikacja: `git status` po commit — wszystkie pliki śledzone, `data-book/` zignorowany.
+
+## Do poprawy po review fazy 6
+
+- [ ] 🟡 [nit] **CLAUDE.md:22** — layout tree `active/active-window-machine/` to stale reference; aktywne zadanie to `fixy-i-kotki-dwa-algorytm`. Uogólnić lub zaktualizować opis katalogu.
+- [ ] 🟡 [nit] **CLAUDE.md:89-100** — sekcja "Walidacja" nie zawiera komend `pnpm --filter sleeper-machine-kotki test|build`; dodać po linii `pnpm --filter sleeper-machine build`.
 
 ---
 

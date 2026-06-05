@@ -3,6 +3,21 @@
 **Branch:** `feature/fixy-i-kotki-dwa-algorytm`
 **Ostatnia aktualizacja:** 2026-05-29 (Faza 6 ukończona)
 
+## Faza 6 — UKOŃCZONA + REVIEW PASS (2026-05-29)
+
+### Review fazy 6 (2026-05-29)
+
+Przeprowadzono 5-perspektywowy code review. Wynik: **CZYSTE** — P1=0, P2=0, P3=2 (nity kosmetyczne w dokumentacji).
+
+**P3-1 (ARCH/DOCS):** `CLAUDE.md:22` — layout tree nadal wymienia `active/active-window-machine/` zamiast `active/fixy-i-kotki-dwa-algorytm/`; stale reference po zmianie aktywnego zadania.
+**P3-2 (ARCH/DOCS):** `CLAUDE.md:89-100` — sekcja "Walidacja (PRZED deklaracja gotowe)" nie zawiera komend `sleeper-machine-kotki test|build`; niekompletna po dodaniu nowego packagu.
+
+CLI: `pnpm machine-kotki:test` PASS (43/43), `pnpm machine-kotki:build` PASS, `git status` — `data-book/` poprawnie gitignorowany.
+Security: brak kodu wykonalnego, brak ryzyka.
+Raport: `review-faza-6.md`.
+
+---
+
 ## Faza 6 — UKOŃCZONA (2026-05-29)
 
 ### Zmiany wprowadzone

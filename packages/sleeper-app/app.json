@@ -8,6 +8,7 @@
     "scheme": "sleeperapp",
     "userInterfaceStyle": "automatic",
     "ios": {
+      "bundleIdentifier": "com.dawidbakalarski.sleeper",
       "icon": "./assets/expo.icon"
     },
     "android": {
@@ -36,8 +37,7 @@
         }
       ],
       "expo-font",
-      "expo-web-browser",
-      "expo-notifications"
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true,
