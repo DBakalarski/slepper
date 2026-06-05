@@ -25,4 +25,13 @@ config.resolver.nodeModulesPaths = [
 //    other workspaces (pnpm isolation guarantees + Metro determinism).
 config.resolver.disableHierarchicalLookup = true;
 
+// 4. Alias lucide-react-native → lucide-react on web. Skopiowany kod z sleeper-app
+//    importuje 'lucide-react-native', który na web renderuje przez react-native-svg
+//    adapter (~2-3× większy bundle). lucide-react ma natywne SVG DOM exporty z tymi
+//    samymi nazwami — alias transparentny dla importów. (review P1.4)
+config.resolver.alias = {
+  ...config.resolver.alias,
+  'lucide-react-native': 'lucide-react',
+};
+
 module.exports = withNativeWind(config, { input: './src/global.css' });

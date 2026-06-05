@@ -1,3 +1,5 @@
+// FAZA 2 (IU5): import z @/features/sessions/hooks świadomie niedziałający do kopii features/sessions/.
+// Patrz docs/active/sleeper-web-pwa/sleeper-web-pwa-kontekst.md sekcja "Faza 1 — znane TS errors (deferred do IU5)".
 import type { SleepSession } from '@/features/sessions/hooks';
 
 import { dayKeyInAppTz } from './time';

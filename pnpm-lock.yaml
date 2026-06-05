@@ -228,6 +228,9 @@ importers:
       expo-web-browser:
         specifier: ~15.0.11
         version: 15.0.11(expo@54.0.34)(react-native@0.81.5)
+      lucide-react:
+        specifier: ^0.469.0
+        version: 0.469.0(react@19.1.0)
       lucide-react-native:
         specifier: ^1.17.0
         version: 1.17.0(react-native-svg@15.12.1)(react-native@0.81.5)(react@19.1.0)
@@ -246,9 +249,6 @@ importers:
       react-native-gesture-handler:
         specifier: ~2.28.0
         version: 2.28.0(react-native@0.81.5)(react@19.1.0)
-      react-native-reanimated:
-        specifier: ~4.1.1
-        version: 4.1.7(react-native-worklets@0.5.1)(react-native@0.81.5)(react@19.1.0)
       react-native-safe-area-context:
         specifier: ~5.6.0
         version: 5.6.2(react-native@0.81.5)(react@19.1.0)
@@ -264,9 +264,6 @@ importers:
       react-native-web:
         specifier: ~0.21.0
         version: 0.21.2(react-dom@19.1.0)(react@19.1.0)
-      react-native-worklets:
-        specifier: 0.5.1
-        version: 0.5.1(@babel/core@7.29.7)(react-native@0.81.5)(react@19.1.0)
       sleeper-machine:
         specifier: workspace:*
         version: link:../sleeper-machine
@@ -7798,6 +7795,14 @@ packages:
       react: 19.1.0
       react-native: 0.81.5(@babel/core@7.29.7)(@types/react@19.1.17)(react@19.1.0)
       react-native-svg: 15.12.1(react-native@0.81.5)(react@19.1.0)
+    dev: false
+
+  /lucide-react@0.469.0(react@19.1.0):
+    resolution: {integrity: sha512-28vvUnnKQ/dBwiCQtwJw7QauYnE7yd2Cyp4tTTJpvglX4EMpbflcdBgrgToX2j71B3YvugK/NH3BGUk+E/p/Fw==}
+    peerDependencies:
+      react: ^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0
+    dependencies:
+      react: 19.1.0
     dev: false
 
   /magic-string@0.30.21:
