@@ -17,6 +17,7 @@ coverage/
 
 # Local Claude config
 .claude/settings.local.json
+.claude/tsc-cache/
 
 # Per-package ignores are also enforced by packages/*/.gitignore
 
