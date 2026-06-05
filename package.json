@@ -10,7 +10,11 @@
     "machine-kotki:build": "pnpm --filter sleeper-machine-kotki build",
     "app:dev": "pnpm --filter sleeper-app start",
     "app:ios": "pnpm --filter sleeper-app ios",
-    "app:android": "pnpm --filter sleeper-app android"
+    "app:android": "pnpm --filter sleeper-app android",
+    "web:dev": "pnpm --filter sleeper-web start --web",
+    "web:build": "pnpm --filter sleeper-web build",
+    "web:typecheck": "pnpm --filter sleeper-web exec tsc --noEmit",
+    "web:lint": "pnpm --filter sleeper-web lint"
   },
   "engines": {
     "node": ">=18",
