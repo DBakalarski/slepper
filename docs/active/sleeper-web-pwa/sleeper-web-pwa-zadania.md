@@ -11,13 +11,28 @@ ostatnia_aktualizacja: 2026-06-05
 
 Pełne szczegóły IU w `docs/plans/2026-06-05-001-feat-sleeper-web-pwa-plan.md`.
 
+## Status faz
+
+- ✅ **Faza 1: Bootstrap & Foundation** (IU1-IU4) — ukończono 2026-06-05
+- ⬜ Faza 2: Data Layer (IU5-IU7)
+- ⬜ Faza 3: UI & Routes (IU8-IU10)
+- ⬜ Faza 4: PWA & Deploy (IU11-IU12)
+
+**Faza 1 — commits:**
+- `440d5cc` IU1 Bootstrap + `7f2615c` log
+- `cc2d3a9` IU2 Foundation lib + `0141111` log
+- `f4c0afa` IU3 Auth flow + `9b038b2` log
+- `e89aa33` IU4 Theme system + `4fd66fb` log
+
+**Faza 1 — znane deferrals:** 2 transient TS errors w `lib/session-gaps.ts:1` i `lib/sleep-stats.ts:4` (importy z `@/features/sessions/hooks` — resolve w IU5). To pre-existing architecture smell sleeper-app (lib importuje z features), nie nowy problem.
+
 ---
 
-## Faza 1: Bootstrap & Foundation
+## Faza 1: Bootstrap & Foundation ✅
 
-### IU1: Bootstrap package skeleton `packages/sleeper-web/`
+### IU1: Bootstrap package skeleton `packages/sleeper-web/` ✅
 
-**Delegate to:** feature-builder-fullstack | **Estymata:** S | **Wymagania:** R1, R10
+**Delegate to:** feature-builder-fullstack | **Estymata:** S | **Wymagania:** R1, R10 | **Commits:** `440d5cc` + log `7f2615c`
 
 **Implementacja:**
 - [ ] Stwórz `packages/sleeper-web/package.json` (Expo SDK 54 web-only deps, lista z planu)
@@ -56,9 +71,9 @@ Pełne szczegóły IU w `docs/plans/2026-06-05-001-feat-sleeper-web-pwa-plan.md`
 
 ---
 
-### IU2: Foundation lib (time, supabase, query-client, error utils)
+### IU2: Foundation lib (time, supabase, query-client, error utils) ✅
 
-**Delegate to:** feature-builder-data | **Estymata:** M | **Wymagania:** R2, R6, R9 | **Zależności:** IU1
+**Delegate to:** feature-builder-data | **Estymata:** M | **Wymagania:** R2, R6, R9 | **Zależności:** IU1 | **Commits:** `cc2d3a9` + log `0141111`
 
 **Implementacja:**
 - [ ] Stwórz `packages/sleeper-web/src/lib/time.ts` (kopia 1:1)
@@ -93,9 +108,9 @@ Pełne szczegóły IU w `docs/plans/2026-06-05-001-feat-sleeper-web-pwa-plan.md`
 
 ---
 
-### IU3: Auth flow (AuthProvider + sign-in + sign-up)
+### IU3: Auth flow (AuthProvider + sign-in + sign-up) ✅
 
-**Delegate to:** feature-builder-fullstack | **Estymata:** M | **Wymagania:** R8 | **Zależności:** IU2
+**Delegate to:** feature-builder-fullstack | **Estymata:** M | **Wymagania:** R8 | **Zależności:** IU2 | **Commits:** `f4c0afa` + log `9b038b2`
 
 **Implementacja:**
 - [ ] Stwórz `packages/sleeper-web/src/features/auth/AuthProvider.tsx` (kopia 1:1)
@@ -124,9 +139,9 @@ Pełne szczegóły IU w `docs/plans/2026-06-05-001-feat-sleeper-web-pwa-plan.md`
 
 ---
 
-### IU4: Theme system (ThemeProvider + useThemeStore)
+### IU4: Theme system (ThemeProvider + useThemeStore) ✅
 
-**Delegate to:** feature-builder-ui | **Estymata:** S | **Wymagania:** R10 | **Zależności:** IU2
+**Delegate to:** feature-builder-ui | **Estymata:** S | **Wymagania:** R10 | **Zależności:** IU2 | **Commits:** `e89aa33` + log `4fd66fb`
 
 **Implementacja:**
 - [ ] Stwórz `packages/sleeper-web/src/features/settings/ThemeProvider.tsx` (kopia 1:1)
@@ -390,7 +405,7 @@ Pełne szczegóły IU w `docs/plans/2026-06-05-001-feat-sleeper-web-pwa-plan.md`
 
 ## Postęp ogólny
 
-- [ ] **Faza 1: Bootstrap & Foundation** (IU1-IU4)
+- [x] **Faza 1: Bootstrap & Foundation** (IU1-IU4) ✅ 2026-06-05
 - [ ] **Faza 2: Data Layer** (IU5-IU7)
 - [ ] **Faza 3: UI & Routes** (IU8-IU10)
 - [ ] **Faza 4: PWA & Deploy** (IU11-IU12)

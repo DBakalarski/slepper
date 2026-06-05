@@ -1,13 +1,86 @@
 ---
 title: Sleeper Web — PWA — kontekst implementacyjny
 branch: feature/sleeper-web-pwa
-ostatnia_aktualizacja: 2026-06-05
+ostatnia_aktualizacja: 2026-06-05 (Faza 1 ukończona)
 ---
 
 # Sleeper Web — PWA — kontekst implementacyjny
 
 **Branch:** `feature/sleeper-web-pwa`
-**Ostatnia aktualizacja:** 2026-06-05
+**Ostatnia aktualizacja:** 2026-06-05 (Faza 1 ukończona)
+
+## Status: Faza 1 ukończona (2026-06-05)
+
+**IU1-IU4 wykonane:** bootstrap package + foundation lib + auth flow + theme system.
+
+### Stan `packages/sleeper-web/` po Fazie 1
+
+```
+packages/sleeper-web/
+├── package.json, app.json, babel.config.js, metro.config.js
+├── tailwind.config.js, tsconfig.json, nativewind-env.d.ts, expo-env.d.ts
+├── eslint.config.js, .env.example, .gitignore, vitest.config.mjs
+└── src/
+    ├── global.css
+    ├── lib/
+    │   ├── time.ts (DST-safe, kopia 1:1)
+    │   ├── supabase.ts (kopia + detectSessionInUrl: true)
+    │   ├── query-client.ts, colors.ts, child-age.ts, email.ts
+    │   ├── postgres-errors.ts, extract-error-message.ts
+    │   ├── session-gaps.ts ⚠️, sleep-stats.ts ⚠️ (TS errors deferred do IU5)
+    │   ├── sleep-norms.ts, database.types.ts
+    │   ├── useNow.ts, useNotificationDot.ts
+    │   ├── notifications.ts (no-op mock — 5 eksportów: configureNotificationHandler, requestPermissions, cancelNapNotification, scheduleNapNotification, PermissionStatus type)
+    │   └── __tests__/time.test.ts (14 tests, PASS)
+    ├── features/
+    │   ├── auth/
+    │   │   ├── AuthProvider.tsx (kopia 1:1)
+    │   │   └── translate-auth-error.ts (kopia 1:1)
+    │   └── settings/
+    │       ├── ThemeProvider.tsx (kopia 1:1 — useEffectiveTheme + jedyne raw useColorScheme)
+    │       ├── useThemeStore.ts (kopia 1:1, Zustand persist)
+    │       └── ThemeModeBottomSheet.tsx (kopia 1:1, RN Modal działa na web)
+    └── app/
+        ├── _layout.tsx — Provider chain: SafeAreaProvider → QueryClientProvider → AuthProvider → ThemeProvider → Stack + StatusBar
+        ├── index.tsx (placeholder "Sleeper Web — Coming soon")
+        └── (auth)/
+            ├── _layout.tsx (Stack screenOptions headerShown: false)
+            ├── sign-in.tsx (kopia 1:1)
+            └── sign-up.tsx (kopia 1:1)
+```
+
+### Faza 1 — decyzje implementacyjne
+
+- **Native deps wykluczone z `package.json`** (per kontekst sekcja "Native-only deps WYKLUCZONE"). Zachowane wszystkie web-compatible per plan.
+- **`detectSessionInUrl: true`** w `supabase.ts` — różnica vs sleeper-app (`false`). Powód: PKCE callback URL parsing w przeglądarce.
+- **`notifications.ts` no-op mock** — 5 eksportów z signaturami 1:1 z sleeper-app, body puste. Pozwala IU5 skopiować `sessions/hooks.ts` bez modyfikacji importów.
+- **`ThemeModeBottomSheet.tsx` kopia 1:1** (brak adaptacji) — komponent używa RN `Modal` + primitives, działa OOTB na web.
+- **Provider chain:** `SafeAreaProvider → QueryClientProvider → AuthProvider → ThemeProvider → Stack`. Identyczna kolejność z sleeper-app. `configureNotificationHandler()` POMINIĘTE (web no-op).
+- **`useEffectiveTheme()` pattern** zachowany — `grep useColorScheme packages/sleeper-web/src/` zwraca tylko `ThemeProvider.tsx` (krytyczne, learned pattern z `docs/solutions/ui-bugs/2026-05-28`).
+- **`expo-env.d.ts`** gitignored (mirror sleeper-app) — Expo CLI regen przy pierwszym `start --web`. Lokalnie utworzony żeby `tsc` przeszło na świeżym kloncie.
+
+### Faza 1 — znane TS errors (deferred do IU5)
+
+```
+src/lib/session-gaps.ts:1 — Cannot find module '@/features/sessions/hooks'
+src/lib/sleep-stats.ts:4 — Cannot find module '@/features/sessions/hooks'
+```
+
+**Powód:** sleeper-app ma architectural smell — `lib/` importuje typ `SleepSession` z `features/sessions/hooks`. Kopia 1:1 zachowała ten dług. IU5 (skopiowanie features/sessions/) automatycznie rozwiąże.
+
+**Decyzja:** akceptujemy te 2 errors do końca IU5. Zero ryzyka regresji w sleeper-app (potwierdzone `pnpm --filter sleeper-app exec tsc --noEmit` exit 0 po każdym IU).
+
+### Faza 1 — System-Wide Test Check (sekcja 4.5)
+
+1. **Typecheck bez nowych błędów:** ✅ (2 deferred z IU2 są jedyne, resolve w IU5)
+2. **Istniejące testy przechodzą:** ✅ (`time.test.ts` 14/14 PASS w sleeper-web)
+3. **Nowe testy pokrywają happy path:** ✅ (kopia testów `time.test.ts`; auth/theme nie mają unit testów ani w sleeper-app — parytet)
+4. **Nowe importy nie łamią modułów:** ✅ (sleeper-app regression check PASS po każdym IU)
+5. **Build przechodzi:** N/A — `expo export --platform web` nie był uruchamiany (IU12). Tsc + lint przechodzą.
+
+---
+
+## Część referencyjna (oryginalna treść)
 
 ## Powiązane pliki
 
