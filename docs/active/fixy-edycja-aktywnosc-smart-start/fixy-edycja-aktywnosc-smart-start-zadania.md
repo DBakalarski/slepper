@@ -133,12 +133,12 @@ Legenda effort: **S** = ≤30 min, **M** = ≤90 min, **L** = >90 min.
 **Zależności:** Fazy 1–3 wykonane.
 
 ### Weryfikacja
-- [ ] **Weryfikacja:** `pnpm --filter sleeper-app exec tsc --noEmit` z poziomu roota — 0 błędów.
-- [ ] **Weryfikacja:** `pnpm --filter sleeper-app lint` — bez nowych warningów względem main.
-- [ ] **Weryfikacja:** `pnpm --filter sleeper-machine test` i `pnpm --filter sleeper-machine-kotki test` — PASS (nie dotykamy algorytmów, ale sanity check że ich nie zepsuliśmy).
-- [ ] **Weryfikacja:** Expo Go iOS — happy path (start sesji + edycja godziny + gap na home) bez crashy.
-- [ ] **Weryfikacja:** Expo Go Android (drugi telefon) — Fix 2 + Fix 3 działają, Fix 1 niezregresowany (system picker OK).
-- [ ] **Weryfikacja:** branch ma 3 commity feature + 3 commity docs/commits log; historia czytelna.
+- [x] **Weryfikacja:** `pnpm --filter sleeper-app exec tsc --noEmit` z poziomu roota — 0 błędów.
+- [x] **Weryfikacja:** `pnpm --filter sleeper-app lint` — bez nowych warningów względem main.
+- [x] **Weryfikacja:** `pnpm --filter sleeper-machine test` (204/204) i `pnpm --filter sleeper-machine-kotki test` (43/43) — PASS.
+- [ ] **Weryfikacja:** Expo Go iOS — happy path (start sesji + edycja godziny + gap na home) bez crashy. — manual test pending (patrz manual-test-faza-1.md / -2.md / -3.md)
+- [ ] **Weryfikacja:** Expo Go Android (drugi telefon) — Fix 2 + Fix 3 działają, Fix 1 niezregresowany (system picker OK). — manual test pending
+- [x] **Weryfikacja:** branch ma 3 commity feature (951f3bb, eb5a176, 22724b4) + 3 commity docs/commits log (004109c, 87b2587, a7e9325) + bookkeeping faz; historia czytelna.
 
 ### Archiwizacja (po merge do main)
 - [ ] Przenieś `docs/active/fixy-edycja-aktywnosc-smart-start/` → `docs/completed/fixy-edycja-aktywnosc-smart-start/`.
