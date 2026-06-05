@@ -216,7 +216,7 @@ Pełne szczegóły IU w `docs/plans/2026-06-05-001-feat-sleeper-web-pwa-plan.md`
 - [x] Test: schedule-nap-side-effects.ts NIE importuje expo-notifications (grep + unit test invariant)
 - [x] Test: translate-session-error pure function (7 cases: 23505, walidacje, network, fallback)
 - [x] Test: schedule-nap-side-effects no-op behavior + grep invariants (5 cases)
-- [ ] Test: [Manual-mobile] (po IU10) start sesji w PWA → druga osoba w sleeper-app widzi via Realtime
+- [ ] Test: [Manual-mobile] (po IU10) start sesji w PWA → druga osoba w sleeper-app widzi via Realtime — manual test (patrz manual-test-faza-2.md TBD, depends IU10)
 
 **Weryfikacja:**
 - [x] Weryfikacja: `pnpm --filter sleeper-web exec tsc --noEmit` exit code 0
@@ -255,12 +255,40 @@ Pełne szczegóły IU w `docs/plans/2026-06-05-001-feat-sleeper-web-pwa-plan.md`
 **Testy:**
 - [x] Test: workspace deps `sleeper-machine`, `sleeper-machine-kotki` resolve (tsc PASS po build)
 - [x] Test: adapter.ts pure functions (11 cases: toLibSessions 4, toLibProfile 7)
-- [ ] Test: [Manual-mobile] (po IU10) RecommendationCard widoczna z poprawnym czasem next sleep window
+- [ ] Test: [Manual-mobile] (po IU10) RecommendationCard widoczna z poprawnym czasem next sleep window — manual test (patrz manual-test-faza-2.md TBD, depends IU10)
 
 **Weryfikacja:**
 - [x] Weryfikacja: `pnpm --filter sleeper-machine build` exit code 0
 - [x] Weryfikacja: `pnpm --filter sleeper-machine-kotki build` exit code 0
 - [x] Weryfikacja: `pnpm --filter sleeper-web exec tsc --noEmit` exit code 0
+
+---
+
+## Do poprawy po review fazy 2
+
+✅ **Status P1:** ZAADRESOWANE 2026-06-05 — `pnpm --filter sleeper-web build` PASS (dist/index.html + _expo/static/* wygenerowane), engines.node >=22 dodane.
+⚠️ **Status P2/P3:** 3 P2 + 5 P3 otwarte, czesc do naprawy razem z IU10/IU11.
+
+**Pelny raport:** [review-faza-2.md](./review-faza-2.md)
+
+### 🔴 P1-blocking (PRE-IU11) — zaadresowane
+
+- [x] 🔴 [blocking] **packages/sleeper-web/app.json** — zmienione `web.output: "static"` na `web.output: "single"`. Static SSR uruchamiał AsyncStorage (`window` undefined w Node) i Realtime WebSocket w module-scope `lib/supabase.ts:18` podczas `expo export`. SPA shell wystarczy dla PWA. **`pnpm --filter sleeper-web build` exit 0, dist/index.html + assety wygenerowane.** (Agent 5 E2E P1.1) ✅
+- [x] 🔴 [blocking] **packages/sleeper-web/package.json** — dodano `"engines": { "node": ">=22" }` zeby zablokowac Vercel CI od Node 20 (gdzie `@supabase/realtime-js` failuje bez `ws` polyfill). (Agent 5 E2E P1.1) ✅
+
+### 🟠 P2-important (przed Faza 4 deploy / w trakcie IU10-IU11)
+
+- [ ] 🟠 [important] **packages/sleeper-web/src/features/recommendation/useSleepRecommendation.ts:66** — `useFocusEffect` z `expo-router` na web nie ma deterministic focus event (tylko `visibilitychange`). Cross-midnight refresh moze nie zadzialac jak na native. Weryfikuj manualnie w IU10 (zostaw otwarte ~23:55, sprawdz po polnocy). Fallback: `useEffect` z `setInterval` co 5min sprawdzajacy `dayKeyInAppTz(new Date())` vs stale. (Architecture P2.1)
+- [ ] 🟠 [important] **packages/sleeper-web/src/features/sessions/__tests__/** (TBD) — dodaj testy dla `useStartSession` (optimistic+rollback), `useRealtimeSessions` (cleanup), `useSleepRecommendation` (queryKey stability — regression na refetch loop pattern). Setup `@testing-library/react` z `QueryClientProvider` wrapper. ~150 LOC, do uzupelnienia przed Faza 4. (Spec-flow P2.2)
+- [ ] 🟠 [important] **packages/sleeper-web/src/features/sessions/hooks.ts:293-295** — `console.warn` leak w prod bundle. Dodaj w IU11 babel plugin `babel-plugin-transform-remove-console` dla `process.env.NODE_ENV === 'production'`, albo zamien na `if (__DEV__) console.warn(...)`. (Performance/Quality P2.3)
+
+### 🟡 P3-nit (sugestie)
+
+- [ ] 🟡 [nit] **packages/sleeper-web/src/features/sessions/hooks.ts:223** — `optimistic-${Date.now()}` theoretical collision risk. `crypto.randomUUID()` bezpieczne na web + RN 0.81. Parytet z sleeper-app — nie ruszac bez sync. (KOD P3.1)
+- [ ] 🟡 [nit] **packages/sleeper-web/src/features/sessions/useRealtimeSessions.ts:42-50** — duplicate prefix invalidation (`['sessions']` + `['session']`). Komentarz wyjasnia ale subtelny smell. Parytet — nie tykac. (Architecture P3.2)
+- [ ] 🟡 [nit] **packages/sleeper-web/src/features/sessions/hooks.ts:35-38**, **packages/sleeper-web/src/features/family/hooks.ts:99-102** — `parseSessionType` / `parseRole` rzuca przy nieznanej wartosci z DB. Fail-loud OK, ale w `useRealtimeSessions` invalidate moze wywolac queryFn z corrupted row → error UI. Parytet — zostaw. (KOD P3.3)
+- [ ] 🟡 [nit] **packages/sleeper-web/src/features/recommendation/useSleepRecommendation.ts:94** — `error: sessionsQuery.error as Error | null` type assertion lamie `coding-rules.md` §10. Parytet z sleeper-app. (Type safety P3.4)
+- [ ] 🟡 [nit] **packages/sleeper-web/src/features/recommendation/__tests__/adapter.test.ts:74-92** — `parseTimeString` (non-exported) testowany posrednio przez `toLibProfile`. Dodaj edge cases: `'24:00'`, `'09:30'` (leading zero), `'12:00'` (dwucyfrowy hour). (Spec-flow P3.5)
 
 ---
 

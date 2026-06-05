@@ -49,5 +49,8 @@
     "lint": "expo lint",
     "test": "vitest run"
   },
+  "engines": {
+    "node": ">=22"
+  },
   "private": true
 }

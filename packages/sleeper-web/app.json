@@ -7,7 +7,7 @@
     "userInterfaceStyle": "automatic",
     "platforms": ["web"],
     "web": {
-      "output": "static",
+      "output": "single",
       "bundler": "metro"
     },
     "plugins": [

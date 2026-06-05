@@ -69,6 +69,26 @@ features/
 
 ---
 
+## Code review Fazy 2 (2026-06-05)
+
+Wykonano multi-perspective code review (5 perspektyw: security, performance, architecture, test coverage, E2E browser-bundle smoke). Raport: `review-faza-2.md`.
+
+**Severity gate:** ⛔ WYMAGA POPRAWEK — 1 P1 (bundle build), 3 P2, 5 P3.
+
+**Kluczowe wnioski:**
+
+1. **Parytet 1:1 wszystkich 11 plikow** zweryfikowany `diff` — zero rozjazdu vs sleeper-app. To kluczowy walor Fazy 2: bug-fix w mobile zostanie automatycznie odziedziczony po nastepnej kopii (lub odwrotnie).
+2. **Bundle build smoke (Agent 5 E2E) wykryl P1 bundle issue** — `pnpm --filter sleeper-web build` failuje przez interakcje `web.output: "static"` (SSR) z eager-init `supabase.ts` (AsyncStorage `window` undefined w Node, Realtime WebSocket fail na Node 20). **Pre-existing problem z Fazy 1 ujawniony pierwszym `expo export`.** Nie blokuje Fazy 3, ale MUSI byc PRE-IU11 step.
+3. **27 unit testow pure-functions** (translate-session-error 7, translate-family-error 9, adapter 11) + 5 invariant testow dla no-op mock (`schedule-nap-side-effects.test.ts`). Strategy "pure-only" zachowana — hooks wymagaja React+QueryClient runtime, manual testing przed Faza 4.
+4. **Brak testow hookow** (useStartSession optimistic, useRealtimeSessions cleanup, useSleepRecommendation queryKey stability) — P2 do uzupelnienia przed Faza 4 deploy.
+5. **`useFocusEffect` web edge** — na web nie ma deterministic focus event (tylko visibilitychange) — cross-midnight refresh moze nie zadzialac. Manual verify w IU10.
+6. **`console.warn` leak w prod bundle** (hooks.ts:293) — fix w IU11 przez babel plugin `transform-remove-console`.
+7. **Zachowane learned-patterns:** TZ-safe time (dayKeyInAppTz w queryKey), stable queryKey (useMemo `[]`), realtime cleanup (`removeChannel`), optimistic tylko dla START/STOP.
+
+**Lista P1/P2/P3 do fix:** sekcja "Do poprawy po review fazy 2" w `sleeper-web-pwa-zadania.md`.
+
+---
+
 ## Code review Fazy 1 (2026-06-05)
 
 Wykonano multi-agent code review (5 agentów: security, performance, architecture, spec-flow, mobile manual checklist). Raport: `review-faza-1.md`.
