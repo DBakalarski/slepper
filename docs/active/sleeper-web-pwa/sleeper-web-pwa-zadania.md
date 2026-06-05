@@ -59,12 +59,12 @@ Pełne szczegóły IU w `docs/plans/2026-06-05-001-feat-sleeper-web-pwa-plan.md`
 - [ ] Test: [Manual-mobile] mobile `pnpm app:dev` nadal działa (smoke regression)
 
 **Weryfikacja:**
-- [ ] Weryfikacja: `pnpm install` exit code 0
-- [ ] Weryfikacja: `pnpm --filter sleeper-web exec tsc --noEmit` exit code 0
-- [ ] Weryfikacja: `pnpm --filter sleeper-web lint` exit code 0
-- [ ] Weryfikacja: `pnpm --filter sleeper-app exec tsc --noEmit` exit code 0 (regression check)
-- [ ] Weryfikacja: [Mobile-manual] localhost web placeholder działa — manual test
-- [ ] Weryfikacja: [Mobile-manual] sleeper-app w Expo Go bez zmian — manual test
+- [x] Weryfikacja: `pnpm install` exit code 0
+- [ ] Weryfikacja: `pnpm --filter sleeper-web exec tsc --noEmit` exit code 0 (FAIL: 2 deferred TS errors → IU5, fix przez review P1.1)
+- [x] Weryfikacja: `pnpm --filter sleeper-web lint` exit code 0 (PASS po fix P1.2)
+- [x] Weryfikacja: `pnpm --filter sleeper-app exec tsc --noEmit` exit code 0 (regression check)
+- [ ] Weryfikacja: [Mobile-manual] localhost web placeholder działa — manual test (patrz manual-test-faza-1.md)
+- [ ] Weryfikacja: [Mobile-manual] sleeper-app w Expo Go bez zmian — manual test (patrz manual-test-faza-1.md)
 
 **Operator checklist:**
 - [ ] User uruchamia `pnpm --filter sleeper-web start --web` i potwierdza placeholder w przeglądarce
@@ -101,10 +101,10 @@ Pełne szczegóły IU w `docs/plans/2026-06-05-001-feat-sleeper-web-pwa-plan.md`
 - [ ] Test: notifications.ts NIE importuje `expo-notifications` (grep)
 
 **Weryfikacja:**
-- [ ] Weryfikacja: `pnpm --filter sleeper-web exec tsc --noEmit` exit code 0
-- [ ] Weryfikacja: `pnpm --filter sleeper-web test` exit code 0
-- [ ] Weryfikacja: `grep -l "detectSessionInUrl: true" packages/sleeper-web/src/lib/supabase.ts` zwraca match
-- [ ] Weryfikacja: `grep -L "expo-notifications" packages/sleeper-web/src/lib/notifications.ts` zwraca match
+- [ ] Weryfikacja: `pnpm --filter sleeper-web exec tsc --noEmit` exit code 0 (FAIL: 2 deferred TS errors → IU5, fix przez review P1.1)
+- [x] Weryfikacja: `pnpm --filter sleeper-web test` exit code 0 (14/14 PASS)
+- [x] Weryfikacja: `grep -l "detectSessionInUrl: true" packages/sleeper-web/src/lib/supabase.ts` zwraca match
+- [x] Weryfikacja: `grep -L "expo-notifications" packages/sleeper-web/src/lib/notifications.ts` zwraca match (0 references)
 
 ---
 
@@ -129,9 +129,9 @@ Pełne szczegóły IU w `docs/plans/2026-06-05-001-feat-sleeper-web-pwa-plan.md`
 - [ ] Test: [Manual-mobile] zalogowany w Expo Go → otwórz PWA → sign-in screen (oczekiwane: separate session per device)
 
 **Weryfikacja:**
-- [ ] Weryfikacja: `pnpm --filter sleeper-web exec tsc --noEmit` exit code 0
-- [ ] Weryfikacja: [Mobile-manual] logowanie istniejącym kontem działa — manual test
-- [ ] Weryfikacja: [Mobile-manual] persist po reload — manual test
+- [ ] Weryfikacja: `pnpm --filter sleeper-web exec tsc --noEmit` exit code 0 (FAIL: 2 deferred TS errors → IU5, fix przez review P1.1)
+- [ ] Weryfikacja: [Mobile-manual] logowanie istniejącym kontem działa — manual test (patrz manual-test-faza-1.md)
+- [ ] Weryfikacja: [Mobile-manual] persist po reload — manual test (patrz manual-test-faza-1.md)
 
 **Operator checklist:**
 - [ ] User loguje się w PWA tym samym kontem co w sleeper-app
@@ -156,8 +156,40 @@ Pełne szczegóły IU w `docs/plans/2026-06-05-001-feat-sleeper-web-pwa-plan.md`
 - [ ] Test: [Manual-mobile] zmiana iOS settings z PWA otwartą → reaktywnie jeśli theme=System
 
 **Weryfikacja:**
-- [ ] Weryfikacja: `pnpm --filter sleeper-web exec tsc --noEmit` exit code 0
-- [ ] Weryfikacja: [Mobile-manual] dark/light/system działa — manual test
+- [ ] Weryfikacja: `pnpm --filter sleeper-web exec tsc --noEmit` exit code 0 (FAIL: 2 deferred TS errors → IU5, fix przez review P1.1)
+- [ ] Weryfikacja: [Mobile-manual] dark/light/system działa — manual test (patrz manual-test-faza-1.md)
+
+---
+
+## Do poprawy po review fazy 1
+
+✅ **Status P1:** ZAADRESOWANE 2026-06-05 — `pnpm lint` exit 0, sleeper-app regression PASS, tsc nadal failuje na 2 deferred (świadomie do IU5).
+⚠️ **Status P2/P3:** otwarte, do naprawy przed Fazą 4 (PWA deploy).
+
+**Pełny raport:** [review-faza-1.md](./review-faza-1.md)
+
+### 🔴 P1-blocking (zaadresowane)
+
+- [x] 🔴 [blocking] **packages/sleeper-web/src/lib/session-gaps.ts:1** — dodano inline komentarz wyjaśniający deferred TS error (import type — eslint-disable nie był potrzebny). (Architecture P1.1) ✅
+- [x] 🔴 [blocking] **packages/sleeper-web/src/lib/sleep-stats.ts:4** — dodano komentarz + `// eslint-disable-next-line import/no-unresolved`. `pnpm lint` przechodzi exit 0. (Architecture P1.1+P1.2) ✅
+- [x] 🔴 [blocking] **packages/sleeper-web/package.json** — usunięto `react-native-reanimated` + `react-native-worklets` z dependencies (zero użyć w Fazie 1 zweryfikowane greppem, -148 paczek). Re-add w IU8 gdy `BigActionButton` faktycznie użyje animacji. (Performance P1.3) ✅
+- [x] 🔴 [blocking] **packages/sleeper-web/metro.config.js** — dodano alias `'lucide-react-native' → 'lucide-react'` w `config.resolver.alias`. Dodano `lucide-react@^0.469.0` jako dep. (Performance P1.4) ✅
+
+### 🟠 P2-important (do naprawy przed deployem prod / Fazą 4)
+
+- [ ] 🟠 [important] **packages/sleeper-web/src/lib/supabase.ts:18-28** — dodaj `flowType: 'pkce'` w `auth` config. Domyślny `implicit` flow leakuje `access_token` w URL fragment → history API, Referer headers, browser extensions. PKCE jest best practice dla web PWA. Wymaga konfiguracji redirect URL whitelisty w Supabase Dashboard. (Security P2.1)
+- [ ] 🟠 [important] **packages/sleeper-web/src/app/(auth)/sign-in.tsx:42** — wyrównaj walidację z sign-up: użyj `isValidEmail` i `MIN_PASSWORD` (early return), dodaj `maxLength={254}` na email i `maxLength={128}` na password TextInputach. Asymetria + brak max length = niepotrzebne zapytania do Supabase + potencjalny DoS payload. (Security P2.2 + Spec-flow)
+- [ ] 🟠 [important] **packages/sleeper-web/src/app/_layout.tsx:11** — zmień `const queryClient = new QueryClient()` na `const [queryClient] = useState(() => new QueryClient())` wewnątrz `RootLayout`. Bezpieczne dla fast-refresh i potencjalnego SSR/RSC. (Performance P2.3)
+- [ ] 🟠 [important] **packages/sleeper-web/src/features/settings/useThemeStore.ts:23** — custom storage adapter: `Platform.OS === 'web' ? localStorage : AsyncStorage`. AsyncStorage na web async-wrapuje localStorage → pierwszy render z default `'system'` → re-render z prawdziwym mode = FOWT risk. Sync hydration eliminuje flash. (Performance P2.4)
+- [ ] 🟠 [important] **packages/sleeper-web/src/app/_layout.tsx:19** — usuń `<Stack.Screen name="(app)" />` lub dodaj stub `src/app/(app)/_layout.tsx`. Premature referencja do segmentu utworzonego w IU10 — expo-router może warningować. (Architecture P2.5)
+- [ ] 🟠 [important] **packages/sleeper-web/src/app/index.tsx** — dodaj komentarz `// FAZA 5+: index.tsx dostanie redirect logic na podstawie useAuth().status`. Bez tego przyszły dev nie wie czy placeholder to bug czy świadoma decyzja. (Architecture P2.6)
+- [ ] 🟠 [important] **packages/sleeper-web/src/features/auth/translate-auth-error.test.ts** — dodaj unit test (czysta funkcja, 6 cases: invalid login, email not confirmed, already registered, password, network, fallback). ~30 LOC, wysoki ROI. (Spec-flow P2.7)
+
+### 🟡 P3-nit (sugestie)
+
+- [ ] 🟡 [nit] **packages/sleeper-web/src/features/auth/translate-auth-error.ts:21** — fallback `return message` może wyciekać raw Supabase error (PostgREST hint, infra). Zmień na generic `"Nie udalo sie. Sprobuj ponownie."`. (Security P3)
+- [ ] 🟡 [nit] **packages/sleeper-web/src/lib/supabase.ts:11-16** — decyzja produktowa: missing env vars → `console.warn` (cichy fail z mylącym "błąd sieci" downstream) vs `throw` (fail-loud build-time). Vercel prod build = realne ryzyko incydentu. (Spec-flow P3)
+- [ ] 🟡 [nit] Rozważ `scripts/check-no-native-imports.sh` automated test (grep invariant że `notifications.ts` i `schedule-nap-side-effects.ts` w sleeper-web nie importują expo-notifications). W IU5 ten sam check się powtórzy. (Spec-flow P3)
 
 ---
 

@@ -1,13 +1,31 @@
 ---
 title: Sleeper Web — PWA — kontekst implementacyjny
 branch: feature/sleeper-web-pwa
-ostatnia_aktualizacja: 2026-06-05 (Faza 1 ukończona)
+ostatnia_aktualizacja: 2026-06-05 (Faza 1 ukończona + code review)
 ---
 
 # Sleeper Web — PWA — kontekst implementacyjny
 
 **Branch:** `feature/sleeper-web-pwa`
-**Ostatnia aktualizacja:** 2026-06-05 (Faza 1 ukończona)
+**Ostatnia aktualizacja:** 2026-06-05 (Faza 1 ukończona + code review)
+
+## Code review Fazy 1 (2026-06-05)
+
+Wykonano multi-agent code review (5 agentów: security, performance, architecture, spec-flow, mobile manual checklist). Raport: `review-faza-1.md`.
+
+**Severity gate:** ⛔ WYMAGA POPRAWEK — 4 P1, 7 P2, 9 P3.
+
+**Kluczowe wnioski:**
+
+1. **Deferred TS errors wymagają inline-komentarzy** — kontekst udokumentował deferral, ale brak ostrzeżeń w samym kodzie (`session-gaps.ts:1`, `sleep-stats.ts:4`). Ryzyko: przyszły dev "naprawi" destrukcyjnie. Fix: dodać komentarz + `// eslint-disable-next-line import/no-unresolved` → `pnpm lint` przejdzie. `tsc` nadal failuje (świadomie, do IU5).
+2. **Bundle bloat w Fazie 1** — `react-native-reanimated` + `react-native-worklets` w `package.json` bez użyć (~100KB), `lucide-react-native` zamiast `lucide-react` (2-3× większe na web przez `react-native-svg` adapter). Usunąć/aliasować przed Fazą 2.
+3. **PKCE flow nie ustawione** — `detectSessionInUrl: true` jest, ale brak `flowType: 'pkce'`. Implicit flow leakuje token w URL fragment — security smell przed prod deploy.
+4. **Walidacja sign-in asymmetryczna** vs sign-up (parytet z sleeper-app, ale na web bardziej widoczne).
+5. **`useThemeStore` AsyncStorage na web** — async hydration → FOWT risk. Custom `localStorage` adapter eliminuje.
+6. **Manual test checklist wygenerowany** — `manual-test-faza-1.md` (22 testy on-device).
+7. **`useEffectiveTheme` single-source-of-truth ZACHOWANY** ✅, **native-only deps EXCLUDED** ✅, **`notifications.ts` no-op parity** ✅.
+
+**Lista P1/P2/P3 do fix:** sekcja "Do poprawy po review fazy 1" w `sleeper-web-pwa-zadania.md`.
 
 ## Status: Faza 1 ukończona (2026-06-05)
 
