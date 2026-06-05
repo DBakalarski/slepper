@@ -267,7 +267,7 @@ Pełne szczegóły IU w `docs/plans/2026-06-05-001-feat-sleeper-web-pwa-plan.md`
 ## Do poprawy po review fazy 2
 
 ✅ **Status P1:** ZAADRESOWANE 2026-06-05 — `pnpm --filter sleeper-web build` PASS (dist/index.html + _expo/static/* wygenerowane), engines.node >=22 dodane.
-⚠️ **Status P2/P3:** 3 P2 + 5 P3 otwarte, czesc do naprawy razem z IU10/IU11.
+✅ **Status P2:** ZAADRESOWANE 2026-06-05 (cykl 2) — P2.2 naprawione (19 nowych testow hookow), P2.1+P2.3 deferred do IU10/IU11 (znow-issues.md). 5 P3 otwarte (parytet z sleeper-app).
 
 **Pelny raport:** [review-faza-2.md](./review-faza-2.md)
 
@@ -278,9 +278,9 @@ Pełne szczegóły IU w `docs/plans/2026-06-05-001-feat-sleeper-web-pwa-plan.md`
 
 ### 🟠 P2-important (przed Faza 4 deploy / w trakcie IU10-IU11)
 
-- [ ] 🟠 [important] **packages/sleeper-web/src/features/recommendation/useSleepRecommendation.ts:66** — `useFocusEffect` z `expo-router` na web nie ma deterministic focus event (tylko `visibilitychange`). Cross-midnight refresh moze nie zadzialac jak na native. Weryfikuj manualnie w IU10 (zostaw otwarte ~23:55, sprawdz po polnocy). Fallback: `useEffect` z `setInterval` co 5min sprawdzajacy `dayKeyInAppTz(new Date())` vs stale. (Architecture P2.1)
-- [ ] 🟠 [important] **packages/sleeper-web/src/features/sessions/__tests__/** (TBD) — dodaj testy dla `useStartSession` (optimistic+rollback), `useRealtimeSessions` (cleanup), `useSleepRecommendation` (queryKey stability — regression na refetch loop pattern). Setup `@testing-library/react` z `QueryClientProvider` wrapper. ~150 LOC, do uzupelnienia przed Faza 4. (Spec-flow P2.2)
-- [ ] 🟠 [important] **packages/sleeper-web/src/features/sessions/hooks.ts:293-295** — `console.warn` leak w prod bundle. Dodaj w IU11 babel plugin `babel-plugin-transform-remove-console` dla `process.env.NODE_ENV === 'production'`, albo zamien na `if (__DEV__) console.warn(...)`. (Performance/Quality P2.3)
+- [x] 🟠 [important] **packages/sleeper-web/src/features/recommendation/useSleepRecommendation.ts:66** — `useFocusEffect` z `expo-router` na web nie ma deterministic focus event (tylko `visibilitychange`). Cross-midnight refresh moze nie zadzialac jak na native. Weryfikuj manualnie w IU10 (zostaw otwarte ~23:55, sprawdz po polnocy). Fallback: `useEffect` z `setInterval` co 5min sprawdzajacy `dayKeyInAppTz(new Date())` vs stale. (Architecture P2.1) — deferred: known-issues.md / IU10
+- [x] 🟠 [important] **packages/sleeper-web/src/features/sessions/__tests__/** — dodano `hooks.test.ts` (12 cases: export smoke, useStartSession optimistic/rollback/cancelQueries, useEndSession optimistic, stable queryKey regression, domain constraints, error translation) + `useRealtimeSessions.test.ts` (7 cases: cleanup removeChannel, deps array, filter, prefix invalidation, channel name). Strategia: static invariants przez `readFileSync` (parytet z `schedule-nap-side-effects.test.ts`) — pelne renderHook+jsdom wymagaloby dodania `@testing-library/react` + mockowania `@/lib/supabase` (transitive react-native), co bez zgody usera nie mozemy. ~190 LOC, 19/19 PASS. (Spec-flow P2.2) ✅
+- [x] 🟠 [important] **packages/sleeper-web/src/features/sessions/hooks.ts:293-295** — `console.warn` leak w prod bundle. Dodaj w IU11 babel plugin `babel-plugin-transform-remove-console` dla `process.env.NODE_ENV === 'production'`, albo zamien na `if (__DEV__) console.warn(...)`. (Performance/Quality P2.3) — deferred: known-issues.md / IU11
 
 ### 🟡 P3-nit (sugestie)
 
