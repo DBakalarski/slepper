@@ -19,15 +19,19 @@ Legenda effort: **S** = ≤30 min, **M** = ≤90 min, **L** = >90 min.
 - [x] W mapowaniu `todaySessions.slice(0, 5).map(...)` (linia 233–234) dorzuć prop: `<SessionListItem key={session.id} session={session} gapBeforeMs={gapMap.get(session.id)} />`.
 
 ### Test (manual, Expo Go)
-- [ ] **Test:** dziecko z ≥2 zakończonymi sesjami dziś (np. drzemka rano + drzemka po południu) → home → sekcja "Sesje dzisiaj" → nad drugą (i kolejnymi) sesjami widać `aktywność Xg Ym` w kolorze orange. — manual test pending
-- [ ] **Test:** pierwsza sesja (najwcześniejsza chronologicznie) NIE ma gap nad sobą. — manual test pending
-- [ ] **Test:** porównanie wizualne z ekranem Historia (powinno wyglądać identycznie — ten sam komponent + helper). — manual test pending
-- [ ] **Test:** brak sesji dziś → sekcja niewidoczna (regression-check: `todaySessions.length > 0` gate na linii 216 niezmieniony). — manual test pending
+- [ ] **Test:** dziecko z ≥2 zakończonymi sesjami dziś (np. drzemka rano + drzemka po południu) → home → sekcja "Sesje dzisiaj" → nad drugą (i kolejnymi) sesjami widać `aktywność Xg Ym` w kolorze orange. — manual test (patrz manual-test-faza-1.md)
+- [ ] **Test:** pierwsza sesja (najwcześniejsza chronologicznie) NIE ma gap nad sobą. — manual test (patrz manual-test-faza-1.md)
+- [ ] **Test:** porównanie wizualne z ekranem Historia (powinno wyglądać identycznie — ten sam komponent + helper). — manual test (patrz manual-test-faza-1.md)
+- [ ] **Test:** brak sesji dziś → sekcja niewidoczna (regression-check: `todaySessions.length > 0` gate na linii 216 niezmieniony). — manual test (patrz manual-test-faza-1.md)
 
 ### Weryfikacja
 - [x] **Weryfikacja:** `pnpm --filter sleeper-app exec tsc --noEmit` → 0 błędów.
 - [x] **Weryfikacja:** `pnpm --filter sleeper-app lint` → brak nowych warningów.
 - [x] **Weryfikacja:** commit `fix(home): render wake gap "aktywność Xg Ym" between today's sessions` + follow-up `docs/commits/YYYY-MM-DD-<hash>-home-wake-gap.md`.
+
+### Do poprawy po review fazy 1
+
+- [ ] 🟡 [nit] **packages/sleeper-app/src/app/(app)/index.tsx:161-162** — komentarz mówi "stabilizuje referencje pustej tablicy", ale precyzyjniej: stabilizuje gdy `data === undefined` (fallback `?? []` tworzy nową tablicę co render). Dla niepustego `data` TanStack Query trzyma stabilną ref przez structural sharing. Kosmetyczne uściślenie tekstu, kod działa poprawnie.
 
 ---
 
@@ -38,7 +42,7 @@ Legenda effort: **S** = ≤30 min, **M** = ≤90 min, **L** = >90 min.
 **Zależności:** brak (niezależna od Fix 2; może lecieć w jednym lub osobnym commicie).
 
 ### Implementacja
-- [ ] W `ActiveChildSection` po `handleStart` (linia ~166) dodaj helper:
+- [x] W `ActiveChildSection` po `handleStart` (linia ~166) dodaj helper:
   ```ts
   function smartSessionType(): 'nap' | 'night_sleep' {
     const next = recommendation?.remainingNapsToday[0];
@@ -47,30 +51,27 @@ Legenda effort: **S** = ≤30 min, **M** = ≤90 min, **L** = >90 min.
     return 'nap';
   }
   ```
-- [ ] Linia 194 — podmień `onPress={activeSession ? handleStop : () => handleStart('nap')}` na `onPress={activeSession ? handleStop : () => handleStart(smartSessionType())}`.
-- [ ] `BigActionButton` (linia 191–196) — dodaj prop `sessionType={activeSession?.type ?? smartSessionType()}` (sprawdź czy komponent już go przyjmuje; jeśli nie — patrz Faza 2b poniżej).
-- [ ] `QuickActions` (linia 199–200) — BEZ ZMIAN: `onStartNap={() => handleStart('nap')}` i `onStartNight={() => handleStart('night_sleep')}` jako jawny override.
+- [x] Linia 194 — podmień `onPress={activeSession ? handleStop : () => handleStart('nap')}` na `onPress={activeSession ? handleStop : () => handleStart(smartSessionType())}`.
+- [x] `BigActionButton` (linia 191–196) — dodaj prop `sessionType={activeSession?.type ?? smartSessionType()}` (sprawdź czy komponent już go przyjmuje; jeśli nie — patrz Faza 2b poniżej).
+- [x] `QuickActions` (linia 199–200) — BEZ ZMIAN: `onStartNap={() => handleStart('nap')}` i `onStartNight={() => handleStart('night_sleep')}` jako jawny override.
 
 ### Faza 2b (warunkowa) — jeśli `BigActionButton` nie przyjmuje `sessionType`
-- [ ] Otwórz `packages/sleeper-app/src/components/BigActionButton.tsx` (lub gdziekolwiek jest definiowany).
-- [ ] Sprawdź czy ikona/label zależy od typu (nap = Sun orange, night_sleep = Moon purple).
-- [ ] Jeśli komponent już derywuje z `activeSession?.type` — przekaż `sessionType` jako optional override.
-- [ ] Jeśli komponent hardcoduje 'nap' label — wprowadź prop `sessionType` (discriminated string union `'nap' | 'night_sleep'`).
+- [x] N/A — `BigActionButton` JUZ przyjmuje optional prop `sessionType?: SessionType` (typ z `@/features/sessions/hooks`, discriminated string union). Komponent uzywa go do warunku `showMoonIcon = mode === 'start' && sessionType === 'night_sleep'`. Zaden dodatkowy edit nie byl konieczny — Faza 2b skipped.
 
 ### Test (manual, Expo Go)
-- [ ] **Test:** rano (przed `preferred_bedtime`, plan zawiera napy) — tap "Rozpocznij" → nowa sesja typu `nap` → SessionListItem z orange Sun ikoną.
-- [ ] **Test:** wieczór (po `preferred_bedtime`, lub `remainingNapsToday[0].type === 'NIGHT'`) — tap "Rozpocznij" → sesja `night_sleep` → fioletowa Moon ikona.
-- [ ] **Test:** cold start (świeże dziecko, brak `targetWakeTime`, `recommendation === null`) — tap "Rozpocznij" → fallback `nap` (zachowane stare zachowanie).
-- [ ] **Test:** wszystkie drzemki dnia wykonane (`remainingNapsToday.length === 0`, `recommendation !== null`) — tap "Rozpocznij" → `night_sleep`.
-- [ ] **Test:** `QuickActions` — explicit "Drzemka" / "Sen nocny" działają niezależnie od smart (override).
-- [ ] **Test (UX):** label/ikona `BigActionButton` ZMIENIA SIĘ między rano a wieczorem (sessionType binding).
-- [ ] **Test (regression):** start sesji NIE crashuje gdy `recommendation === null` (loading / brak kotwicy).
+- [ ] **Test:** rano (przed `preferred_bedtime`, plan zawiera napy) — tap "Rozpocznij" → nowa sesja typu `nap` → SessionListItem z orange Sun ikoną. — manual test pending
+- [ ] **Test:** wieczór (po `preferred_bedtime`, lub `remainingNapsToday[0].type === 'NIGHT'`) — tap "Rozpocznij" → sesja `night_sleep` → fioletowa Moon ikona. — manual test pending
+- [ ] **Test:** cold start (świeże dziecko, brak `targetWakeTime`, `recommendation === null`) — tap "Rozpocznij" → fallback `nap` (zachowane stare zachowanie). — manual test pending
+- [ ] **Test:** wszystkie drzemki dnia wykonane (`remainingNapsToday.length === 0`, `recommendation !== null`) — tap "Rozpocznij" → `night_sleep`. — manual test pending
+- [ ] **Test:** `QuickActions` — explicit "Drzemka" / "Sen nocny" działają niezależnie od smart (override). — manual test pending
+- [ ] **Test (UX):** label/ikona `BigActionButton` ZMIENIA SIĘ między rano a wieczorem (sessionType binding). — manual test pending
+- [ ] **Test (regression):** start sesji NIE crashuje gdy `recommendation === null` (loading / brak kotwicy). — manual test pending
 
 ### Weryfikacja
-- [ ] **Weryfikacja:** `pnpm --filter sleeper-app exec tsc --noEmit` → 0 błędów.
-- [ ] **Weryfikacja:** `pnpm --filter sleeper-app lint` → brak nowych warningów.
-- [ ] **Weryfikacja:** Promise.allSettled / race conditions niezmienione (helper synchroniczny, czyta state hooka — bez async).
-- [ ] **Weryfikacja:** commit `feat(start-sleep): derive session type from sleep recommendation` + follow-up `docs/commits/YYYY-MM-DD-<hash>-smart-session-type.md`.
+- [x] **Weryfikacja:** `pnpm --filter sleeper-app exec tsc --noEmit` → 0 błędów.
+- [x] **Weryfikacja:** `pnpm --filter sleeper-app lint` → brak nowych warningów.
+- [x] **Weryfikacja:** Promise.allSettled / race conditions niezmienione (helper synchroniczny, czyta state hooka — bez async).
+- [x] **Weryfikacja:** commit `feat(start-sleep): derive session type from sleep recommendation` + follow-up `docs/commits/YYYY-MM-DD-<hash>-smart-session-type.md`.
 
 ---
 

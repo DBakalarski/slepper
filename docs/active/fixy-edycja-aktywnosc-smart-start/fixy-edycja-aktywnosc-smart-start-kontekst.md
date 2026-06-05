@@ -1,7 +1,7 @@
 # Kontekst: fixy-edycja-aktywnosc-smart-start
 
 **Branch:** `feature/fixy-edycja-aktywnosc-smart-start`
-**Ostatnia aktualizacja:** 2026-06-05
+**Ostatnia aktualizacja:** 2026-06-05 (Faza 2 done)
 
 ## Postep
 
@@ -12,6 +12,21 @@
 - Dodatkowo zmemoizowano `todaySessions` (`useMemo([todaySessionsQuery.data])`) zeby zapobiec ostrzezeniu `react-hooks/exhaustive-deps` przy `gapMap` — wzorzec spojny z istniejacym memo `children` na linii 52.
 - Typecheck PASS, lint PASS (0 warningow).
 - Manual on-device test pending (Expo Go iOS+Android).
+
+### Review fazy 1 (2026-06-05)
+- Raport: `review-faza-1.md`. Severity: ✅ GOTOWE DO KONTYNUACJI.
+- Liczniki: P1=0, P2=0, P3=1 (kosmetyka komentarza w `index.tsx:161-162`), info=1 (`session-gaps.ts` bez testow — pre-existing).
+- Manual test checklist: `manual-test-faza-1.md` (4 scenariusze + 2 edge cases opcjonalne).
+- Kluczowy wniosek: Faza 1 = minimalny clean fix (17 LOC dodanych w 1 pliku), zgodny z planem, bez nowych deps, typecheck+lint zielone. Bonus memoizacja `todaySessions` to mikrooptymalizacja zgodna z learned-patterns (queryKey stability). Rekomendacja: kontynuuj Faza 2.
+
+### Faza 2 — Fix 3: smart start sleep (DONE 2026-06-05)
+- Dodano helper `smartSessionType(): 'nap' | 'night_sleep'` w `ActiveChildSection` po `handleStart`/`handleStop`. Czyta `recommendation?.remainingNapsToday[0]?.type`, mapuje `'NIGHT' -> 'night_sleep'` / `'NAP' -> 'nap'`. Fallback: `recommendation !== null` z pustym planem -> `'night_sleep'`; `recommendation === null` (cold start) -> `'nap'`.
+- Podmieniono `BigActionButton` props (linia 213-218): `sessionType={activeSession?.type ?? smartSessionType()}` i `onPress={activeSession ? handleStop : () => handleStart(smartSessionType())}`.
+- `QuickActions` BEZ ZMIAN — explicit "Drzemka" / "Sen nocny" jako jawny override smart logic.
+- **Faza 2b N/A** — `BigActionButton` JUZ przyjmuje `sessionType?: SessionType` (sprawdzone w `packages/sleeper-app/src/components/BigActionButton.tsx:16`, typ z `@/features/sessions/hooks`, discriminated union). Komponent juz uzywa go do warunku `showMoonIcon = mode === 'start' && sessionType === 'night_sleep'`. Zero zmian w komponencie.
+- Typecheck PASS (0 bledow), lint PASS (0 warningow).
+- Manual on-device test pending (Expo Go iOS+Android — 7 scenariuszy zdefiniowanych w `*-zadania.md`).
+- Zmiana to 14 LOC dodanych w 1 pliku (`src/app/(app)/index.tsx`), zero nowych deps, zero modyfikacji komponentow.
 
 ## Cel
 
