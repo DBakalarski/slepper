@@ -1,13 +1,73 @@
 ---
 title: Sleeper Web — PWA — kontekst implementacyjny
 branch: feature/sleeper-web-pwa
-ostatnia_aktualizacja: 2026-06-05 (Faza 1 ukończona + code review)
+ostatnia_aktualizacja: 2026-06-05 (Faza 2 ukończona)
 ---
 
 # Sleeper Web — PWA — kontekst implementacyjny
 
 **Branch:** `feature/sleeper-web-pwa`
-**Ostatnia aktualizacja:** 2026-06-05 (Faza 1 ukończona + code review)
+**Ostatnia aktualizacja:** 2026-06-05 (Faza 2 ukończona)
+
+## Status: Faza 2 ukończona (2026-06-05)
+
+**IU5-IU7 wykonane:** sessions data layer (9 hooks + realtime + timer) + children/family + recommendation adapter.
+
+### Stan `packages/sleeper-web/src/features/` po Fazie 2
+
+```
+features/
+├── auth/ (Faza 1)
+├── settings/ (Faza 1)
+├── sessions/
+│   ├── hooks.ts (9 hooks kopia 1:1 — useSessions, useSessionById, useActiveSession,
+│   │              useLastEndedSession, useStartSession, useEndSession,
+│   │              useUpdateSession, useDeleteSession, useInsertBackdatedSession)
+│   ├── useRealtimeSessions.ts (Supabase Realtime WS, kopia 1:1)
+│   ├── useSessionTimer.ts (derived timer state, kopia 1:1)
+│   ├── translate-session-error.ts (kopia 1:1, pure function)
+│   ├── schedule-nap-side-effects.ts (NEW no-op mock standalone)
+│   ├── components/ (placeholder na IU8/IU10)
+│   └── __tests__/ (translate-session-error: 7 cases, schedule-nap-side-effects: 5 cases)
+├── children/
+│   ├── hooks.ts (kopia 1:1 — useChildren/useChildById/useCreateChild/useUpdate/useDelete)
+│   ├── useActiveChild.ts (Zustand persist, kopia 1:1)
+│   └── components/ (placeholder)
+├── family/
+│   ├── hooks.ts (kopia 1:1 — useFamily/useMembers/useInvitations etc.)
+│   ├── translate-family-error.ts (kopia 1:1, pure function)
+│   ├── components/ (placeholder)
+│   └── __tests__/ (translate-family-error: 9 cases)
+└── recommendation/
+    ├── adapter.ts (kopia 1:1 — toLibSessions/toLibProfile)
+    ├── useSleepRecommendation.ts (kopia 1:1)
+    ├── RecommendationCard.tsx (kopia 1:1)
+    └── __tests__/ (adapter: 11 cases)
+```
+
+### Faza 2 — decyzje implementacyjne
+
+- **`schedule-nap-side-effects.ts` standalone no-op** — w przeciwieństwie do sleeper-app, web mock NIE importuje `@/lib/notifications`. Powód: web `lib/notifications.ts` jest też no-op, więc graf zależności notyfikacji w web byłby fikcyjny. Standalone = eliminacja całego grafu z bundla + ułatwia tree-shake. Sygnatury 1:1 z sleeper-app (3 funkcje: `rescheduleNapNotification`, `cancelNapNotificationSafe`, `rescheduleFromLastEnded`) — `hooks.ts` kopia 1:1 resolve bez modyfikacji.
+- **Deferred TS errors z Fazy 1 — ROZWIĄZANE** ✅ — `lib/session-gaps.ts` i `lib/sleep-stats.ts` importują `SleepSession` z `@/features/sessions/hooks`. Komentarze i `eslint-disable-next-line import/no-unresolved` usunięte.
+- **Workspace deps pre-build** — `pnpm --filter sleeper-machine build` + `pnpm --filter sleeper-machine-kotki build` przed `tsc` w sleeper-web. Types resolve z `dist/`. Pattern udokumentowany w plan technicznym sekcja "Build order".
+- **Testy jednostkowe — strategia "pure functions only"** — hooks (useSessions, useChildren, useSleepRecommendation) wymagają React + QueryClient runtime; manual test [Mobile-mobile] po IU10. Pure funkcje (`translate-session-error`, `translate-family-error`, `adapter.toLibSessions/toLibProfile`) pokryte w pełni (27 cases łącznie w Fazie 2).
+- **Realtime invalidation pattern zachowany** — `useRealtimeSessions` używa `queryClient.invalidateQueries({ queryKey: ['sessions'] })` zgodnie z CLAUDE.md ("nie patchuj cache ręcznie").
+
+### Faza 2 — System-Wide Test Check (sekcja 4.5)
+
+1. **Typecheck bez nowych błędów:** ✅ (2 deferred z Fazy 1 resolved w IU5)
+2. **Istniejące testy przechodzą:** ✅ (`time.test.ts` 14/14 PASS, dodano 32 nowe testy w Fazie 2)
+3. **Nowe testy pokrywają happy path:** ✅ (27 cases dla pure functions + 5 invariant cases dla no-op mock)
+4. **Nowe importy nie łamią modułów:** ✅ (sleeper-app regression PASS po każdym IU)
+5. **Build przechodzi:** N/A — `expo export --platform web` nie był uruchamiany (IU12). Tsc + lint + workspace builds przechodzą.
+
+### Faza 2 — commits
+
+- `9cf21b9` IU5 Sessions data layer + `9f35009` log
+- `c0c41b5` IU6 Children + family data layer + `508165c` log
+- `d694448` IU7 Recommendation data + algorytm wiring + `295c7df` log
+
+---
 
 ## Code review Fazy 1 (2026-06-05)
 

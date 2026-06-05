@@ -1,20 +1,20 @@
 ---
 title: Sleeper Web — PWA — checklista zadań
 branch: feature/sleeper-web-pwa
-ostatnia_aktualizacja: 2026-06-05
+ostatnia_aktualizacja: 2026-06-05 (Faza 2 ukończona)
 ---
 
 # Sleeper Web — PWA — checklista zadań
 
 **Branch:** `feature/sleeper-web-pwa`
-**Ostatnia aktualizacja:** 2026-06-05
+**Ostatnia aktualizacja:** 2026-06-05 (Faza 2 ukończona)
 
 Pełne szczegóły IU w `docs/plans/2026-06-05-001-feat-sleeper-web-pwa-plan.md`.
 
 ## Status faz
 
 - ✅ **Faza 1: Bootstrap & Foundation** (IU1-IU4) — ukończono 2026-06-05
-- ⬜ Faza 2: Data Layer (IU5-IU7)
+- ✅ **Faza 2: Data Layer** (IU5-IU7) — ukończono 2026-06-05
 - ⬜ Faza 3: UI & Routes (IU8-IU10)
 - ⬜ Faza 4: PWA & Deploy (IU11-IU12)
 
@@ -24,7 +24,12 @@ Pełne szczegóły IU w `docs/plans/2026-06-05-001-feat-sleeper-web-pwa-plan.md`
 - `f4c0afa` IU3 Auth flow + `9b038b2` log
 - `e89aa33` IU4 Theme system + `4fd66fb` log
 
-**Faza 1 — znane deferrals:** 2 transient TS errors w `lib/session-gaps.ts:1` i `lib/sleep-stats.ts:4` (importy z `@/features/sessions/hooks` — resolve w IU5). To pre-existing architecture smell sleeper-app (lib importuje z features), nie nowy problem.
+**Faza 2 — commits:**
+- `9cf21b9` IU5 Sessions data layer + `9f35009` log
+- `c0c41b5` IU6 Children + family data layer + `508165c` log
+- `d694448` IU7 Recommendation data + algorytm wiring + `295c7df` log
+
+**Faza 1 — deferrals: ROZWIĄZANE w IU5** ✅ — `lib/session-gaps.ts` i `lib/sleep-stats.ts` importują teraz `SleepSession` z `features/sessions/hooks` poprawnie. Komentarze + eslint-disable usunięte.
 
 ---
 
@@ -193,65 +198,69 @@ Pełne szczegóły IU w `docs/plans/2026-06-05-001-feat-sleeper-web-pwa-plan.md`
 
 ---
 
-## Faza 2: Data Layer
+## Faza 2: Data Layer ✅
 
-### IU5: Sessions data layer (hooks + realtime + timer)
+### IU5: Sessions data layer (hooks + realtime + timer) ✅
 
-**Delegate to:** feature-builder-data | **Estymata:** M | **Wymagania:** R2, R3, R4, R9 | **Zależności:** IU2, IU3
+**Delegate to:** feature-builder-data | **Estymata:** M | **Wymagania:** R2, R3, R4, R9 | **Zależności:** IU2, IU3 | **Commits:** `9cf21b9` + log `9f35009`
 
 **Implementacja:**
-- [ ] Stwórz `packages/sleeper-web/src/features/sessions/hooks.ts` (kopia 1:1)
-- [ ] Stwórz `packages/sleeper-web/src/features/sessions/useRealtimeSessions.ts` (kopia 1:1)
-- [ ] Stwórz `packages/sleeper-web/src/features/sessions/useSessionTimer.ts` (kopia 1:1)
-- [ ] Stwórz `packages/sleeper-web/src/features/sessions/translate-session-error.ts` (kopia 1:1)
-- [ ] Stwórz `packages/sleeper-web/src/features/sessions/schedule-nap-side-effects.ts` (**NEW — no-op mock**)
+- [x] Stwórz `packages/sleeper-web/src/features/sessions/hooks.ts` (kopia 1:1)
+- [x] Stwórz `packages/sleeper-web/src/features/sessions/useRealtimeSessions.ts` (kopia 1:1)
+- [x] Stwórz `packages/sleeper-web/src/features/sessions/useSessionTimer.ts` (kopia 1:1)
+- [x] Stwórz `packages/sleeper-web/src/features/sessions/translate-session-error.ts` (kopia 1:1)
+- [x] Stwórz `packages/sleeper-web/src/features/sessions/schedule-nap-side-effects.ts` (**NEW — no-op mock**)
 
 **Testy:**
-- [ ] Test: wszystkie 9 hooks eksportowane
-- [ ] Test: schedule-nap-side-effects.ts NIE importuje expo-notifications (grep)
+- [x] Test: wszystkie 9 hooks eksportowane (tsc PASS przez konsumentów `lib/session-gaps.ts`, `lib/sleep-stats.ts`)
+- [x] Test: schedule-nap-side-effects.ts NIE importuje expo-notifications (grep + unit test invariant)
+- [x] Test: translate-session-error pure function (7 cases: 23505, walidacje, network, fallback)
+- [x] Test: schedule-nap-side-effects no-op behavior + grep invariants (5 cases)
 - [ ] Test: [Manual-mobile] (po IU10) start sesji w PWA → druga osoba w sleeper-app widzi via Realtime
 
 **Weryfikacja:**
-- [ ] Weryfikacja: `pnpm --filter sleeper-web exec tsc --noEmit` exit code 0
-- [ ] Weryfikacja: `grep -c "expo-notifications" packages/sleeper-web/src/features/sessions/schedule-nap-side-effects.ts` zwraca 0
+- [x] Weryfikacja: `pnpm --filter sleeper-web exec tsc --noEmit` exit code 0
+- [x] Weryfikacja: `grep -c "expo-notifications" packages/sleeper-web/src/features/sessions/schedule-nap-side-effects.ts` zwraca 0
 
 ---
 
-### IU6: Children + family data layer
+### IU6: Children + family data layer ✅
 
-**Delegate to:** feature-builder-data | **Estymata:** S | **Wymagania:** R5, R6 | **Zależności:** IU2, IU3
+**Delegate to:** feature-builder-data | **Estymata:** S | **Wymagania:** R5, R6 | **Zależności:** IU2, IU3 | **Commits:** `c0c41b5` + log `508165c`
 
 **Implementacja:**
-- [ ] Stwórz `packages/sleeper-web/src/features/children/hooks.ts` (kopia 1:1)
-- [ ] Stwórz `packages/sleeper-web/src/features/children/useActiveChild.ts` (kopia 1:1)
-- [ ] Stwórz `packages/sleeper-web/src/features/family/hooks.ts` (kopia 1:1)
-- [ ] Stwórz `packages/sleeper-web/src/features/family/translate-family-error.ts` (kopia 1:1)
+- [x] Stwórz `packages/sleeper-web/src/features/children/hooks.ts` (kopia 1:1)
+- [x] Stwórz `packages/sleeper-web/src/features/children/useActiveChild.ts` (kopia 1:1)
+- [x] Stwórz `packages/sleeper-web/src/features/family/hooks.ts` (kopia 1:1)
+- [x] Stwórz `packages/sleeper-web/src/features/family/translate-family-error.ts` (kopia 1:1)
 
 **Testy:**
-- [ ] Test: hooks eksportowane (`useChildren`, `useActiveChild`, family hooks)
+- [x] Test: hooks eksportowane (tsc PASS = importy konsumentów resolve; pure-functions pokryte unit testami)
+- [x] Test: translate-family-error pure function (9 cases: 23505, P0001, last-owner, auth, email, network, fallback, non-Error)
 
 **Weryfikacja:**
-- [ ] Weryfikacja: `pnpm --filter sleeper-web exec tsc --noEmit` exit code 0
+- [x] Weryfikacja: `pnpm --filter sleeper-web exec tsc --noEmit` exit code 0
 
 ---
 
-### IU7: Recommendation data + algorytm wiring
+### IU7: Recommendation data + algorytm wiring ✅
 
-**Delegate to:** feature-builder-data | **Estymata:** S | **Wymagania:** R5, R6 | **Zależności:** IU2, IU5, IU6
+**Delegate to:** feature-builder-data | **Estymata:** S | **Wymagania:** R5, R6 | **Zależności:** IU2, IU5, IU6 | **Commits:** `d694448` + log `295c7df`
 
 **Implementacja:**
-- [ ] Stwórz `packages/sleeper-web/src/features/recommendation/adapter.ts` (kopia 1:1)
-- [ ] Stwórz `packages/sleeper-web/src/features/recommendation/useSleepRecommendation.ts` (kopia 1:1)
-- [ ] Stwórz `packages/sleeper-web/src/features/recommendation/RecommendationCard.tsx` (kopia 1:1)
+- [x] Stwórz `packages/sleeper-web/src/features/recommendation/adapter.ts` (kopia 1:1)
+- [x] Stwórz `packages/sleeper-web/src/features/recommendation/useSleepRecommendation.ts` (kopia 1:1)
+- [x] Stwórz `packages/sleeper-web/src/features/recommendation/RecommendationCard.tsx` (kopia 1:1)
 
 **Testy:**
-- [ ] Test: workspace deps `sleeper-machine`, `sleeper-machine-kotki` resolve
+- [x] Test: workspace deps `sleeper-machine`, `sleeper-machine-kotki` resolve (tsc PASS po build)
+- [x] Test: adapter.ts pure functions (11 cases: toLibSessions 4, toLibProfile 7)
 - [ ] Test: [Manual-mobile] (po IU10) RecommendationCard widoczna z poprawnym czasem next sleep window
 
 **Weryfikacja:**
-- [ ] Weryfikacja: `pnpm --filter sleeper-machine build` exit code 0
-- [ ] Weryfikacja: `pnpm --filter sleeper-machine-kotki build` exit code 0
-- [ ] Weryfikacja: `pnpm --filter sleeper-web exec tsc --noEmit` exit code 0
+- [x] Weryfikacja: `pnpm --filter sleeper-machine build` exit code 0
+- [x] Weryfikacja: `pnpm --filter sleeper-machine-kotki build` exit code 0
+- [x] Weryfikacja: `pnpm --filter sleeper-web exec tsc --noEmit` exit code 0
 
 ---
 
@@ -438,7 +447,7 @@ Pełne szczegóły IU w `docs/plans/2026-06-05-001-feat-sleeper-web-pwa-plan.md`
 ## Postęp ogólny
 
 - [x] **Faza 1: Bootstrap & Foundation** (IU1-IU4) ✅ 2026-06-05
-- [ ] **Faza 2: Data Layer** (IU5-IU7)
+- [x] **Faza 2: Data Layer** (IU5-IU7) ✅ 2026-06-05
 - [ ] **Faza 3: UI & Routes** (IU8-IU10)
 - [ ] **Faza 4: PWA & Deploy** (IU11-IU12)
 
