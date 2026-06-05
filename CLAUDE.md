@@ -49,14 +49,14 @@ sleeper/                                  # ← root (TEN katalog)
 - Wybor algorytmu per dziecko — pole `children.algorithm` ('galland' | 'kotki_dwa', default 'galland').
 - `docs/` i `.claude/` zostaja w roocie i sa wspolne.
 
-## Aktualny stan (2026-05-29)
+## Aktualny stan (2026-06-05)
 
-- **Branch:** `feature/fixy-i-kotki-dwa-algorytm`
-- **Aktualne zadanie:** brak (branch `feature/fixy-i-kotki-dwa-algorytm` — oczekuje na merge do main).
+- **Branch:** `feature/fixy-edycja-aktywnosc-smart-start`
+- **Aktualne zadanie:** `docs/active/fixy-edycja-aktywnosc-smart-start/` — 3 fixy UX (TimePicker iOS minuty, gap aktywności na home, smart typ sesji z rekomendacji).
 - **Ukonczone:**
   - MVP sleep tracker → `docs/completed/mvp-sleep-tracker/`
   - UI redesign → `docs/completed/ui-redesign/`
-  - fixy-i-kotki-dwa-algorytm → `docs/completed/fixy-i-kotki-dwa-algorytm/`
+  - fixy-i-kotki-dwa-algorytm → `docs/completed/fixy-i-kotki-dwa-algorytm/` (merged to main 2026-06-05)
 
 ## Stack (zainstalowany — sprawdzone w `packages/sleeper-app/package.json`)
 
