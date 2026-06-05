@@ -3,6 +3,16 @@
 **Branch:** `feature/fixy-edycja-aktywnosc-smart-start`
 **Ostatnia aktualizacja:** 2026-06-05
 
+## Postep
+
+### Faza 1 — Fix 2: gap aktywności w "Sesje dzisiaj" (DONE 2026-06-05)
+- Dodano import `computeGapsBetweenSessions` w `src/app/(app)/index.tsx`.
+- Dodano `gapMap` przez `useMemo` w `ActiveChildSection` (po `useSleepRecommendation`).
+- Przekazano `gapBeforeMs={gapMap.get(session.id)}` do `SessionListItem` w mapowaniu `todaySessions.slice(0, 5)`.
+- Dodatkowo zmemoizowano `todaySessions` (`useMemo([todaySessionsQuery.data])`) zeby zapobiec ostrzezeniu `react-hooks/exhaustive-deps` przy `gapMap` — wzorzec spojny z istniejacym memo `children` na linii 52.
+- Typecheck PASS, lint PASS (0 warningow).
+- Manual on-device test pending (Expo Go iOS+Android).
+
 ## Cel
 
 Trzy punktowe fixy UX zgłoszone przez usera po ostatnich zmianach (kotki-dwa + cross-day edit):

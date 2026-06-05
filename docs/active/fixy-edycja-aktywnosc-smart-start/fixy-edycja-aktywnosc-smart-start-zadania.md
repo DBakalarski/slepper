@@ -14,20 +14,20 @@ Legenda effort: **S** = ≤30 min, **M** = ≤90 min, **L** = >90 min.
 **Zależności:** brak.
 
 ### Implementacja
-- [ ] Dodaj import: `import { computeGapsBetweenSessions } from '@/lib/session-gaps';` (sprawdź czy alias `@/*` rozwiązuje się — jeśli nie, użyj relatywnej ścieżki tak jak inne importy w `index.tsx`).
-- [ ] W `ActiveChildSection` (koło linii 154–164) dodaj `const gapMap = useMemo(() => computeGapsBetweenSessions(todaySessions), [todaySessions]);`.
-- [ ] W mapowaniu `todaySessions.slice(0, 5).map(...)` (linia 233–234) dorzuć prop: `<SessionListItem key={session.id} session={session} gapBeforeMs={gapMap.get(session.id)} />`.
+- [x] Dodaj import: `import { computeGapsBetweenSessions } from '@/lib/session-gaps';` (sprawdź czy alias `@/*` rozwiązuje się — jeśli nie, użyj relatywnej ścieżki tak jak inne importy w `index.tsx`).
+- [x] W `ActiveChildSection` (koło linii 154–164) dodaj `const gapMap = useMemo(() => computeGapsBetweenSessions(todaySessions), [todaySessions]);`.
+- [x] W mapowaniu `todaySessions.slice(0, 5).map(...)` (linia 233–234) dorzuć prop: `<SessionListItem key={session.id} session={session} gapBeforeMs={gapMap.get(session.id)} />`.
 
 ### Test (manual, Expo Go)
-- [ ] **Test:** dziecko z ≥2 zakończonymi sesjami dziś (np. drzemka rano + drzemka po południu) → home → sekcja "Sesje dzisiaj" → nad drugą (i kolejnymi) sesjami widać `aktywność Xg Ym` w kolorze orange.
-- [ ] **Test:** pierwsza sesja (najwcześniejsza chronologicznie) NIE ma gap nad sobą.
-- [ ] **Test:** porównanie wizualne z ekranem Historia (powinno wyglądać identycznie — ten sam komponent + helper).
-- [ ] **Test:** brak sesji dziś → sekcja niewidoczna (regression-check: `todaySessions.length > 0` gate na linii 216 niezmieniony).
+- [ ] **Test:** dziecko z ≥2 zakończonymi sesjami dziś (np. drzemka rano + drzemka po południu) → home → sekcja "Sesje dzisiaj" → nad drugą (i kolejnymi) sesjami widać `aktywność Xg Ym` w kolorze orange. — manual test pending
+- [ ] **Test:** pierwsza sesja (najwcześniejsza chronologicznie) NIE ma gap nad sobą. — manual test pending
+- [ ] **Test:** porównanie wizualne z ekranem Historia (powinno wyglądać identycznie — ten sam komponent + helper). — manual test pending
+- [ ] **Test:** brak sesji dziś → sekcja niewidoczna (regression-check: `todaySessions.length > 0` gate na linii 216 niezmieniony). — manual test pending
 
 ### Weryfikacja
-- [ ] **Weryfikacja:** `pnpm --filter sleeper-app exec tsc --noEmit` → 0 błędów.
-- [ ] **Weryfikacja:** `pnpm --filter sleeper-app lint` → brak nowych warningów.
-- [ ] **Weryfikacja:** commit `fix(home): render wake gap "aktywność Xg Ym" between today's sessions` + follow-up `docs/commits/YYYY-MM-DD-<hash>-home-wake-gap.md`.
+- [x] **Weryfikacja:** `pnpm --filter sleeper-app exec tsc --noEmit` → 0 błędów.
+- [x] **Weryfikacja:** `pnpm --filter sleeper-app lint` → brak nowych warningów.
+- [x] **Weryfikacja:** commit `fix(home): render wake gap "aktywność Xg Ym" between today's sessions` + follow-up `docs/commits/YYYY-MM-DD-<hash>-home-wake-gap.md`.
 
 ---
 
