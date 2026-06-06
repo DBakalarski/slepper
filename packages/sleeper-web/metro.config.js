@@ -34,4 +34,39 @@ config.resolver.alias = {
   'lucide-react-native': 'lucide-react',
 };
 
+// 5. Custom resolveRequest dla zustand → wymuszone CJS buildy.
+//    zustand@5 ESM (`esm/index.mjs`, `esm/middleware.mjs`) używa
+//    `import.meta.env.MODE` (Vite-style guard dla devtools).
+//    Metro web target NIE transformuje `import.meta`, raw token ląduje
+//    w klasycznym `<script defer>` bundle → `Uncaught SyntaxError: Cannot
+//    use 'import.meta' outside a module` → white screen.
+//    CJS buildy (`middleware.js`, `index.js`) NIE mają `import.meta`.
+//    `resolver.alias` z subpath ('zustand/middleware') jest zawodny gdy
+//    package.json#exports kieruje na `.mjs` — custom resolveRequest
+//    deterministycznie przepina na `.js`. (review Fazy 3 P1.1)
+const path_ = path;
+const zustandRoot = path_.dirname(require.resolve('zustand/package.json'));
+const ZUSTAND_CJS_MAP = {
+  zustand: path_.join(zustandRoot, 'index.js'),
+  'zustand/middleware': path_.join(zustandRoot, 'middleware.js'),
+  'zustand/vanilla': path_.join(zustandRoot, 'vanilla.js'),
+  'zustand/react': path_.join(zustandRoot, 'react.js'),
+  'zustand/shallow': path_.join(zustandRoot, 'shallow.js'),
+  'zustand/traditional': path_.join(zustandRoot, 'traditional.js'),
+};
+
+const defaultResolver = config.resolver.resolveRequest;
+config.resolver.resolveRequest = (context, moduleName, platform) => {
+  if (platform === 'web' && ZUSTAND_CJS_MAP[moduleName]) {
+    return {
+      type: 'sourceFile',
+      filePath: ZUSTAND_CJS_MAP[moduleName],
+    };
+  }
+  if (defaultResolver) {
+    return defaultResolver(context, moduleName, platform);
+  }
+  return context.resolveRequest(context, moduleName, platform);
+};
+
 module.exports = withNativeWind(config, { input: './src/global.css' });

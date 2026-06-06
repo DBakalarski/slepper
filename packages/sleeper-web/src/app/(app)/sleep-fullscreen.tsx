@@ -1,20 +1,32 @@
 import { useRouter } from 'expo-router';
 import { useEffect } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Platform, Pressable, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useActiveChild } from '@/features/children/useActiveChild';
 import { useActiveSession, useEndSession } from '@/features/sessions/hooks';
 import { useSessionTimer } from '@/features/sessions/useSessionTimer';
 
+// Minimalny typ Wake Lock API (Sentinel + Navigator). RN-Web nie ma DOM lib
+// w tsconfig pelnym, wiec definujemy local — zero runtime impactu.
+type WakeLockSentinelLike = {
+  readonly release: () => Promise<void>;
+};
+type NavigatorWithWakeLock = Navigator & {
+  readonly wakeLock?: {
+    readonly request: (type: 'screen') => Promise<WakeLockSentinelLike>;
+  };
+};
+
 // Pelnoekranowy widok aktywnej sesji: duzy timer, dwa CTA (Zakoncz / Wyjdz).
 // Jesli sesja zakonczy sie zdalnie (drugi telefon) — useActiveSession refetchuje
 // przez focus, ekran wraca do `/`.
 //
-// Web-only: `expo-keep-awake` ZAMIESZCZONY z importu (native-only excluded
-// per kontekst). Wake Lock API jako post-MVP feature (IU11 PWA polish). Bez
-// tego ekran moze sie zablokowac po OS timeout — manual test confirm
-// behavior na iOS Safari.
+// Web: uzywamy Wake Lock API (iOS Safari 16.4+, Chrome 84+) zeby zapobiec
+// wygaszeniu ekranu w czasie pelnoekranowego timera. Starsze przegladarki —
+// graceful no-op (`navigator.wakeLock` undefined). Re-acquire na
+// `visibilitychange` (Safari zwalnia sentinel gdy karta straci focus).
+// (review Fazy 3 P2.3)
 export default function SleepFullscreenScreen() {
   const router = useRouter();
   const { activeChildId } = useActiveChild();
@@ -30,6 +42,50 @@ export default function SleepFullscreenScreen() {
       router.replace('/');
     }
   }, [activeQuery.isLoading, session, router]);
+
+  // Wake Lock — utrzymuje ekran wlaczony podczas pelnoekranowego timera.
+  // Web only (`navigator.wakeLock`); native (Expo Go) nie ma tego globala,
+  // tam sleep-fullscreen i tak nie jest uzywane (osobny native flow).
+  useEffect(() => {
+    if (Platform.OS !== 'web') return;
+    if (typeof navigator === 'undefined') return;
+    const nav = navigator as NavigatorWithWakeLock;
+    if (!nav.wakeLock) return;
+
+    let sentinel: WakeLockSentinelLike | null = null;
+    let cancelled = false;
+
+    async function acquire() {
+      try {
+        const s = await nav.wakeLock!.request('screen');
+        if (cancelled) {
+          await s.release().catch(() => {});
+          return;
+        }
+        sentinel = s;
+      } catch {
+        // Permission denied lub niewspierane — graceful degrade.
+      }
+    }
+
+    function handleVisibility() {
+      if (document.visibilityState === 'visible' && !sentinel) {
+        void acquire();
+      }
+    }
+
+    void acquire();
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      cancelled = true;
+      document.removeEventListener('visibilitychange', handleVisibility);
+      if (sentinel) {
+        void sentinel.release().catch(() => {});
+        sentinel = null;
+      }
+    };
+  }, []);
 
   if (!session || !activeChildId) {
     return (

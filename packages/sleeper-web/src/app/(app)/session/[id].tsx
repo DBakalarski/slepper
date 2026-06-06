@@ -2,7 +2,6 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -17,6 +16,7 @@ import {
   type SessionFormState,
 } from '@/features/sessions/components/SessionEditForm';
 import { useDeleteSession, useSessionById, useUpdateSession } from '@/features/sessions/hooks';
+import { confirmAction } from '@/lib/confirm';
 import { extractErrorMessage } from '@/lib/extract-error-message';
 
 // Ekran edycji pojedynczej sesji. Bez optimistic update — formularz wymaga
@@ -124,26 +124,20 @@ export default function SessionEditScreen() {
     );
   }
 
-  function handleDelete() {
-    Alert.alert(
-      'Usunac sesje?',
-      'Tej operacji nie da sie cofnac.',
-      [
-        { text: 'Anuluj', style: 'cancel' },
-        {
-          text: 'Usun',
-          style: 'destructive',
-          onPress: () => {
-            deleteSession.mutate(
-              { sessionId: session.id, childId: session.child_id },
-              {
-                onSuccess: () => router.back(),
-              },
-            );
-          },
-        },
-      ],
-      { cancelable: true },
+  async function handleDelete() {
+    const ok = await confirmAction({
+      title: 'Usunac sesje?',
+      message: 'Tej operacji nie da sie cofnac.',
+      confirmText: 'Usun',
+      cancelText: 'Anuluj',
+      destructive: true,
+    });
+    if (!ok) return;
+    deleteSession.mutate(
+      { sessionId: session.id, childId: session.child_id },
+      {
+        onSuccess: () => router.back(),
+      },
     );
   }
 

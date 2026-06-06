@@ -334,10 +334,10 @@ Pełne szczegóły IU w `docs/plans/2026-06-05-001-feat-sleeper-web-pwa-plan.md`
 - [ ] Test: [Manual-mobile] ProgressRing renderuje SVG poprawnie, manual test pending
 
 **Weryfikacja:**
-- [ ] Weryfikacja: `pnpm --filter sleeper-web exec tsc --noEmit` exit code 0
-- [ ] Weryfikacja: [Mobile-manual] TimePicker pokazuje natywny iOS wheel — manual test
-- [ ] Weryfikacja: [Mobile-manual] brak white screen / console errors — manual test
-- [ ] Weryfikacja: [Mobile-manual] BigActionButton animation działa — manual test
+- [x] Weryfikacja: `pnpm --filter sleeper-web exec tsc --noEmit` exit code 0 (PASS — review faza 3)
+- [ ] Weryfikacja: [Mobile-manual] TimePicker pokazuje natywny iOS wheel — manual test (patrz manual-test-faza-3.md TBD; wymaga fixu P1.1)
+- [ ] Weryfikacja: [Mobile-manual] brak white screen / console errors — manual test (BLOKADA: P1.1 bundle parse error)
+- [ ] Weryfikacja: [Mobile-manual] BigActionButton animation działa — manual test (wymaga fixu P1.1)
 
 **Operator checklist:**
 - [ ] User testuje TimePickerField w Safari iOS, potwierdza parytet z mobile fix (minute scroll)
@@ -360,8 +360,8 @@ Pełne szczegóły IU w `docs/plans/2026-06-05-001-feat-sleeper-web-pwa-plan.md`
 - [ ] Test: [Manual-mobile] `/sign-up` URL działa standalone, manual test pending
 
 **Weryfikacja:**
-- [ ] Weryfikacja: `pnpm --filter sleeper-web exec tsc --noEmit` exit code 0
-- [ ] Weryfikacja: [Mobile-manual] auth gate działa — manual test
+- [x] Weryfikacja: `pnpm --filter sleeper-web exec tsc --noEmit` exit code 0 (PASS — review faza 3)
+- [ ] Weryfikacja: [Mobile-manual] auth gate działa — manual test (BLOKADA: P1.1 bundle parse error)
 
 ---
 
@@ -395,15 +395,49 @@ Pełne szczegóły IU w `docs/plans/2026-06-05-001-feat-sleeper-web-pwa-plan.md`
 - [ ] Test: [Manual-mobile] Backdated insert — prefill `todayDateInAppTz`, walidacja endAt>startAt, manual test pending
 
 **Weryfikacja:**
-- [ ] Weryfikacja: `pnpm --filter sleeper-web exec tsc --noEmit` exit code 0
-- [ ] Weryfikacja: `pnpm --filter sleeper-web lint` exit code 0
-- [ ] Weryfikacja: [Mobile-manual] wszystkie screens renderują się — manual test
+- [x] Weryfikacja: `pnpm --filter sleeper-web exec tsc --noEmit` exit code 0 (PASS — review faza 3)
+- [x] Weryfikacja: `pnpm --filter sleeper-web lint` exit code 0 (PASS — review faza 3)
+- [ ] Weryfikacja: [Mobile-manual] wszystkie screens renderują się — manual test (BLOKADA: P1.1 bundle parse error)
 - [ ] Weryfikacja: [Mobile-manual] cross-day night sleep zapisuje poprawnie — manual test
 - [ ] Weryfikacja: [Mobile-manual] cross-device sync z sleeper-app — manual test
 
 **Operator checklist:**
 - [ ] User: pełny flow (start → end → edit → stats), każdy krok widoczny na drugim urządzeniu
 - [ ] User: cross-day night sleep test (22:00 → 06:00) z weryfikacją bazy
+
+---
+
+## Do poprawy po review fazy 3
+
+✅ **Status P1:** NAPRAWIONY (cykl 1 autopilot 2026-06-06) — bundle parse error fixed (custom resolveRequest dla zustand CJS).
+✅ **Status P2:** wszystkie 4 naprawione (cykl 1 autopilot 2026-06-06).
+🟡 **Status P3:** 5 sugestii — bez blokady, deferred do IU11/known-issues.
+
+**Pełny raport:** [review-faza-3.md](./review-faza-3.md)
+
+### 🔴 P1-blocking (PRE-Faza 4)
+
+- [x] 🔴 [blocking] **packages/sleeper-web/metro.config.js** — bundle web `dist/_expo/static/js/web/entry-*.js` zawiera `import.meta.env.MODE` z `zustand@5.0.14/esm/middleware.mjs` (linie 64, 126). Metro resolwuje `"import"` condition z `zustand/package.json#exports` → wybiera ESM zamiast CJS. Bundle ładowany jako classic `<script defer>` (nie `type="module"`) → `Uncaught SyntaxError: Cannot use 'import.meta' outside a module` → cały tree fail, `#root` pusty (white screen E2E confirmed). **Fix:** custom `resolver.resolveRequest` z mapą `zustand` + subpathów (`middleware`, `vanilla`, `react`, `shallow`, `traditional`) → CJS `.js`. `resolver.alias` ze stringiem był zawodny (Metro nie rozwiazywal `zustand/middleware` na ESM gdy pkg.exports go preferowal). Rebuild + browser smoke: `grep -c "import.meta" dist/_expo/static/js/web/entry-*.js` → **0**. Bundle parsuje sie jako classic script (V8 `new Function` PASS). (E2E P1.1)
+
+### 🟠 P2-important (przed Fazą 4 deploy)
+
+- [x] 🟠 [important] **packages/sleeper-web/src/app/(app)/session/[id].tsx + packages/sleeper-web/src/features/family/components/PendingInvitationsList.tsx** — `Alert.alert` jest no-op w react-native-web → destruktywne akcje silently nie uruchamiaja callbacku. **Fix:** nowy `packages/sleeper-web/src/lib/confirm.ts` z `confirmAction(): Promise<boolean>` (Platform.OS guard: `window.confirm` na web, `Alert.alert` z Promise wrapper na native). Oba callsite przepisane na `async/await` z early return na cancel. (KOD P2.1)
+- [x] 🟠 [important] **packages/sleeper-web/src/features/recommendation/useSleepRecommendation.ts** — `useFocusEffect` web tylko `visibilitychange`. **Fix preventywny:** `useEffect` z `setInterval(checkDayKey, 5 * 60 * 1000)` invalidate `['sessions', child.id]` gdy `dayKeyInAppTz(new Date()) !== dayKey`. Cleanup w return — `clearInterval`. (KOD P2.2)
+- [x] 🟠 [important] **packages/sleeper-web/src/app/(app)/sleep-fullscreen.tsx** — `expo-keep-awake` usuniety bez Wake Lock API fallback. **Fix:** ~40 LOC `navigator.wakeLock?.request('screen')` w `useEffect` (Platform.OS guard + graceful try/catch + re-acquire na `visibilitychange` gdy Safari zwalnia sentinel po zwroceniu focusu). Typowanie lokalne (`WakeLockSentinelLike` + `NavigatorWithWakeLock`) bez dotykania `tsconfig.lib`. (KOD P2.3)
+- [x] 🟠 [important] **packages/sleeper-web/src/features/sessions/components/__tests__/ + packages/sleeper-web/src/features/family/components/__tests__/ + packages/sleeper-web/src/lib/__tests__/confirm.test.ts** — **Fix:** 4 nowe test suites (37 cases), wzorzec "static invariants + pure-function pipeline" z `pickers.test.ts`:
+  - `SessionEditForm.test.ts` (10) — TZ-safe merge, brak setHours/setDate, brak Alert, parytet Chip/Picker.
+  - `BackdatedSessionModal.test.ts` (12) — `addDaysInAppTz` (NIE +86400000), regex HH:MM/YYYY-MM-DD, pipeline `22:00 → 06:30` (cross-day night sleep).
+  - `PendingInvitationsList.test.ts` (6) — wymusza `confirmAction` (P2.1 invariant), brak `Alert`.
+  - `confirm.test.ts` (9) — kontrakt Platform.OS guard, Promise<boolean>, native sciezka rozwiazana w `onPress`/`onDismiss`.
+  Razem: 82 → **119** testow, wszystkie PASS. (TEST P2.4)
+
+### 🟡 P3-nit (sugestie)
+
+- [ ] 🟡 [nit] **packages/sleeper-web/src/components/TimePickerField.tsx:68-93 + DatePickerField.tsx:71-97** — inline `style={{...}}` zamiast Tailwind `className`. NativeWind v4 obsługuje raw `<input>` na web. Mniej kodu, spójność. (KOD P3.1)
+- [ ] 🟡 [nit] **packages/sleeper-web/src/features/sessions/hooks.ts:293** — `console.warn` w prod bundle. Deferred do IU11 (`babel-plugin-transform-remove-console`). (KOD P3.2)
+- [ ] 🟡 [nit] **packages/sleeper-web/src/components/BigActionButton.tsx:49-53** — Pressable scale via inline style (`{ transform: [{ scale: 0.97 }] }`) zamiast reanimated `useAnimatedStyle`. Mobile smooth, web "twardy snap". Visual polish. (KOD P3.3)
+- [ ] 🟡 [nit] **packages/sleeper-web/src/components/TimePickerField.tsx:74 + DatePickerField.tsx:78** — `aria-label` przesłania visual label. Lepiej `aria-labelledby` + `nativeID` na `<Text>`. (KOD P3.4)
+- [ ] 🟡 [nit] **packages/sleeper-web/src/components/BigActionButton.tsx:2** — `lucide-react-native` (zachowany dla parytetu, alias w metro.config.js działa). Udokumentować w `learned-patterns.md` "Web aliasing zachowuje source-level parity". (KOD P3.5)
 
 ---
 

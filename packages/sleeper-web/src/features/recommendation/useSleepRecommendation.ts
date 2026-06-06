@@ -1,7 +1,7 @@
 // React hook wrapping sleeper-machine.recommend() with the app's
 // data layer (react-query useSessions + child birth_date).
 
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { useFocusEffect } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { recommend as recommendGalland, type Recommendation, type TimeOfDay } from 'sleeper-machine';
@@ -71,6 +71,25 @@ export function useSleepRecommendation(
       }
     }, [dayKey, child?.id, queryClient]),
   );
+
+  // Web edge: useFocusEffect na react-native-web reaguje tylko na
+  // `visibilitychange` (bg → fg). Jesli user trzyma karte otwarta przez
+  // polnoc bez przelaczania zakladki, dayKey w queryKey nie odswiezy sie.
+  // Fallback: polling co 5 min — jezeli dayKeyInAppTz zmieni sie, invalidate
+  // ['sessions'] i pozwol konsumentowi re-mountowac. (review Fazy 3 P2.2)
+  useEffect(() => {
+    if (!child?.id) return;
+    const interval = setInterval(
+      () => {
+        const currentDayKey = dayKeyInAppTz(new Date());
+        if (currentDayKey !== dayKey) {
+          void queryClient.invalidateQueries({ queryKey: ['sessions', child.id] });
+        }
+      },
+      5 * 60 * 1000,
+    );
+    return () => clearInterval(interval);
+  }, [dayKey, child?.id, queryClient]);
 
   const sessionsQuery = useSessions(child?.id ?? null, rangeStart, rangeEnd);
 

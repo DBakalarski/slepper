@@ -1,7 +1,7 @@
 ---
 title: Sleeper Web — PWA — kontekst implementacyjny
 branch: feature/sleeper-web-pwa
-ostatnia_aktualizacja: 2026-06-05 (Faza 3 ukończona)
+ostatnia_aktualizacja: 2026-06-06 (Faza 3 ukończona + code review)
 ---
 
 # Sleeper Web — PWA — kontekst implementacyjny
@@ -81,6 +81,36 @@ Lista do operatora po deployment IU11+IU12 (lub lokalnie przez `pnpm --filter sl
 - Backdated insert prefill + walidacja
 - `useFocusEffect` cross-midnight — czy dziala via visibilitychange?
 - sleep-fullscreen — czy ekran sie blokuje po OS timeout (Wake Lock decision dla IU11)
+
+---
+
+## Code review Fazy 3 (2026-06-06)
+
+Wykonano multi-perspective code review (5 perspektyw: security, performance, architecture, test coverage, E2E browser smoke przez Playwright + dist server). Raport: `review-faza-3.md`.
+
+**Severity gate:** ⛔ WYMAGA POPRAWEK — 1 P1 blokujący rendering, 4 P2, 5 P3.
+
+**Kluczowe wnioski:**
+
+1. **P1.1 bundle parse error** — `dist/_expo/static/js/web/entry-*.js` zawiera `import.meta.env.MODE` z `zustand@5.0.14/esm/middleware.mjs` (linie 64, 126). Metro resolwuje `"import"` condition z `zustand/package.json#exports` → wybiera ESM zamiast CJS. Bundle ładowany jako classic `<script defer>` (nie `type="module"`) → `Uncaught SyntaxError: Cannot use 'import.meta' outside a module` → cały tree fail, `#root` pusty. **PRE-existing latentny od Fazy 1/2** (zustand/middleware używany w `useThemeStore`/`useActiveChild`), ale browser execution test nigdy nie był uruchamiany — `pnpm build` exit 0 zamaskował problem. Phase 3 review jako pierwszy odpalił Playwright na dist → wykrył.
+
+2. **`Alert.alert` no-op na web** — destruktywne akcje (Usuń sesję, Cofnij zaproszenie) silently nie uruchamiają callbacku. Parytet 1:1 ujawnił web-specific bug. Fix: `window.confirm` adapter.
+
+3. **Wake Lock API zostawiony do IU11** — `sleep-fullscreen` jest top-3 flow (rodzic w pełnoekranowym timerze), iOS Safari zgasi ekran po timeout. P2.3 sugeruje fix w Fazie 3 (~30 LOC).
+
+4. **17 nowych testów pickers** (TimePicker + DatePicker static invariants + DST-safe conversion pipeline) — wzorzec skalowalny dla form components, ale `SessionEditForm`/`BackdatedSessionModal`/family components nie mają testów (P2.4).
+
+5. **`useFocusEffect` cross-midnight web edge** (deferred z Fazy 2 P2.1) — nadal nieadresowany w Fazie 3. P2.2.
+
+6. **Parytet 1:1 zachowany dla 28/29 plików** (sleep-fullscreen jedyna świadoma adaptacja). Bundle wzrósł do 4.42 MB po re-add reanimated/worklets/haptics — akceptowalne.
+
+7. **Walidacja CLI:** tsc PASS, lint PASS, test 82/82 PASS, build PASS. Browser smoke (Playwright) wykrył P1.1 — `pnpm build` exit 0 ≠ runtime works.
+
+**Lista P1/P2/P3 do fix:** sekcja "Do poprawy po review fazy 3" w `sleeper-web-pwa-zadania.md`.
+
+**Lessons learned:**
+- Dla Fazy 4: dodać `build:smoke` skrypt (curl + headless browser console-error check) jako quality gate przed deploy.
+- Parytet 1:1 nie chroni przed web-specific API gaps (Alert, keep-awake, ESM resolution).
 
 ---
 

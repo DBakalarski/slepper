@@ -1,10 +1,11 @@
-import { Alert, Pressable, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 import {
   useFamilyInvitations,
   useRevokeInvitation,
   type PendingInvitation,
 } from '@/features/family/hooks';
+import { confirmAction } from '@/lib/confirm';
 
 interface PendingInvitationsListProps {
   familyId: string;
@@ -17,21 +18,16 @@ export function PendingInvitationsList({ familyId }: PendingInvitationsListProps
 
   if (invitations.length === 0) return null;
 
-  function handleRevoke(invitation: PendingInvitation) {
-    Alert.alert(
-      'Cofnac zaproszenie?',
-      `Zaproszenie do ${invitation.email} zostanie usuniete.`,
-      [
-        { text: 'Anuluj', style: 'cancel' },
-        {
-          text: 'Cofnij',
-          style: 'destructive',
-          onPress: () => {
-            revokeInvitation.mutate({ invitationId: invitation.id, familyId });
-          },
-        },
-      ],
-    );
+  async function handleRevoke(invitation: PendingInvitation) {
+    const ok = await confirmAction({
+      title: 'Cofnac zaproszenie?',
+      message: `Zaproszenie do ${invitation.email} zostanie usuniete.`,
+      confirmText: 'Cofnij',
+      cancelText: 'Anuluj',
+      destructive: true,
+    });
+    if (!ok) return;
+    revokeInvitation.mutate({ invitationId: invitation.id, familyId });
   }
 
   return (
