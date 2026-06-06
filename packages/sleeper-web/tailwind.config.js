@@ -32,8 +32,8 @@ module.exports = {
         card: '0 4px 12px rgba(30, 27, 75, 0.04)',
       },
       fontFamily: {
-        display: ['System'],
-        mono: ['System'],
+        display: ['-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', '"Helvetica Neue"', 'Arial', 'sans-serif'],
+        mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'monospace'],
       },
     },
   },

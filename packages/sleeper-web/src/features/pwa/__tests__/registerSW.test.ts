@@ -162,9 +162,10 @@ describe('public/index.html invariants (PWA shell template)', () => {
     expect(indexHtmlSrc).toMatch(/<meta name="theme-color" content="#0F0F1A" media="\(prefers-color-scheme: dark\)"/);
   });
 
-  it('body background-color FOWT prevention (cream / dark navy)', () => {
+  it('body background-color FOWT prevention (cream / dark navy matchuje tab bar)', () => {
     expect(indexHtmlSrc).toMatch(/background-color: #F5F0E8/);
-    expect(indexHtmlSrc).toMatch(/background-color: #0F0F1A/);
+    // Dark bg = #0F0D26 (kolor tab baru) zeby na iOS PWA pas pod tab barem nie byl widoczny.
+    expect(indexHtmlSrc).toMatch(/background-color: #0F0D26/);
   });
 
   it('zachowuje Expo template placeholders (%LANG_ISO_CODE%, %WEB_TITLE%)', () => {

@@ -33,10 +33,12 @@
 
     <!-- The `react-native-web` recommended style reset -->
     <style id="expo-reset">
-      /* These styles make the body full-height */
+      /* These styles make the body full-height. 100dvh = dynamic viewport,
+         iOS PWA standalone uwzglednia iOS home bar; fallback 100% dla starszych przegladarek. */
       html,
       body {
         height: 100%;
+        height: 100dvh;
       }
       /* These styles disable body scrolling if you are using <ScrollView> */
       body {
@@ -46,14 +48,21 @@
       }
       @media (prefers-color-scheme: dark) {
         body {
-          background-color: #0F0F1A;
+          /* Dark bg matchuje tab bar (#0F0D26) zeby na iOS PWA pas pod tab barem nie byl widoczny */
+          background-color: #0F0D26;
         }
       }
       /* These styles make the root element full-height */
       #root {
         display: flex;
         height: 100%;
+        height: 100dvh;
         flex: 1;
+      }
+      /* iOS PWA standalone — tab bar rozszerza tlo o iOS home bar safe-area.
+         react-native-safe-area-context na web zwraca 0 insets, wiec robimy to CSS-em. */
+      div[role="tablist"] {
+        padding-bottom: env(safe-area-inset-bottom);
       }
     </style>
   </head>
