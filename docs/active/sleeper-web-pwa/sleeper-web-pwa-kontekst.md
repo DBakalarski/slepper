@@ -1,13 +1,42 @@
 ---
 title: Sleeper Web — PWA — kontekst implementacyjny
 branch: feature/sleeper-web-pwa
-ostatnia_aktualizacja: 2026-06-06 (Faza 3 ukończona + code review)
+ostatnia_aktualizacja: 2026-06-06 (Faza 4 ukończona kodowo)
 ---
 
 # Sleeper Web — PWA — kontekst implementacyjny
 
 **Branch:** `feature/sleeper-web-pwa`
-**Ostatnia aktualizacja:** 2026-06-05 (Faza 3 ukończona)
+**Ostatnia aktualizacja:** 2026-06-06 (Faza 4 ukończona kodowo — deploy + mobile-manual = user action)
+
+## Status: Faza 4 ukończona kodowo (2026-06-06)
+
+**IU11 (PWA shell) + IU12 (Vercel deploy) wykonane:**
+- PWA shell: `public/{manifest.json, sw.js, index.html, favicon.png, icons/}` + `src/features/pwa/registerSW.ts` + `_layout.tsx` wire-up.
+- Ikony: 192/512/180/48 generowane via `sips` z `packages/sleeper-app/assets/images/icon.png`.
+- Vercel config: `vercel.json` (SPA rewrites + Cache-Control per asset type + Service-Worker-Allowed).
+- Runbook: `docs/runbook/sleeper-web-deploy.md` (10 sekcji).
+- CLAUDE.md: zaktualizowane sekcje "Layout repozytorium", "Walidacja", "Runtime".
+
+**P2 hardening (deferred z Faz 1+2 — fix przed deploy):**
+- Faza 1 P2.1 → `lib/supabase.ts` flowType 'pkce' ✅
+- Faza 1 P2.2 → `sign-in.tsx` walidacja parytet + maxLength 254/128 ✅
+- Faza 1 P2.4 → `useThemeStore.ts` webLocalStorage adapter (Platform.OS guard) ✅
+- Faza 1 P2.7 → `translate-auth-error.test.ts` (10 cases) ✅
+- Faza 1 P3 security → fallback message generic + supabase throw w prod + `check-no-native-imports.sh` ✅
+- Faza 2 P2.3 → `babel.config.js` `babel-plugin-transform-remove-console` (prod only, exclude error) ✅
+
+**Testy:** 14 plikow, 158 testow PASS (+39 vs Faza 3: 10 translate-auth-error + 29 registerSW/sw.js/manifest/index.html invariants).
+
+**Walidacja:** `pnpm web:build:check` PASS (tsc + lint + test + invariants + build).
+
+**Commits Fazy 4:**
+- `690569d` IU11 PWA shell + P2 hardening + log `39cdfee`
+- `d5471a3` IU12 build pipeline + Vercel config + runbook + log `c02b638`
+
+**USER ACTION ITEMS:** patrz `manual-test-faza-4.md` + `docs/runbook/sleeper-web-deploy.md`.
+
+---
 
 ## Status: Faza 3 ukończona (2026-06-05)
 
@@ -84,11 +113,33 @@ Lista do operatora po deployment IU11+IU12 (lub lokalnie przez `pnpm --filter sl
 
 ---
 
-## Code review Fazy 3 (2026-06-06)
+## Code review Fazy 3 — cykl 2 / re-review (2026-06-06)
 
-Wykonano multi-perspective code review (5 perspektyw: security, performance, architecture, test coverage, E2E browser smoke przez Playwright + dist server). Raport: `review-faza-3.md`.
+Re-review po cyklu fix (commit `4a3e3eb`). Wszystkie blokery z cyklu 1 zaadresowane. Raport: `review-faza-3.md`.
 
-**Severity gate:** ⛔ WYMAGA POPRAWEK — 1 P1 blokujący rendering, 4 P2, 5 P3.
+**Severity gate (cykl 2):** ✅ **GOTOWE DO KONTYNUACJI** — 0 P1, 0 P2, 5 P3 (deferred do IU11/known-issues).
+
+**Status finingow z cyklu 1:**
+- P1.1 (bundle parse error / zustand ESM) → ✅ NAPRAWIONY (`metro.config.js` custom resolveRequest dla zustand → CJS, `import.meta` count w bundle = **0**, E2E confirmed).
+- P2.1 (Alert.alert no-op) → ✅ NAPRAWIONY (`lib/confirm.ts` cross-platform wrapper, 2 callsites przepisane na async/await).
+- P2.2 (useFocusEffect cross-midnight) → ✅ NAPRAWIONY (preventywny `setInterval(5min)` w `useSleepRecommendation`).
+- P2.3 (Wake Lock API) → ✅ NAPRAWIONY (`navigator.wakeLock.request('screen')` + visibilitychange re-acquire w `sleep-fullscreen.tsx`).
+- P2.4 (testy form components) → ✅ NAPRAWIONY (4 nowe suites, 37 cases — total 82 → **119** PASS).
+- P3.1-3.5 → ⚪ deferred do IU11 / known-issues.md (kosmetyka).
+
+**Walidacja cyklu 2:**
+- tsc / lint / build / test → wszystkie PASS (119/119).
+- E2E browser smoke: bundle parsuje sie i wykonuje (vs SyntaxError w cyklu 1). Runtime crash na `supabaseUrl is required` = oczekiwany behavior bez prawdziwych env vars (placeholder w `.env.example`); Vercel deploy w Fazie 4 dostarczy creds.
+
+**Przejscie do Fazy 4 (IU11 PWA shell + IU12 deploy):** APPROVED.
+
+---
+
+## Code review Fazy 3 — cykl 1 (2026-06-06, archiwum)
+
+Wykonano multi-perspective code review (5 perspektyw: security, performance, architecture, test coverage, E2E browser smoke przez Playwright + dist server). Raport: `review-faza-3.md` (nadpisany przez cykl 2, historia w git).
+
+**Severity gate (cykl 1):** ⛔ WYMAGA POPRAWEK — 1 P1 blokujący rendering, 4 P2, 5 P3.
 
 **Kluczowe wnioski:**
 

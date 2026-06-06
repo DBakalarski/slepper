@@ -1,13 +1,13 @@
 ---
 title: Sleeper Web — PWA — checklista zadań
 branch: feature/sleeper-web-pwa
-ostatnia_aktualizacja: 2026-06-05 (Faza 3 ukończona)
+ostatnia_aktualizacja: 2026-06-06 (Faza 4 ukończona — kod gotowy, deploy = user action)
 ---
 
 # Sleeper Web — PWA — checklista zadań
 
 **Branch:** `feature/sleeper-web-pwa`
-**Ostatnia aktualizacja:** 2026-06-05 (Faza 3 ukończona)
+**Ostatnia aktualizacja:** 2026-06-06 (Faza 4 ukończona kodowo, deploy Vercel = user action)
 
 Pełne szczegóły IU w `docs/plans/2026-06-05-001-feat-sleeper-web-pwa-plan.md`.
 
@@ -16,7 +16,11 @@ Pełne szczegóły IU w `docs/plans/2026-06-05-001-feat-sleeper-web-pwa-plan.md`
 - ✅ **Faza 1: Bootstrap & Foundation** (IU1-IU4) — ukończono 2026-06-05
 - ✅ **Faza 2: Data Layer** (IU5-IU7) — ukończono 2026-06-05
 - ✅ **Faza 3: UI & Routes** (IU8-IU10) — ukończono 2026-06-05
-- ⬜ Faza 4: PWA & Deploy (IU11-IU12)
+- ✅ **Faza 4: PWA & Deploy** (IU11-IU12) — ukończono kodowo 2026-06-06 (deploy + mobile-manual czeka na user)
+
+**Faza 4 — commits:**
+- `690569d` IU11 PWA shell + Faza 1/2 P2 hardening + log `39cdfee`
+- `d5471a3` IU12 build pipeline + Vercel config + runbook + log `c02b638`
 
 **Faza 3 — commits:**
 - `7f6b22c` IU8 UI components (kopia 1:1 + web pickers HTML5) + log `b11a7d9`
@@ -187,19 +191,19 @@ Pełne szczegóły IU w `docs/plans/2026-06-05-001-feat-sleeper-web-pwa-plan.md`
 
 ### 🟠 P2-important (do naprawy przed deployem prod / Fazą 4)
 
-- [ ] 🟠 [important] **packages/sleeper-web/src/lib/supabase.ts:18-28** — dodaj `flowType: 'pkce'` w `auth` config. Domyślny `implicit` flow leakuje `access_token` w URL fragment → history API, Referer headers, browser extensions. PKCE jest best practice dla web PWA. Wymaga konfiguracji redirect URL whitelisty w Supabase Dashboard. (Security P2.1)
-- [ ] 🟠 [important] **packages/sleeper-web/src/app/(auth)/sign-in.tsx:42** — wyrównaj walidację z sign-up: użyj `isValidEmail` i `MIN_PASSWORD` (early return), dodaj `maxLength={254}` na email i `maxLength={128}` na password TextInputach. Asymetria + brak max length = niepotrzebne zapytania do Supabase + potencjalny DoS payload. (Security P2.2 + Spec-flow)
-- [ ] 🟠 [important] **packages/sleeper-web/src/app/_layout.tsx:11** — zmień `const queryClient = new QueryClient()` na `const [queryClient] = useState(() => new QueryClient())` wewnątrz `RootLayout`. Bezpieczne dla fast-refresh i potencjalnego SSR/RSC. (Performance P2.3)
-- [ ] 🟠 [important] **packages/sleeper-web/src/features/settings/useThemeStore.ts:23** — custom storage adapter: `Platform.OS === 'web' ? localStorage : AsyncStorage`. AsyncStorage na web async-wrapuje localStorage → pierwszy render z default `'system'` → re-render z prawdziwym mode = FOWT risk. Sync hydration eliminuje flash. (Performance P2.4)
-- [ ] 🟠 [important] **packages/sleeper-web/src/app/_layout.tsx:19** — usuń `<Stack.Screen name="(app)" />` lub dodaj stub `src/app/(app)/_layout.tsx`. Premature referencja do segmentu utworzonego w IU10 — expo-router może warningować. (Architecture P2.5)
-- [ ] 🟠 [important] **packages/sleeper-web/src/app/index.tsx** — dodaj komentarz `// FAZA 5+: index.tsx dostanie redirect logic na podstawie useAuth().status`. Bez tego przyszły dev nie wie czy placeholder to bug czy świadoma decyzja. (Architecture P2.6)
-- [ ] 🟠 [important] **packages/sleeper-web/src/features/auth/translate-auth-error.test.ts** — dodaj unit test (czysta funkcja, 6 cases: invalid login, email not confirmed, already registered, password, network, fallback). ~30 LOC, wysoki ROI. (Spec-flow P2.7)
+- [x] 🟠 [important] **packages/sleeper-web/src/lib/supabase.ts** — dodano `flowType: 'pkce'` w `auth` config. (Faza 4 IU11, commit `690569d`)
+- [x] 🟠 [important] **packages/sleeper-web/src/app/(auth)/sign-in.tsx** — walidacja parytet z sign-up (`isValidEmail` + `MIN_PASSWORD` early return) + `maxLength={254}` (email) + `maxLength={128}` (password). Sign-up dostal te same `maxLength` dla parytetu. (Faza 4 IU11, commit `690569d`)
+- [x] 🟠 [important] **packages/sleeper-web/src/app/_layout.tsx** — zaadresowane w Fazie 3 (queryClient juz w `lib/query-client.ts` jako singleton modulowy). (P2.3 deferred do Fazy 3 — POTWIERDZONE NAPRAWIONE)
+- [x] 🟠 [important] **packages/sleeper-web/src/features/settings/useThemeStore.ts** — `webLocalStorage` adapter z `Platform.OS === 'web'` guard. Synchroniczny localStorage eliminuje FOWT. (Faza 4 IU11, commit `690569d`)
+- [x] 🟠 [important] **packages/sleeper-web/src/app/_layout.tsx** — `<Stack.Screen name="(app)" />` zaadresowane w Fazie 3 (segment `(app)/` istnieje). (P2.5 — POTWIERDZONE NAPRAWIONE)
+- [x] 🟠 [important] **packages/sleeper-web/src/app/index.tsx** — placeholder usuniety w Fazie 3 (auth gate przez `(auth)/_layout.tsx` + `(app)/_layout.tsx`). (P2.6 — POTWIERDZONE NAPRAWIONE)
+- [x] 🟠 [important] **packages/sleeper-web/src/features/auth/__tests__/translate-auth-error.test.ts** — unit test dodany (10 cases: 8 branchy + fallback security + edge). (Faza 4 IU11, commit `690569d`)
 
 ### 🟡 P3-nit (sugestie)
 
-- [ ] 🟡 [nit] **packages/sleeper-web/src/features/auth/translate-auth-error.ts:21** — fallback `return message` może wyciekać raw Supabase error (PostgREST hint, infra). Zmień na generic `"Nie udalo sie. Sprobuj ponownie."`. (Security P3)
-- [ ] 🟡 [nit] **packages/sleeper-web/src/lib/supabase.ts:11-16** — decyzja produktowa: missing env vars → `console.warn` (cichy fail z mylącym "błąd sieci" downstream) vs `throw` (fail-loud build-time). Vercel prod build = realne ryzyko incydentu. (Spec-flow P3)
-- [ ] 🟡 [nit] Rozważ `scripts/check-no-native-imports.sh` automated test (grep invariant że `notifications.ts` i `schedule-nap-side-effects.ts` w sleeper-web nie importują expo-notifications). W IU5 ten sam check się powtórzy. (Spec-flow P3)
+- [x] 🟡 [nit] **packages/sleeper-web/src/features/auth/translate-auth-error.ts** — fallback zmieniona na generic `"Nie udalo sie. Sprobuj ponownie."` (Security P3). (Faza 4 IU11, commit `690569d`)
+- [x] 🟡 [nit] **packages/sleeper-web/src/lib/supabase.ts** — missing env vars → `throw` w `NODE_ENV=production`, `console.warn` w dev (fail-loud build-time). (Faza 4 IU11, commit `690569d`)
+- [x] 🟡 [nit] **packages/sleeper-web/scripts/check-no-native-imports.sh** — invariant check dodany + integrowany w `pnpm web:build:check`. (Faza 4 IU11, commit `690569d`)
 
 ---
 
@@ -285,7 +289,7 @@ Pełne szczegóły IU w `docs/plans/2026-06-05-001-feat-sleeper-web-pwa-plan.md`
 
 - [x] 🟠 [important] **packages/sleeper-web/src/features/recommendation/useSleepRecommendation.ts:66** — `useFocusEffect` z `expo-router` na web nie ma deterministic focus event (tylko `visibilitychange`). Cross-midnight refresh moze nie zadzialac jak na native. Weryfikuj manualnie w IU10 (zostaw otwarte ~23:55, sprawdz po polnocy). Fallback: `useEffect` z `setInterval` co 5min sprawdzajacy `dayKeyInAppTz(new Date())` vs stale. (Architecture P2.1) — deferred: known-issues.md / IU10
 - [x] 🟠 [important] **packages/sleeper-web/src/features/sessions/__tests__/** — dodano `hooks.test.ts` (12 cases: export smoke, useStartSession optimistic/rollback/cancelQueries, useEndSession optimistic, stable queryKey regression, domain constraints, error translation) + `useRealtimeSessions.test.ts` (7 cases: cleanup removeChannel, deps array, filter, prefix invalidation, channel name). Strategia: static invariants przez `readFileSync` (parytet z `schedule-nap-side-effects.test.ts`) — pelne renderHook+jsdom wymagaloby dodania `@testing-library/react` + mockowania `@/lib/supabase` (transitive react-native), co bez zgody usera nie mozemy. ~190 LOC, 19/19 PASS. (Spec-flow P2.2) ✅
-- [x] 🟠 [important] **packages/sleeper-web/src/features/sessions/hooks.ts:293-295** — `console.warn` leak w prod bundle. Dodaj w IU11 babel plugin `babel-plugin-transform-remove-console` dla `process.env.NODE_ENV === 'production'`, albo zamien na `if (__DEV__) console.warn(...)`. (Performance/Quality P2.3) — deferred: known-issues.md / IU11
+- [x] 🟠 [important] **packages/sleeper-web/babel.config.js** — `babel-plugin-transform-remove-console` (exclude error) pod `NODE_ENV=production`. Eliminuje wszystkie `console.warn/log` leaki naraz (hooks.ts:293 + supabase.ts dev warn + Faza 3 P3.2). (Faza 4 IU11, commit `690569d`)
 
 ### 🟡 P3-nit (sugestie)
 
@@ -443,75 +447,85 @@ Pełne szczegóły IU w `docs/plans/2026-06-05-001-feat-sleeper-web-pwa-plan.md`
 
 ## Faza 4: PWA & Deploy
 
-### IU11: PWA shell (manifest + service worker + iOS meta + ikony)
+### IU11: PWA shell (manifest + service worker + iOS meta + ikony) ✅
 
-**Delegate to:** feature-builder-fullstack | **Estymata:** M | **Wymagania:** R7 | **Zależności:** IU10
+**Delegate to:** feature-builder-fullstack | **Estymata:** M | **Wymagania:** R7 | **Zależności:** IU10 | **Commits:** `690569d` + log `39cdfee`
 
 **Implementacja:**
-- [ ] Stwórz `packages/sleeper-web/public/manifest.json` (PWA standard)
-- [ ] Stwórz `packages/sleeper-web/public/sw.js` (~50 LOC, cache-first shell, network-first API)
-- [ ] Stwórz `packages/sleeper-web/public/icons/icon-192.png`
-- [ ] Stwórz `packages/sleeper-web/public/icons/icon-512.png`
-- [ ] Stwórz `packages/sleeper-web/public/icons/apple-touch-icon.png` (180×180)
-- [ ] Stwórz `packages/sleeper-web/public/favicon.png`
-- [ ] Stwórz `packages/sleeper-web/src/app/+html.tsx` (iOS meta + manifest link)
-- [ ] Stwórz `packages/sleeper-web/src/features/pwa/registerSW.ts`
-- [ ] Modyfikuj `packages/sleeper-web/src/app/_layout.tsx` (call `registerSW()` w useEffect)
+- [x] Stwórz `packages/sleeper-web/public/manifest.json` (PWA standard — Sleeper, standalone, theme #208AEF, icons 192/512 maskable)
+- [x] Stwórz `packages/sleeper-web/public/sw.js` (~75 LOC, cache-first shell + skip Supabase API + offline SPA fallback)
+- [x] Stwórz `packages/sleeper-web/public/icons/icon-192.png` (sips z sleeper-app/assets/images/icon.png)
+- [x] Stwórz `packages/sleeper-web/public/icons/icon-512.png`
+- [x] Stwórz `packages/sleeper-web/public/icons/apple-touch-icon.png` (180×180)
+- [x] Stwórz `packages/sleeper-web/public/favicon.png`
+- [x] Stwórz `packages/sleeper-web/public/index.html` (custom Expo template — iOS meta + manifest link + theme-color, ZAMIAST `+html.tsx` bo `web.output: "single"`)
+- [x] Stwórz `packages/sleeper-web/src/features/pwa/registerSW.ts` (idempotentny, window.load defer, error path)
+- [x] Modyfikuj `packages/sleeper-web/src/app/_layout.tsx` (call `registerSW()` w useEffect)
+- [x] Zaadresowano deferred P2/P3 z Faz 1+2 (security/perf hardening przed deploy) — patrz "Do poprawy po review fazy 1/2"
 
 **Testy:**
-- [ ] Test: `/manifest.json` zwraca poprawny JSON
-- [ ] Test: `/sw.js` zwraca poprawny JS
-- [ ] Test: [Manual-mobile] Safari iOS → Share → Add to Home Screen → ikona z apple-touch-icon, nazwa "Sleeper"
-- [ ] Test: [Manual-mobile] tap ikony home screen → standalone PWA (bez Safari chrome)
+- [x] Test: `/manifest.json` zwraca poprawny JSON (unit test parsuje + sprawdza pola)
+- [x] Test: `/sw.js` zwraca poprawny JS (unit test invariants: cache strategy, Supabase skip, navigate fallback)
+- [x] Test: `translate-auth-error` (10 cases — Faza 1 P2.7)
+- [x] Test: registerSW invariants (window/navigator guards, scope, error path) + sw.js invariants + manifest.json contract + index.html template invariants (29 cases razem)
+- [ ] Test: [Manual-mobile] Safari iOS → Share → Add to Home Screen → ikona z apple-touch-icon, nazwa "Sleeper" (czeka na IU12 deploy)
+- [ ] Test: [Manual-mobile] tap ikony home screen → standalone PWA (bez Safari chrome) (czeka na IU12 deploy)
 - [ ] Test: [Manual-mobile] safe-area-inset OK (status bar nie nakłada na header)
 - [ ] Test: [Manual-mobile] Lighthouse PWA audit (Chrome desktop mobile emulation) — installable ✓, SW ✓, manifest valid ✓
 - [ ] Test: [Manual-mobile] DevTools → Application → Service Worker — status activated
 - [ ] Test: [Manual-mobile] offline: airplane mode → reload → app shell widoczny, API failuje gracefully
 
 **Weryfikacja:**
-- [ ] Weryfikacja: `pnpm --filter sleeper-web exec tsc --noEmit` exit code 0
-- [ ] Weryfikacja: `pnpm --filter sleeper-web build` produkuje `dist/manifest.json` + `dist/sw.js`
-- [ ] Weryfikacja: [Mobile-manual] Lighthouse PWA audit pass — manual test
-- [ ] Weryfikacja: [Mobile-manual] Add to Home Screen + standalone — manual test
-- [ ] Weryfikacja: [Mobile-manual] safe-area-inset działa — manual test
+- [x] Weryfikacja: `pnpm --filter sleeper-web exec tsc --noEmit` exit code 0
+- [x] Weryfikacja: `pnpm --filter sleeper-web lint` exit code 0
+- [x] Weryfikacja: `pnpm --filter sleeper-web test` 158/158 PASS
+- [x] Weryfikacja: `pnpm --filter sleeper-web build` produkuje `dist/manifest.json` + `dist/sw.js` + `dist/icons/` + `dist/index.html` z PWA meta tagami
+- [x] Weryfikacja: `grep -c "import.meta" dist/_expo/static/js/web/entry-*.js` → 0 (zustand CJS fix zachowany)
+- [ ] Weryfikacja: [Mobile-manual] Lighthouse PWA audit pass — manual test (patrz manual-test-faza-4.md)
+- [ ] Weryfikacja: [Mobile-manual] Add to Home Screen + standalone — manual test (patrz manual-test-faza-4.md)
+- [ ] Weryfikacja: [Mobile-manual] safe-area-inset działa — manual test (patrz manual-test-faza-4.md)
 
 **Operator checklist:**
-- [ ] User instaluje PWA z Safari iOS, potwierdza ikona + nazwa
+- [ ] User instaluje PWA z Safari iOS (po deploy IU12), potwierdza ikona + nazwa
 - [ ] User otwiera PWA z home screen, potwierdza standalone mode
 
 ---
 
-### IU12: Build pipeline + deploy na Vercel
+### IU12: Build pipeline + deploy na Vercel ✅
 
-**Delegate to:** feature-builder-data | **Estymata:** M | **Wymagania:** R1, R7 | **Zależności:** IU11
+**Delegate to:** feature-builder-data | **Estymata:** M | **Wymagania:** R1, R7 | **Zależności:** IU11 | **Commits:** `d5471a3` + log `c02b638`
 
 **Implementacja:**
-- [ ] Modyfikuj `packages/sleeper-web/package.json` (build script, build:check)
-- [ ] Stwórz `packages/sleeper-web/vercel.json` (jeśli wymaga custom SPA rewrites)
-- [ ] Modyfikuj root `package.json` (web:deploy script opcjonalny)
-- [ ] Modyfikuj `packages/sleeper-web/.gitignore` (dist/, .expo/)
-- [ ] Stwórz `docs/runbook/sleeper-web-deploy.md` (deploy/rollback/env vars)
-- [ ] Modyfikuj `CLAUDE.md` (root) — sekcja "Layout repozytorium" + "Walidacja"
+- [x] Modyfikuj `packages/sleeper-web/package.json` (`build:check`, `check:invariants` scripts)
+- [x] Stwórz `packages/sleeper-web/vercel.json` (SPA rewrites + Cache-Control per asset type + Service-Worker-Allowed)
+- [x] Modyfikuj root `package.json` (`web:build:check`, `web:test` proxies)
+- [x] Modyfikuj `packages/sleeper-web/.gitignore` — JUZ MA `dist/` i `.expo/` (no-op)
+- [x] Stwórz `docs/runbook/sleeper-web-deploy.md` (10 sekcji: setup, deploy, rollback, SW invalidation, iPhone debug, monitoring, troubleshooting)
+- [x] Modyfikuj `CLAUDE.md` (root) — sekcja "Layout repozytorium" + "Walidacja" + "Runtime" (split Mobile + Web)
 
 **Testy:**
-- [ ] Test: `dist/` zawiera index.html, manifest.json, sw.js, _expo/static/js/*.js, _expo/static/css/*.css
-- [ ] Test: dist/manifest.json poprawnie sparsuje się jako JSON
-- [ ] Test: [Manual-mobile] Vercel prod URL otwiera się w Safari iOS
+- [x] Test: `dist/` zawiera index.html, manifest.json, sw.js, _expo/static/js/*.js, _expo/static/css/*.css, icons/*, favicon.png
+- [x] Test: dist/manifest.json poprawnie sparsuje się jako JSON (unit test)
+- [ ] Test: [Manual-mobile] Vercel prod URL otwiera się w Safari iOS (czeka na user deploy)
 - [ ] Test: [Manual-mobile] prod URL: sign-in działa, sesja persist
 - [ ] Test: [Manual-mobile] prod URL: Add to Home Screen → standalone PWA
 - [ ] Test: [Manual-mobile] cross-device: prod PWA + sleeper-app — start sesji na PWA widoczne w mobile via Realtime
 - [ ] Test: [Manual] Vercel env vars setup poprawnie (build log)
 
 **Weryfikacja:**
-- [ ] Weryfikacja: `pnpm --filter sleeper-web build` exit code 0
-- [ ] Weryfikacja: `ls packages/sleeper-web/dist/manifest.json dist/sw.js dist/index.html` — wszystkie istnieją
-- [ ] Weryfikacja: [Mobile-manual] Vercel prod URL otwiera się i logowanie działa — manual test
+- [x] Weryfikacja: `pnpm --filter sleeper-web build` exit code 0
+- [x] Weryfikacja: `pnpm web:build:check` (full pipeline: tsc + lint + test + invariants + build) exit code 0
+- [x] Weryfikacja: `ls packages/sleeper-web/dist/{manifest.json,sw.js,index.html,icons/apple-touch-icon.png,icons/icon-192.png,icons/icon-512.png,favicon.png}` — wszystkie istnieją
+- [ ] Weryfikacja: [Mobile-manual] Vercel prod URL otwiera się i logowanie działa — manual test (patrz manual-test-faza-4.md)
 - [ ] Weryfikacja: [Mobile-manual] PWA installable z prod URL — manual test
 
-**Operator checklist:**
-- [ ] User konfiguruje Vercel (root: packages/sleeper-web, build/output, env vars)
-- [ ] User pierwszy deploy, potwierdza prod URL
+**Operator checklist (USER ACTION):**
+- [ ] User konfiguruje Vercel project (root: `packages/sleeper-web`, build command: `cd ../.. && pnpm install --frozen-lockfile && pnpm --filter sleeper-web build`, output: `dist`, Node 22)
+- [ ] User ustawia env vars w Vercel: `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY` (Production + Preview + Development)
+- [ ] User dodaje prod URL do Supabase Auth → URL Configuration (Site URL + Redirect URLs whitelist — PKCE wymaga)
+- [ ] User pierwszy deploy (git push lub Vercel UI redeploy), potwierdza prod URL otwiera PWA
 - [ ] User instaluje PWA z prod URL na swój iPhone + iPhone partnera, potwierdza ten sam stan po zalogowaniu
+- [ ] User uruchamia Lighthouse PWA audit z Chrome DevTools — installable ✓, SW ✓, manifest valid ✓
 
 ---
 
@@ -520,7 +534,7 @@ Pełne szczegóły IU w `docs/plans/2026-06-05-001-feat-sleeper-web-pwa-plan.md`
 - [x] **Faza 1: Bootstrap & Foundation** (IU1-IU4) ✅ 2026-06-05
 - [x] **Faza 2: Data Layer** (IU5-IU7) ✅ 2026-06-05
 - [x] **Faza 3: UI & Routes** (IU8-IU10) ✅ 2026-06-05
-- [ ] **Faza 4: PWA & Deploy** (IU11-IU12)
+- [x] **Faza 4: PWA & Deploy** (IU11-IU12) ✅ 2026-06-06 (kodowo; deploy + mobile-manual = user action)
 
 ## Końcowe kryteria akceptacji
 
