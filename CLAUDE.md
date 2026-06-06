@@ -23,6 +23,7 @@ sleeper/                                  # ← root (TEN katalog)
 │   ├── completed/mvp-sleep-tracker/      # archiwum ukonczonego MVP
 │   ├── completed/ui-redesign/            # archiwum ukonczonego redesignu UI
 │   ├── completed/fixy-i-kotki-dwa-algorytm/ # archiwum: cross-day edit + progress bar + kotki dwa
+│   ├── completed/sleeper-web-pwa/        # archiwum: PWA web (Expo SDK 54 web-only) + Vercel deploy
 │   ├── commits/                          # log commitow (jeden plik per commit, OBOWIAZKOWE)
 │   └── solutions/                        # baza wiedzy (zarzadzana przez /dev-compound)
 ├── .claude/
@@ -64,6 +65,7 @@ sleeper/                                  # ← root (TEN katalog)
   - MVP sleep tracker → `docs/completed/mvp-sleep-tracker/`
   - UI redesign → `docs/completed/ui-redesign/`
   - fixy-i-kotki-dwa-algorytm → `docs/completed/fixy-i-kotki-dwa-algorytm/` (merged to main 2026-06-05)
+  - sleeper-web-pwa → `docs/completed/sleeper-web-pwa/` (kod gotowy 2026-06-06; deploy Vercel + manual-on-device = user action)
 
 ## Stack (zainstalowany — sprawdzone w `packages/sleeper-app/package.json`)
 

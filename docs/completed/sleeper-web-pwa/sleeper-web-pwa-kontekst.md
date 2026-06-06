@@ -9,11 +9,35 @@ ostatnia_aktualizacja: 2026-06-06 (Faza 4 ukończona kodowo)
 **Branch:** `feature/sleeper-web-pwa`
 **Ostatnia aktualizacja:** 2026-06-06 (Faza 4 ukończona kodowo — deploy + mobile-manual = user action)
 
-## Code review Fazy 4 — cykl 1 (2026-06-06)
+## Code review Fazy 4 — cykl 2 / re-review po cyklu 1 fixów (2026-06-06)
 
-Multi-perspective code review (5 perspektyw: security, performance, architecture, test coverage, E2E browser smoke przez Playwright + dist server). Raport: `review-faza-4.md`.
+Re-review po commit `24f7ddb` (fix: poprawki po review fazy 4 cykl 1). Raport: `review-faza-4.md`.
 
-**Severity gate:** ⚠️ **KONTYNUUJ Z ZASTRZEŻENIAMI** — 0 P1, 3 P2, 5 P3. PWA jest deploy-ready.
+**Severity gate (cykl 2):** ✅ **GOTOWE DO KONTYNUACJI** — 0 P1, **0 P2**, 2 P3 (świadomie deferred do `known-issues.md`). PWA **deploy-ready bez zastrzeżeń**.
+
+**Cykl 1 → cykl 2 progresja:** 3 P2 → 0 P2 (-3), 5 P3 → 2 P3 (-3).
+
+**Empiryczna weryfikacja napraw (re-built prod bundle):**
+- P2.1 babel cache fix + NODE_ENV guards: `console.warn` count 71→1 (-70), `console.log` 20→0, `[notifications]` + `[auth] getSession` strings NIEOBECNE w bundle.
+- P2.2 README move: `dist/icons/` zawiera tylko 3 PNG.
+- P2.3 SW network-first: `request.mode === 'navigate'` w dist/sw.js, CACHE_NAME bump `v2`, runbook zaktualizowany.
+- P3.1 regex escape, P3.3 PKCE invariant test (+2 testy 158→160), P3.5 security headers — wszystkie zaaplikowane.
+
+**Świadomie deferred do known-issues.md:**
+- P3.2 maskable icons (wymaga dedicated graphic asset, post-MVP polish).
+- P3.4 auto-SHA bump w CACHE_NAME (P2.3 fix obniża pilność; manualny bump nadal OK).
+
+**Walidacja CLI:** PASS (tsc, lint, **160/160 tests**, NODE_ENV=production build).
+
+**PWA deploy-readiness verdict (cykl 2):** **DEPLOY-READY BEZ ZASTRZEŻEŃ.** User może wykonywać Vercel deploy + mobile-manual checklist bez code-level blockerów.
+
+---
+
+## Code review Fazy 4 — cykl 1 (2026-06-06) — historyczne
+
+Multi-perspective code review (5 perspektyw: security, performance, architecture, test coverage, E2E browser smoke przez Playwright + dist server). Raport historyczny.
+
+**Severity gate (cykl 1):** ⚠️ **KONTYNUUJ Z ZASTRZEŻENIAMI** — 0 P1, 3 P2, 5 P3. PWA jest deploy-ready.
 
 **Kluczowe findings:**
 
