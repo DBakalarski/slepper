@@ -18,6 +18,9 @@ import { isValidEmail } from '@/lib/email';
 import { supabase } from '@/lib/supabase';
 
 const MIN_PASSWORD = 6;
+// DoS hardening: max email 254 (RFC 5321), max password 128. (Faza 1 P2.2)
+const MAX_EMAIL = 254;
+const MAX_PASSWORD = 128;
 
 interface FormErrors {
   email?: string;
@@ -93,6 +96,7 @@ export default function SignUpScreen() {
                 autoComplete="email"
                 keyboardType="email-address"
                 textContentType="emailAddress"
+                maxLength={MAX_EMAIL}
                 placeholder="email@example.com"
                 placeholderTextColor="#9d97b5"
                 className="rounded-2xl border border-purple/30 bg-white px-4 py-3 text-base text-navy dark:bg-dark-card dark:text-cream"
@@ -110,6 +114,7 @@ export default function SignUpScreen() {
                 secureTextEntry
                 autoComplete="new-password"
                 textContentType="newPassword"
+                maxLength={MAX_PASSWORD}
                 placeholder={`min. ${MIN_PASSWORD} znakow`}
                 placeholderTextColor="#9d97b5"
                 className="rounded-2xl border border-purple/30 bg-white px-4 py-3 text-base text-navy dark:bg-dark-card dark:text-cream"

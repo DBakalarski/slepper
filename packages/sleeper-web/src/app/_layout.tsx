@@ -7,6 +7,7 @@ import { useEffect } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AuthProvider } from '@/features/auth/AuthProvider';
+import { registerSW } from '@/features/pwa/registerSW';
 import { ThemeProvider, useEffectiveTheme } from '@/features/settings/ThemeProvider';
 import { configureNotificationHandler } from '@/lib/notifications';
 import { queryClient, setupFocusManager } from '@/lib/query-client';
@@ -32,6 +33,12 @@ function RootLayoutContent() {
 export default function RootLayout() {
   useEffect(() => {
     return setupFocusManager();
+  }, []);
+
+  // PWA: register Service Worker on mount (post-hydration).
+  // Idempotentny; browser deduplikuje. (IU11)
+  useEffect(() => {
+    registerSW();
   }, []);
 
   return (

@@ -8,7 +8,10 @@
     "platforms": ["web"],
     "web": {
       "output": "single",
-      "bundler": "metro"
+      "bundler": "metro",
+      "lang": "pl",
+      "themeColor": "#208AEF",
+      "description": "Trackuj sen i okna aktywnosci dziecka. Synchronizacja miedzy urzadzeniami."
     },
     "plugins": [
       "expo-router",

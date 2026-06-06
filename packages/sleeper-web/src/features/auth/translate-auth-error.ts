@@ -18,5 +18,7 @@ export function translateAuthError(message: string): string {
   if (lower.includes('network') || lower.includes('fetch')) {
     return 'Blad polaczenia. Sprawdz internet.';
   }
-  return message;
+  // Fallback generic — nie wyciekamy raw Supabase error (PostgREST hint, infra info).
+  // (Faza 1 P3 — Security hardening przed deploy.)
+  return 'Nie udalo sie. Sprobuj ponownie.';
 }

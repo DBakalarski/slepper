@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="%LANG_ISO_CODE%">
+  <head>
+    <meta charset="utf-8" />
+    <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
+    <!-- viewport-fit=cover dla iPhone notch / safe-area-inset -->
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no, viewport-fit=cover" />
+    <title>%WEB_TITLE%</title>
+
+    <!-- PWA manifest -->
+    <link rel="manifest" href="/manifest.json" />
+
+    <!-- Theme color — browser chrome tint (Chrome Android, Edge, Safari 15+) -->
+    <meta name="theme-color" content="#208AEF" />
+    <meta name="theme-color" content="#0F0F1A" media="(prefers-color-scheme: dark)" />
+
+    <!-- iOS Safari PWA — standalone mode (full-screen, bez Safari chrome) -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <!-- black-translucent: status bar nakłada na app, treść pod nim;
+         wymaga safe-area-inset top padding na headerze. -->
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Sleeper" />
+
+    <!-- iOS home screen icon (Add to Home Screen) -->
+    <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png" />
+    <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png" />
+    <link rel="icon" type="image/png" sizes="48x48" href="/favicon.png" />
+
+    <!-- SEO + social (minimum) -->
+    <meta name="description" content="Trackuj sen i okna aktywnosci dziecka. Synchronizacja miedzy urzadzeniami." />
+
+    <!-- The `react-native-web` recommended style reset -->
+    <style id="expo-reset">
+      /* These styles make the body full-height */
+      html,
+      body {
+        height: 100%;
+      }
+      /* These styles disable body scrolling if you are using <ScrollView> */
+      body {
+        overflow: hidden;
+        /* Cream tla — eliminuje bialy flash przed React render (anti-FOWT body bg) */
+        background-color: #F5F0E8;
+      }
+      @media (prefers-color-scheme: dark) {
+        body {
+          background-color: #0F0F1A;
+        }
+      }
+      /* These styles make the root element full-height */
+      #root {
+        display: flex;
+        height: 100%;
+        flex: 1;
+      }
+    </style>
+  </head>
+
+  <body>
+    <!-- Use static rendering with Expo Router to support running without JavaScript. -->
+    <noscript>
+      You need to enable JavaScript to run this app.
+    </noscript>
+    <!-- The root element for your Expo app. -->
+    <div id="root"></div>
+  </body>
+</html>

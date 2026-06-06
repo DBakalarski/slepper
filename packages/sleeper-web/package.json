@@ -29,15 +29,16 @@
     "react-native-safe-area-context": "~5.6.0",
     "react-native-screens": "~4.16.0",
     "react-native-svg": "15.12.1",
-    "react-native-worklets": "0.5.1",
     "react-native-url-polyfill": "^3.0.0",
     "react-native-web": "~0.21.0",
+    "react-native-worklets": "0.5.1",
     "sleeper-machine": "workspace:*",
     "sleeper-machine-kotki": "workspace:*",
     "zustand": "^5.0.13"
   },
   "devDependencies": {
     "@types/react": "~19.1.10",
+    "babel-plugin-transform-remove-console": "^6.9.4",
     "eslint": "^9.0.0",
     "eslint-config-expo": "~10.0.0",
     "prettier-plugin-tailwindcss": "^0.8.0",
