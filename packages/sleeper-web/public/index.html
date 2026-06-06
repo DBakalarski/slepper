@@ -59,10 +59,18 @@
         height: 100dvh;
         flex: 1;
       }
-      /* iOS PWA standalone safe-area dla tab baru:
-         glowna logika w (app)/_layout.tsx przez useSafeAreaInsets. Ten CSS to fallback —
-         gdyby insets nie zostaly poprawnie odczytane na web, body bg pod tab barem (cream)
-         matchuje tab bar bg w light mode = niewidoczna szczelina. */
+      /* iOS PWA standalone — home indicator safe-area dla tab baru.
+         react-navigation renderuje tab bar jako div[role="tablist"] z inline
+         padding-bottom: insets.bottom. Na web insets.bottom czesto = 0 (useSafeAreaInsets
+         mierzy env() na hidden zero-size elemencie -> Safari zwraca 0px). Dlatego
+         aplikujemy env() bezposrednio na realnym elemencie tab baru — Safari liczy env()
+         poprawnie na renderowanym elemencie. content-box: padding ZWIEKSZA wysokosc
+         (RN-Web default to border-box), wiec tlo tab baru wypelnia obszar home indicatora.
+         !important bije inline padding-bottom: 0 od react-navigation. */
+      div[role="tablist"] {
+        box-sizing: content-box !important;
+        padding-bottom: env(safe-area-inset-bottom) !important;
+      }
     </style>
   </head>
 
