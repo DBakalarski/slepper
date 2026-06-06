@@ -85,9 +85,9 @@ export default function AppTabsLayout() {
         tabBarShowLabel: false,
         // Explicit bg dla obu trybow — bez tego na webie light mode dostaje default
         // (biale tlo), kontrastujace z body bg cream. iOS PWA home-indicator safe-area
-        // obslugiwana CSS-em w public/index.html (div[role="tablist"] + env()), bo
-        // useSafeAreaInsets na web mierzy env() na hidden zero-size elemencie i Safari
-        // zwraca 0px -> JS hook zawodny; CSS env() na realnym elemencie dziala.
+        // obsluguje react-navigation natywnie (getTabBarHeight = wysokosc + insets.bottom,
+        // outer container paddingBottom: insets.bottom); safe-area-context mierzy env() na
+        // web poprawnie. NIE dodawac tu height/paddingBottom z insets — dubluje to.
         tabBarStyle: isDark
           ? { backgroundColor: '#0F0D26', borderTopColor: '#2A2660' }
           : { backgroundColor: '#F5F0E8', borderTopColor: '#E5DDD0' },

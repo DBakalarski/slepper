@@ -172,6 +172,15 @@ describe('public/index.html invariants (PWA shell template)', () => {
     expect(indexHtmlSrc).toMatch(/%LANG_ISO_CODE%/);
     expect(indexHtmlSrc).toMatch(/%WEB_TITLE%/);
   });
+
+  it('NIE nadpisuje safe-area tab baru CSS-em (react-navigation robi to natywnie)', () => {
+    // Regresja wracala 3x: CSS hack na div[role="tablist"] z padding-bottom: env(safe-area-inset)
+    // dubluje home-indicator inset, ktory react-navigation/bottom-tabs juz dodaje na zewnetrznym
+    // kontenerze (getTabBarHeight = TABBAR_HEIGHT + insets.bottom, + paddingBottom: insets.bottom).
+    // safe-area-context@5.x mierzy env() na web poprawnie. Dodatkowy CSS = pusty pas pod ikonami.
+    expect(indexHtmlSrc).not.toMatch(/role="tablist"/);
+    expect(indexHtmlSrc).not.toMatch(/padding-bottom:\s*env\(safe-area-inset-bottom\)/);
+  });
 });
 
 describe('supabase.ts invariants (security)', () => {
