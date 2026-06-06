@@ -2,6 +2,7 @@ import { Redirect, Tabs } from 'expo-router';
 import { BarChart3, Calendar, Home, User } from 'lucide-react-native';
 import type { ComponentType } from 'react';
 import { View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/features/auth/AuthProvider';
 import { useActiveChild } from '@/features/children/useActiveChild';
@@ -57,6 +58,10 @@ export default function AppTabsLayout() {
   const { activeChildId } = useActiveChild();
   const effectiveTheme = useEffectiveTheme();
   const isDark = effectiveTheme === 'dark';
+  // Safe-area insets — na webie czytane z CSS env() przez SafeAreaProvider (z root layout).
+  // W iOS PWA standalone insets.bottom ~= 34 (home indicator). Bez tego tab bar siedzi na
+  // 100dvh - 49px, a pod nim widac body bg cream do dolnej krawedzi ekranu.
+  const insets = useSafeAreaInsets();
 
   // Realtime sync: subskrypcja na poziomie layoutu, zeby zyla niezaleznie od
   // tego ktora zakladka jest aktywna. Event invaliduje ['sessions'] -> TanStack
@@ -83,12 +88,18 @@ export default function AppTabsLayout() {
         tabBarActiveTintColor: activeColor,
         tabBarInactiveTintColor: inactiveColor,
         tabBarShowLabel: false,
-        // Explicit bg dla obu trybow — bez tego na webie light mode dostaje default
-        // (najczesciej bialy), ktory kontrastuje z body bg cream i daje widoczna granice
-        // pod tab barem (w polaczeniu z env(safe-area-inset-bottom) na iOS PWA standalone).
-        tabBarStyle: isDark
-          ? { backgroundColor: '#0F0D26', borderTopColor: '#2A2660' }
-          : { backgroundColor: '#F5F0E8', borderTopColor: '#E5DDD0' },
+        // Explicit bg dla obu trybow + height/paddingBottom uwzgledniajaca iOS PWA
+        // home indicator safe-area. react-navigation/bottom-tabs sam dodaje paddingBottom
+        // z useSafeAreaInsets na natywie, ale na webie ta logika nie zawsze odpala (zalezy
+        // od wersji). Robimy to jawnie zeby tab bar rozciagal sie do dolnej krawedzi
+        // viewport-u na iOS PWA standalone.
+        tabBarStyle: {
+          ...(isDark
+            ? { backgroundColor: '#0F0D26', borderTopColor: '#2A2660' }
+            : { backgroundColor: '#F5F0E8', borderTopColor: '#E5DDD0' }),
+          height: 60 + insets.bottom,
+          paddingBottom: insets.bottom,
+        },
         tabBarItemStyle: { paddingVertical: 6 },
       }}>
       <Tabs.Screen
