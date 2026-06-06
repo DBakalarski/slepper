@@ -60,9 +60,13 @@
         flex: 1;
       }
       /* iOS PWA standalone — tab bar rozszerza tlo o iOS home bar safe-area.
-         react-native-safe-area-context na web zwraca 0 insets, wiec robimy to CSS-em. */
+         react-native-safe-area-context na web zwraca 0 insets, wiec robimy to CSS-em.
+         box-sizing: content-box wymusza ze padding ZWIEKSZA height (RN-Web default to
+         border-box, gdzie padding zmniejsza content area, ale tab bar siedzi nadal na
+         fixed 49px -> widac body bg pod tab barem). */
       div[role="tablist"] {
-        padding-bottom: env(safe-area-inset-bottom);
+        box-sizing: content-box !important;
+        padding-bottom: env(safe-area-inset-bottom) !important;
       }
     </style>
   </head>

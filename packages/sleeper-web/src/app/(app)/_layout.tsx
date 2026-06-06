@@ -83,9 +83,12 @@ export default function AppTabsLayout() {
         tabBarActiveTintColor: activeColor,
         tabBarInactiveTintColor: inactiveColor,
         tabBarShowLabel: false,
+        // Explicit bg dla obu trybow — bez tego na webie light mode dostaje default
+        // (najczesciej bialy), ktory kontrastuje z body bg cream i daje widoczna granice
+        // pod tab barem (w polaczeniu z env(safe-area-inset-bottom) na iOS PWA standalone).
         tabBarStyle: isDark
           ? { backgroundColor: '#0F0D26', borderTopColor: '#2A2660' }
-          : undefined,
+          : { backgroundColor: '#F5F0E8', borderTopColor: '#E5DDD0' },
         tabBarItemStyle: { paddingVertical: 6 },
       }}>
       <Tabs.Screen
