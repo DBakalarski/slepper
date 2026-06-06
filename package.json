@@ -13,8 +13,10 @@
     "app:android": "pnpm --filter sleeper-app android",
     "web:dev": "pnpm --filter sleeper-web start --web",
     "web:build": "pnpm --filter sleeper-web build",
+    "web:build:check": "pnpm --filter sleeper-web build:check",
     "web:typecheck": "pnpm --filter sleeper-web exec tsc --noEmit",
-    "web:lint": "pnpm --filter sleeper-web lint"
+    "web:lint": "pnpm --filter sleeper-web lint",
+    "web:test": "pnpm --filter sleeper-web test"
   },
   "engines": {
     "node": ">=18",
