@@ -49,8 +49,8 @@
   "scripts": {
     "start": "expo start --web",
     "web": "expo start --web",
-    "build": "expo export --platform web --output-dir dist",
-    "build:check": "tsc --noEmit && expo lint && vitest run && bash scripts/check-no-native-imports.sh && expo export --platform web --output-dir dist",
+    "build": "pnpm --filter sleeper-machine build && pnpm --filter sleeper-machine-kotki build && expo export --platform web --output-dir dist",
+    "build:check": "tsc --noEmit && expo lint && vitest run && bash scripts/check-no-native-imports.sh && pnpm --filter sleeper-machine build && pnpm --filter sleeper-machine-kotki build && expo export --platform web --output-dir dist",
     "lint": "expo lint",
     "test": "vitest run",
     "check:invariants": "bash scripts/check-no-native-imports.sh"
