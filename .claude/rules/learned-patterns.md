@@ -2,7 +2,7 @@
 
 Reguły wyciągnięte z rozwiązanych problemów w docs/solutions/. Zarządzane przez /dev-compound i /dev-compound-refresh.
 
-<!-- rule-count: 8 -->
+<!-- rule-count: 13 -->
 
 - **Anti-FOWT: inicjalizacja motywu inline w `<head>` przed stylesheetem**: Skrypt ustawiający `data-theme`/klasę dark na `<html>` musi być synchroniczny, inline w `<head>` i **przed** `<link rel="stylesheet">`. Nie używaj `defer`, `async` ani `type="module"` — flash of wrong theme pojawi się od pierwszego paint.
   Source: docs/solutions/ui-bugs/2026-05-19-flash-of-wrong-theme-fowt.md
@@ -27,3 +27,18 @@ Reguły wyciągnięte z rozwiązanych problemów w docs/solutions/. Zarządzane 
 
 - **Expo CLI w monorepo: ZAWSZE per-package, nigdy z roota**: W monorepo `packages/*` uruchamiaj `expo start|ios|android` wyłącznie przez `pnpm --filter sleeper-app <skrypt>` (lub aliasy `pnpm app:dev|app:ios|app:android`) z roota, albo `cd packages/sleeper-app && pnpm start`. Uruchomienie `expo start` z roota generuje fałszywy `tsconfig.json` (extends `expo/tsconfig.base`, BEZ path aliasów `@/*`) i `.expo/` w roocie → (a) Metro bundler error "Unable to resolve ../../App" (fallback na default `node_modules/expo/AppEntry.js`), (b) stop hook uruchamia `npx tsc --noEmit` z roota i generuje setki fałszywych `TS2307 Cannot find module '@/...'`. Jeśli zobaczysz untracked root `tsconfig.json` / `.expo/` — usuń je, NIE commituj, NIE uruchamiaj auto-error-resolvera na fałszywych TS errors.
   Source: docs/solutions/build-errors/2026-05-29-expo-start-from-monorepo-root.md
+
+- **Metro `resolveRequest` > `resolver.alias` dla pakietów z `package.json#exports`**: Dla pakietów eksportujących dual ESM/CJS przez `exports` field (np. zustand@5), Metro w trybie `--platform web` preferuje pole `import` i wpycha do bundle `import.meta.env.MODE` → SyntaxError przy parse (bundle leci jako classic script). `resolver.alias` z subpathami (`zustand/middleware`) jest ignorowany. Rozwiązanie: custom `resolveRequest` w `metro.config.js` z explicit mapą subpaths → CJS files (`zustand/middleware.js`), aktywny tylko gdy `platform === 'web'`. Mapuj WSZYSTKIE używane subpaths (`zustand`, `zustand/middleware`, `zustand/shallow`, `zustand/vanilla`) — pominięcie jednego = ten sam błąd przy lazy importcie.
+  Source: docs/solutions/build-errors/2026-06-06-zustand-esm-import-meta-metro-web.md
+
+- **Service Worker: HTML zawsze network-first, hashed assets cache-first**: Cache-first dla `request.mode === 'navigate'` powoduje że po deployu zainstalowane PWA serwuje stary `index.html` referujący nieistniejące JS hashe → 404 i blank screen. Fix: w `fetch` handlerze rozdziel logikę — navigation = network-first z cache fallback (offline.html), static assets z hash w nazwie (.js/.css/woff2) = cache-first. Bumpuj `CACHE_VERSION` per deploy + `skipWaiting()`/`clients.claim()` + cleanup starych cache w `activate`. Test post-deploy z zainstalowanego PWA, nie tylko fresh tab.
+  Source: docs/solutions/deployment-issues/2026-06-06-service-worker-cache-first-stale-html.md
+
+- **Babel `api.cache.using(() => NODE_ENV)` dla env-zależnych pluginów**: `api.cache(true)` (domyślne) cachuje wynik konfiguracji niezależnie od `NODE_ENV` — pierwszy raz config wywołany w dev jest cached i prod build dostaje stale config bez `env.production` pluginów (np. `babel-plugin-transform-remove-console`). Zawsze `api.cache.using(() => process.env.NODE_ENV)` w `babel.config.js`. Belt-and-suspenders: dodatkowo guarduj callsite `if (process.env.NODE_ENV !== 'production') console.log(...)` przez `lib/log.ts` wrapper — przeżyje odejście pluginu. Po zmianie babel config zawsze `rm -rf .babel-cache node_modules/.cache .expo`.
+  Source: docs/solutions/build-errors/2026-06-06-babel-cache-env-transform-remove-console.md
+
+- **Native-only API na web: ZAWSZE przez `Platform.OS` guard + `lib/` wrapper**: `Alert.alert`, `useKeepAwake`, `expo-notifications`, `expo-haptics`, `expo-secure-store` cicho no-op (lub crashują) na `react-native-web`. TypeScript przepuszcza — `.d.ts` deklaruje API identycznie na wszystkich platformach. Reguła: nigdy nie importuj native-only API bezpośrednio w plikach współdzielonych. Twórz wrappery (`lib/confirm.ts` → `window.confirm` | `Alert.alert`, `lib/keep-awake.ts` → Wake Lock API | expo-keep-awake) z `Platform.OS === 'web'` branch. Dynamiczny `import('expo-keep-awake')` w native branchu — web bundle nie zawiera modułu. Manual smoke checklist per release: destrukcyjna akcja + keep-awake action na web.
+  Source: docs/solutions/runtime-errors/2026-06-06-web-parity-native-only-apis-platform-guard.md
+
+- **Static-invariants testing > pełny jsdom+RNTL dla architektury**: Dla regresji architektury (queryKey stability, `useEffect` cleanup, dependency array, `Platform.OS` guard, brak raw `Alert.alert`/`useColorScheme`) używaj testów `static-invariants` — `readFileSync` + regex/grep w vitest. Niska bariera (1 plik, 5 min na invariant), szybkie (1-2s na 100 grepów), łapie regresje architektury które jsdom+RNTL przepuszcza. NIE używaj static-invariants do logiki biznesowej (= vitest unit na pure functions) ani user flow (= RNTL tylko dla critical paths). Granica: gdy regex robi się skomplikowany (>3 alternacje, lookahead) — przepisz na ESLint custom rule albo AST.
+  Source: docs/solutions/testing-issues/2026-06-06-static-invariants-testing-strategy.md

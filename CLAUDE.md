@@ -23,6 +23,7 @@ sleeper/                                  # ← root (TEN katalog)
 │   ├── completed/mvp-sleep-tracker/      # archiwum ukonczonego MVP
 │   ├── completed/ui-redesign/            # archiwum ukonczonego redesignu UI
 │   ├── completed/fixy-i-kotki-dwa-algorytm/ # archiwum: cross-day edit + progress bar + kotki dwa
+│   ├── completed/sleeper-web-pwa/        # archiwum: PWA web (Expo SDK 54 web-only) + Vercel deploy
 │   ├── commits/                          # log commitow (jeden plik per commit, OBOWIAZKOWE)
 │   └── solutions/                        # baza wiedzy (zarzadzana przez /dev-compound)
 ├── .claude/
@@ -36,6 +37,12 @@ sleeper/                                  # ← root (TEN katalog)
     │   ├── src/app/                      # routes (expo-router, file-based)
     │   ├── src/components/, src/features/, src/lib/
     │   └── supabase/{config.toml,migrations/}
+    ├── sleeper-web/                      # ← PWA web (Expo SDK 54 web-only)
+    │   ├── src/app/                      # routes — kopia 1:1 sleeper-app
+    │   ├── src/components/, src/features/, src/lib/
+    │   ├── public/                       # manifest.json, sw.js, icons, index.html
+    │   ├── scripts/check-no-native-imports.sh
+    │   └── vercel.json                   # SPA rewrites + cache headers
     ├── sleeper-machine/                  # ← algorytm Galland (TS, vitest) — naukowy, EWMA
     │   └── src/, dist/, scripts/smoke-test.ts
     └── sleeper-machine-kotki/            # ← algorytm Kotki Dwa (TS, vitest) — lookup table per wiek
@@ -44,6 +51,7 @@ sleeper/                                  # ← root (TEN katalog)
 
 **Wazne:**
 - Kod aplikacji zyje w `packages/sleeper-app/`. Komendy `expo/tsc/lint` uruchamiaj z tego katalogu **lub** przez `pnpm --filter sleeper-app <skrypt>` z roota.
+- **PWA web w `packages/sleeper-web/`** — Expo SDK 54 web-only, deploy na Vercel. Komendy: `pnpm web:dev|build|build:check|typecheck|lint|test`. Deploy runbook: `docs/runbook/sleeper-web-deploy.md`. Wspoldzieli baze Supabase z sleeper-app (cross-device sync via Realtime).
 - Algorytm Galland w `packages/sleeper-machine/` — importowany jako `sleeper-machine`. Komendy: `pnpm --filter sleeper-machine test|build|smoke`.
 - Algorytm Kotki Dwa w `packages/sleeper-machine-kotki/` — importowany jako `sleeper-machine-kotki`. Komendy: `pnpm --filter sleeper-machine-kotki test|build`. Proxy: `pnpm machine-kotki:test|build`.
 - Wybor algorytmu per dziecko — pole `children.algorithm` ('galland' | 'kotki_dwa', default 'galland').
@@ -57,6 +65,7 @@ sleeper/                                  # ← root (TEN katalog)
   - MVP sleep tracker → `docs/completed/mvp-sleep-tracker/`
   - UI redesign → `docs/completed/ui-redesign/`
   - fixy-i-kotki-dwa-algorytm → `docs/completed/fixy-i-kotki-dwa-algorytm/` (merged to main 2026-06-05)
+  - sleeper-web-pwa → `docs/completed/sleeper-web-pwa/` (kod gotowy 2026-06-06; deploy Vercel + manual-on-device = user action)
 
 ## Stack (zainstalowany — sprawdzone w `packages/sleeper-app/package.json`)
 
@@ -94,6 +103,11 @@ Z roota (przez pnpm filter):
 ```bash
 pnpm --filter sleeper-app exec tsc --noEmit   # typecheck app — 0 bledow
 pnpm --filter sleeper-app lint                # expo lint
+pnpm --filter sleeper-web exec tsc --noEmit   # typecheck web PWA — 0 bledow
+pnpm --filter sleeper-web lint                # expo lint web
+pnpm --filter sleeper-web test                # vitest web (lib + features)
+pnpm --filter sleeper-web build               # expo export web -> dist/
+pnpm web:build:check                          # WSZYSTKO razem (tsc + lint + test + invariants + build)
 pnpm --filter sleeper-machine test            # vitest (algorytm Galland)
 pnpm --filter sleeper-machine build           # tsc -> dist/ (gdy app importuje typy)
 pnpm --filter sleeper-machine-kotki test      # vitest (algorytm Kotki Dwa)
@@ -102,7 +116,9 @@ pnpm --filter sleeper-machine-kotki build     # tsc -> dist/
 
 Alternatywnie wejdz do `packages/sleeper-app/` i uzyj `npx tsc --noEmit` / `pnpm lint` lokalnie.
 
-Runtime: `pnpm app:dev` (alias `pnpm --filter sleeper-app start`) -> QR -> Expo Go na fizycznym urzadzeniu. Symulator iOS wymaga Maca z Xcode.
+Runtime:
+- Mobile: `pnpm app:dev` (alias `pnpm --filter sleeper-app start`) -> QR -> Expo Go na fizycznym urzadzeniu. Symulator iOS wymaga Maca z Xcode.
+- Web PWA: `pnpm web:dev` -> http://localhost:8081 w Safari/Chrome. Deploy prod: `git push origin main` -> Vercel auto-deploy (runbook: `docs/runbook/sleeper-web-deploy.md`).
 
 ## Commit logging — OBOWIAZKOWE
 
