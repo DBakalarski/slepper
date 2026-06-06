@@ -11,7 +11,7 @@
 // Wersjonowanie: bump CACHE_NAME nadal zalecany przy zmianie strategii (sw.js samo),
 // ale dla zwyklych bundle changes network-first dla `/` to obroni.
 
-const CACHE_NAME = 'sleeper-shell-v6';
+const CACHE_NAME = 'sleeper-shell-v7';
 const SHELL_URLS = ['/', '/manifest.json'];
 
 self.addEventListener('install', (event) => {

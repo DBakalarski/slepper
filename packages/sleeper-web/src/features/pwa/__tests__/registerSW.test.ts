@@ -149,8 +149,13 @@ describe('public/index.html invariants (PWA shell template)', () => {
     expect(indexHtmlSrc).toMatch(/apple-mobile-web-app-capable" content="yes"/);
   });
 
-  it('apple-mobile-web-app-status-bar-style: black-translucent (notch handling)', () => {
-    expect(indexHtmlSrc).toMatch(/apple-mobile-web-app-status-bar-style" content="black-translucent"/);
+  it('apple-mobile-web-app-status-bar-style: default (NIE black-translucent — launch-height bug)', () => {
+    // black-translucent powodowal ze iOS standalone PWA startuje z przycietym webview
+    // (np. 812px zamiast 874px na iPhone 16 Pro) — webview zakotwiczony u gory, deficit
+    // gornego insetu (62px) ladowal jako pusty kremowy pas pod tab barem; naprawialo sie
+    // dopiero po reload. `default` kotwiczy webview pod statusbarem -> pelna wysokosc od startu.
+    expect(indexHtmlSrc).toMatch(/apple-mobile-web-app-status-bar-style" content="default"/);
+    expect(indexHtmlSrc).not.toMatch(/content="black-translucent"/);
   });
 
   it('apple-touch-icon 180x180', () => {
