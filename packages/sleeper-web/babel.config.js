@@ -1,5 +1,8 @@
 module.exports = function (api) {
-  api.cache(true);
+  // P2.1 (review fazy 4): `api.cache(true)` permamentnie cachuje pierwszy odczyt
+  // configu bez relookupa NODE_ENV — efektywnie wylacza prod transform jesli pierwsze
+  // wywolanie babel bylo dev. `cache.using(() => NODE_ENV)` invaliduje cache per env.
+  api.cache.using(() => process.env.NODE_ENV);
   const isProduction = process.env.NODE_ENV === 'production';
   return {
     presets: [

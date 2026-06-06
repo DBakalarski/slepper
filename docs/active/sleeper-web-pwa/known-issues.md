@@ -27,6 +27,14 @@ Pozostale zadania zaadresowane:
 - **Wszystkie P2 z Faz 1+2** ZAADRESOWANE w IU11 (commit `690569d`) — patrz `sleeper-web-pwa-zadania.md` sekcja "Do poprawy po review fazy 1/2".
 - **Wszystkie P3 (kosmetyka)** — czesc rozwiazana (P3.2 console.warn), czesc swiadomie odlozone do post-MVP polish.
 
+### Cykl 1 fixów post-review fazy 4 (2026-06-06)
+
+**Zaadresowane:** 3 P2 (P2.1 babel + NODE_ENV guards, P2.2 README move, P2.3 SW network-first) + 3 P3 (P3.1 regex escape, P3.3 PKCE invariant test, P3.5 security headers).
+
+**Swiadomie deferred do post-MVP polish:**
+- **P3.2: manifest.json `purpose: "any maskable"` bez dedicated assets** — wymaga regeneracji ikon przez maskable.app/ z safe-area padding (~10% inset). Manualny chore wymagajacy graphic asset. Risk: niski (mozliwe obciecie logo na Pixel/Samsung adaptive icons). Akcja: post-MVP w trakcie polish faz UI.
+- **P3.4: auto-inject git SHA do CACHE_NAME postbuild** — manualny bump nadal OK, P2.3 fix (network-first dla nawigacji) drastycznie obniza ryzyko stale-cache. ~10 LOC postbuild script `scripts/inject-sw-version.sh`. Akcja: jesli operator zapomni bump 2+ razy w trakcie pierwszych deployow, zaimplementowac auto-inject.
+
 **USER ACTION ITEMS** (deploy + mobile-manual — nie blokuja kodowo zakonczonej fazy):
 - Konfiguracja Vercel project (root, build command, output, Node 22) — `docs/runbook/sleeper-web-deploy.md` sekcja 1.
 - Env vars w Vercel: `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY` (Production + Preview + Development).

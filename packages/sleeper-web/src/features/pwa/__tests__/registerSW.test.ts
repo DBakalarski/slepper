@@ -19,6 +19,7 @@ const registerSrc = readFileSync(resolve(__dirname, '../registerSW.ts'), 'utf-8'
 const swSrc = readFileSync(resolve(PKG_ROOT, 'public/sw.js'), 'utf-8');
 const manifestSrc = readFileSync(resolve(PKG_ROOT, 'public/manifest.json'), 'utf-8');
 const indexHtmlSrc = readFileSync(resolve(PKG_ROOT, 'public/index.html'), 'utf-8');
+const supabaseSrc = readFileSync(resolve(PKG_ROOT, 'src/lib/supabase.ts'), 'utf-8');
 
 describe('registerSW invariants', () => {
   it('uzywa typeof window guard (RN compat)', () => {
@@ -71,7 +72,7 @@ describe('sw.js invariants', () => {
     expect(swSrc).toMatch(/supabase\.co/);
   });
 
-  it('fetch: cache-first dla shell (caches.match + fallback fetch)', () => {
+  it('fetch: cache-first dla static assets (caches.match + fallback fetch)', () => {
     expect(swSrc).toMatch(/caches\.match\(request\)/);
   });
 
@@ -81,8 +82,12 @@ describe('sw.js invariants', () => {
     expect(swSrc).toMatch(/\/manifest\.json/);
   });
 
-  it('offline fallback dla nawigacji → / (shell)', () => {
+  it('fetch: network-first dla nawigacji (P2.3 review fazy 4 — stale-HTML guard)', () => {
+    // navigate request → najpierw fetch (swiezy HTML z nowym hashem JS),
+    // potem cache (offline fallback). Cache-first daloby 404 white screen po deploy.
     expect(swSrc).toMatch(/request\.mode === 'navigate'/);
+    // network-first pattern: fetch przed caches.match w branchu navigate
+    expect(swSrc).toMatch(/network-first/i);
   });
 
   it('pomija POST/PUT/DELETE (tylko GET cache)', () => {
@@ -165,5 +170,15 @@ describe('public/index.html invariants (PWA shell template)', () => {
   it('zachowuje Expo template placeholders (%LANG_ISO_CODE%, %WEB_TITLE%)', () => {
     expect(indexHtmlSrc).toMatch(/%LANG_ISO_CODE%/);
     expect(indexHtmlSrc).toMatch(/%WEB_TITLE%/);
+  });
+});
+
+describe('supabase.ts invariants (security)', () => {
+  it("uzywa flowType: 'pkce' (P3.3 review fazy 4 — security: nie leakuj access_token w URL fragment)", () => {
+    expect(supabaseSrc).toMatch(/flowType:\s*['"]pkce['"]/);
+  });
+
+  it("uzywa detectSessionInUrl: true (wymagane przez PKCE callback flow)", () => {
+    expect(supabaseSrc).toMatch(/detectSessionInUrl:\s*true/);
   });
 });

@@ -2,11 +2,28 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "rewrites": [
     {
-      "source": "/((?!_expo|icons|assets|manifest.json|sw.js|favicon.png|robots.txt).*)",
+      "source": "/((?!_expo|icons|assets|manifest\\.json|sw\\.js|favicon\\.png|robots\\.txt).*)",
       "destination": "/index.html"
     }
   ],
   "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        }
+      ]
+    },
     {
       "source": "/sw.js",
       "headers": [

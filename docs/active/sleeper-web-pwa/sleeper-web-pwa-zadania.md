@@ -529,6 +529,28 @@ Pełne szczegóły IU w `docs/plans/2026-06-05-001-feat-sleeper-web-pwa-plan.md`
 
 ---
 
+## Do poprawy po review fazy 4
+
+⚠️ **Status:** KONTYNUUJ Z ZASTRZEŻENIAMI — 0 P1, 3 P2, 5 P3. PWA deploy-ready. P2 do naprawy w follow-up commit przed pierwszym Vercel deployem (nie blokuje kodowo).
+
+**Pełny raport:** [review-faza-4.md](./review-faza-4.md)
+
+### 🟠 P2-important (do naprawy przed deployem prod)
+
+- [x] 🟠 [important] **packages/sleeper-web/babel.config.js + src/features/sessions/hooks.ts:293** — `babel-plugin-transform-remove-console` NIE strippuje `console.warn` z app kodu. **DONE (cykl 1 fixów fazy 4):** zastosowano OBA fixy — `api.cache.using(() => process.env.NODE_ENV)` w babel.config.js + `NODE_ENV` guard w hooks.ts:293, AuthProvider.tsx:35, supabase.ts:21. Weryfikacja empiryczna: `[notifications]` i `[auth] getSession` STR NIEOBECNE w bundle prod; `console.warn` count 71→41 (pozostałe to vendor RN — Metro nie babiluje node_modules, OK).
+- [x] 🟠 [important] **packages/sleeper-web/public/icons/README.md** — plik deployowany do prod. **DONE:** `git mv packages/sleeper-web/public/icons/README.md packages/sleeper-web/docs/icons.md`. Weryfikacja: `dist/icons/` zawiera tylko PNG (`apple-touch-icon.png`, `icon-192.png`, `icon-512.png`).
+- [x] 🟠 [important] **packages/sleeper-web/public/sw.js:8-9 + docs/runbook/sleeper-web-deploy.md** — cache-first dla `/` ryzykuje 404 white screen po deploy. **DONE:** opcja A — **network-first dla nawigacji** (`request.mode === 'navigate'`) z cache fallback offline. Cache-first zachowany dla immutable static assets. Bump `CACHE_NAME = 'sleeper-shell-v2'`. Runbook zaktualizowany (sekcja 4 + troubleshooting). Test invariant `network-first` dodany.
+
+### 🟡 P3-nit (sugestie post-MVP polish)
+
+- [x] 🟡 [nit] **packages/sleeper-web/vercel.json:5** — rewrite regex `manifest.json` nieescape'owany `.`. **DONE:** escape zastosowany dla `manifest.json`, `sw.js`, `favicon.png`, `robots.txt`.
+- [ ] 🟡 [nit] **packages/sleeper-web/public/manifest.json:19,25** — ikony `purpose: "any maskable"` bez prawdziwych maskable assets. **DEFERRED (known-issues):** wymaga dedicated graphic asset, post-MVP polish.
+- [x] 🟡 [nit] **packages/sleeper-web/src/lib/supabase.ts:40** — brak invariant testu na `flowType: 'pkce'`. **DONE:** dodano `describe('supabase.ts invariants (security)')` z 2 testami (flowType pkce + detectSessionInUrl) w registerSW.test.ts.
+- [ ] 🟡 [nit] **packages/sleeper-web/public/sw.js:8** — `CACHE_NAME` manualny bump. **DEFERRED:** P2.3 fix (network-first) drastycznie obniza pilnosc — manualny bump nadal OK dla zmian sw.js/manifest.json.
+- [x] 🟡 [nit] **packages/sleeper-web/vercel.json** — brakujące security headers. **DONE:** dodano `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `X-Frame-Options: DENY` w global headers (`source: /(.*)`).
+
+---
+
 ## Postęp ogólny
 
 - [x] **Faza 1: Bootstrap & Foundation** (IU1-IU4) ✅ 2026-06-05

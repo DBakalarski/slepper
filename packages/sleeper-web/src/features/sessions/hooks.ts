@@ -290,9 +290,14 @@ export function useEndSession(): UseMutationResult<
         // powinno byc zawsze ustawione po `update + select`. Null moze sie
         // przytrafic po race condition (partner updatuje wiersz na null
         // rownolegle). Logujemy warning dla diagnostyki i cancellujemy.
-        console.warn(
-          '[notifications] useEndSession received row with end_at === null — cancelling notification as fallback',
-        );
+        // P2.1 (review fazy 4): explicit NODE_ENV guard — Metro/Terser zrobi
+        // dead-code elimination w prod bundle (defense-in-depth + belt-and-suspenders
+        // wzgledem babel-plugin-transform-remove-console).
+        if (process.env.NODE_ENV !== 'production') {
+          console.warn(
+            '[notifications] useEndSession received row with end_at === null — cancelling notification as fallback',
+          );
+        }
         void rescheduleNapNotification(data.child_id, null);
         return;
       }

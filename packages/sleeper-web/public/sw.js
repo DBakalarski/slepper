@@ -1,11 +1,17 @@
 // Sleeper PWA Service Worker
-// Strategia:
-//   - cache-first dla shell assets (/, /sign-in, /manifest.json, /_expo/static/*)
-//   - network-only dla Supabase API (/rest/v1/*, /auth/v1/*, /realtime/v1/*) — skip cache
-//   - network-first fallback dla pozostalych routes (SPA fallback do /index.html)
-// Wersjonowanie: bump CACHE_NAME przy kazdym deploy zeby aktywowac fresh assets.
+// Strategia (po P2.3 fix review fazy 4):
+//   - NETWORK-FIRST dla nawigacji (request.mode === 'navigate', np. `/`, deep linki)
+//     z cache fallback dla offline. Eliminuje stale-HTML-with-stale-JS-hash 404 problem:
+//     stary HTML w cache referowal stary hash entry-{hash}.js ktory po deploy juz nie istnieje
+//     (Vercel ma immutable headers per-hash). Network-first kosztuje 1 RTT na cold navigation,
+//     ale gwarantuje swieze hashe.
+//   - CACHE-FIRST dla immutable static assets (/_expo/static/*, /icons/*, /favicon.png,
+//     /manifest.json) — bezpieczne, bo nazwy plikow zawieraja content hash.
+//   - NETWORK-ONLY (skip) dla Supabase API (/rest/v1/*, /auth/v1/*, /realtime/v1/*).
+// Wersjonowanie: bump CACHE_NAME nadal zalecany przy zmianie strategii (sw.js samo),
+// ale dla zwyklych bundle changes network-first dla `/` to obroni.
 
-const CACHE_NAME = 'sleeper-shell-v1';
+const CACHE_NAME = 'sleeper-shell-v2';
 const SHELL_URLS = ['/', '/manifest.json'];
 
 self.addEventListener('install', (event) => {
@@ -49,7 +55,31 @@ self.addEventListener('fetch', (event) => {
     return; // pass-through to network (default browser behavior)
   }
 
-  // Cache-first dla shell + static assets (Expo bundled JS/CSS, ikony).
+  // NETWORK-FIRST dla nawigacji (HTML) — gwarantuje swiezy hash entry-{hash}.js po deploy.
+  // P2.3 (review fazy 4): cache-first dla `/` powodowal 404 white screen po deploy bo
+  // stary HTML referowal hashy ktorych juz nie ma. Network-first eliminuje ten risk.
+  if (request.mode === 'navigate') {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          // Aktualizuj cache w tle — uzytkownik offline dostanie ostatni dzialajacy HTML.
+          if (response.ok && response.type === 'basic') {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put('/', clone));
+          }
+          return response;
+        })
+        .catch(() => {
+          // Offline fallback — cached shell.
+          return caches.match('/').then((cached) => {
+            return cached ?? new Response('', { status: 503, statusText: 'Service Unavailable' });
+          });
+        }),
+    );
+    return;
+  }
+
+  // CACHE-FIRST dla immutable static assets (hash w nazwie = no stale risk).
   event.respondWith(
     caches.match(request).then((cached) => {
       if (cached) return cached;
@@ -70,10 +100,6 @@ self.addEventListener('fetch', (event) => {
           return response;
         })
         .catch(() => {
-          // Offline fallback: SPA shell dla nawigacji.
-          if (request.mode === 'navigate') {
-            return caches.match('/');
-          }
           return new Response('', { status: 503, statusText: 'Service Unavailable' });
         });
     }),

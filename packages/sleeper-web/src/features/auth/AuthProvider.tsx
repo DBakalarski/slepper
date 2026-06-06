@@ -32,7 +32,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
       })
       .catch((err: unknown) => {
         if (cancelled) return;
-        console.warn('[auth] getSession failed', err);
+        // P2.1 (review fazy 4): guard NODE_ENV by zapewnic dead-code elimination
+        // w prod bundle (defense-in-depth wzgledem babel-plugin-transform-remove-console).
+        if (process.env.NODE_ENV !== 'production') {
+          console.warn('[auth] getSession failed', err);
+        }
         setSession(null);
         setStatus('signed_out');
       });

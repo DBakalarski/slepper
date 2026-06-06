@@ -9,6 +9,29 @@ ostatnia_aktualizacja: 2026-06-06 (Faza 4 ukończona kodowo)
 **Branch:** `feature/sleeper-web-pwa`
 **Ostatnia aktualizacja:** 2026-06-06 (Faza 4 ukończona kodowo — deploy + mobile-manual = user action)
 
+## Code review Fazy 4 — cykl 1 (2026-06-06)
+
+Multi-perspective code review (5 perspektyw: security, performance, architecture, test coverage, E2E browser smoke przez Playwright + dist server). Raport: `review-faza-4.md`.
+
+**Severity gate:** ⚠️ **KONTYNUUJ Z ZASTRZEŻENIAMI** — 0 P1, 3 P2, 5 P3. PWA jest deploy-ready.
+
+**Kluczowe findings:**
+
+1. **P2.1 — `babel-plugin-transform-remove-console` nie strippuje app `console.warn`** — empirycznie potwierdzone, `hooks.ts:293 [notifications]` warn jest w bundle prod. Faza 2 P2.3 advertised jako "rozwiązane" — częściowo nieprawda. Root cause: `api.cache(true)` permamentnie cachuje plugin choice + Metro nie babiluje vendor `node_modules`. Dev-only logi (z `if NODE_ENV !== production` guard) eliminowane przez dead-code elimination DZIAŁA.
+2. **P2.2 — `dist/icons/README.md` deployowany do prod** — leakuje monorepo path + dev workflow. Fix: przenieść poza `public/`.
+3. **P2.3 — SW cache-first dla `/` ryzykuje stale HTML→404 JS po deploy** — runbook mówi "opcjonalnie bump CACHE_NAME". Niepoprawne — każdy deploy z nowym JS hash wymaga bumpa. Fix: network-first dla `/` LUB auto-bump postbuild.
+4. **5 P3** — kosmetyka: regex escape, maskable icons, PKCE test, SW cache versioning, security headers.
+
+**Browser smoke (Playwright):** Bundle parsuje się i wykonuje (vs Faza 3 cykl 1 SyntaxError). Jedyny runtime error = świadomy fail-loud throw z `supabase.ts` bez env vars (oczekiwany behavior bez `.env`).
+
+**Bundle size:** 4.42 MB (bez zmiany od Fazy 3).
+
+**Walidacja CLI:** PASS (tsc, lint, 158/158 tests, build:check, invariants, sleeper-app regression).
+
+**PWA deploy-readiness verdict:** **GOTOWA** — wszystkie krytyczne wymagania (manifest valid, SW registers, iOS meta, PKCE, env throw, runbook) spełnione. P2 do naprawy w follow-up commit (~1h pracy) przed pierwszym `git push origin main` LUB jako drobne follow-ups po pierwszym deployu.
+
+---
+
 ## Status: Faza 4 ukończona kodowo (2026-06-06)
 
 **IU11 (PWA shell) + IU12 (Vercel deploy) wykonane:**

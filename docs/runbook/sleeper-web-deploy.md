@@ -120,17 +120,24 @@ pnpm dlx vercel rollback <deployment-url> --token <vercel-token>
 
 ## 4. Service Worker — invalidation strategy
 
-PWA cachuje shell (CACHE_NAME `sleeper-shell-v1`). Po deploy z nowym JS bundle:
+PWA cachuje shell (CACHE_NAME `sleeper-shell-v2`). Strategia (po P2.3 fix review fazy 4):
 
-1. SW `install` event tworzy nowy cache `sleeper-shell-v2` (po bump w `public/sw.js`).
-2. SW `activate` usuwa stary `sleeper-shell-v1`.
-3. User dostaje fresh bundle przy nastepnym navigation.
+- **Network-first** dla nawigacji (`request.mode === 'navigate'`, czyli `/` i deep linki) — gwarantuje swiezy HTML z aktualnym hashem `entry-{hash}.js` po deploy. Cache jest tylko offline fallback.
+- **Cache-first** dla static assets (`/_expo/static/*`, `/icons/*`, `/manifest.json`, `/favicon.png`) — bezpieczne, bo Vercel daje immutable headers + nazwy plikow zawieraja content hash.
+
+Po deploy z nowym JS bundle:
+
+1. User otwiera PWA → SW probuje `fetch /` (network-first) → dostaje swiezy HTML referencujacy nowy `entry-{hash}.js` hash.
+2. Nowy JS hash jest pobierany i cachowany w `sleeper-shell-v2`.
+3. Stary HTML w cache zostaje zaktualizowany w tle.
 
 ### Kiedy bump CACHE_NAME
 
-- **Zawsze** gdy zmieniony `public/sw.js` (zmiana strategii).
-- **Zawsze** gdy zmienione `public/index.html` lub `manifest.json`.
-- **Opcjonalnie** dla zwyklych bundle changes (Vercel ma immutable cache headers na `/_expo/static/*` z hashem w nazwie, wiec collision risk = 0).
+- **Zawsze** gdy zmieniony `public/sw.js` (zmiana strategii lub fix bug w SW).
+- **Zawsze** gdy zmienione `public/index.html` lub `manifest.json` (te NIE maja content hash w nazwie, wiec tylko cache_name bump je invaliduje).
+- **Opcjonalnie** dla zwyklych bundle changes — network-first dla `/` rozwiazuje problem stale-HTML automatycznie, content hash w nazwach `/_expo/static/*` rozwiazuje collision risk.
+
+Note: P2.3 review fazy 4 wymusil zmiane strategii na network-first dla `/` zeby wyeliminowac scenario gdzie installed PWA serwuje stary HTML referencujacy nieistniejacy juz hash JS → 404 white screen.
 
 ### Force update na zainstalowanej PWA
 
@@ -197,7 +204,7 @@ Powinien wypisac caly manifest. Brak = misconfig SW caching lub Vercel 404.
 | Sign-in nie redirectuje po magic link | PKCE redirect URL nie whitelisted | Supabase Dashboard → Auth → URL Config → dodaj prod URL |
 | Build error: "Missing EXPO_PUBLIC_SUPABASE_URL" | env vars nie ustawione w Vercel | Settings → Environment Variables (Production + Preview + Development) |
 | Add to Home Screen pokazuje generic ikone | apple-touch-icon 404 | Sprawdz `dist/icons/apple-touch-icon.png` istnieje + Cache-Control header (vercel.json) |
-| Stary bundle po deploy | SW cache stale | Bump CACHE_NAME w `public/sw.js` (sleeper-shell-v1 → -v2) + redeploy |
+| Stary bundle po deploy | SW cache stale (rzadkie po P2.3 fix — network-first dla `/`) | Bump CACHE_NAME w `public/sw.js` (sleeper-shell-vN → -vN+1) + redeploy. Jesli user wciaz widzi stary — DevTools → Application → Service Workers → Unregister + clear storage |
 | Build timeout > 5min | Bundle size lub cold cache | Vercel Hobby ma 45min limit — nie problem. Cold cache: pnpm fetch step |
 
 ## 9. Sekrety i bezpieczenstwo

@@ -17,10 +17,12 @@ if (!supabaseUrl || !supabaseAnonKey) {
     throw new Error(
       '[supabase] Missing EXPO_PUBLIC_SUPABASE_URL or EXPO_PUBLIC_SUPABASE_ANON_KEY in production build. Configure Vercel env vars.',
     );
+  } else {
+    // dev only — explicit else dla dead-code elimination w prod (P2.1 review fazy 4).
+    console.warn(
+      '[supabase] Brak EXPO_PUBLIC_SUPABASE_URL lub EXPO_PUBLIC_SUPABASE_ANON_KEY w .env',
+    );
   }
-  console.warn(
-    '[supabase] Brak EXPO_PUBLIC_SUPABASE_URL lub EXPO_PUBLIC_SUPABASE_ANON_KEY w .env',
-  );
 }
 
 export const supabase = createClient<Database>(supabaseUrl ?? '', supabaseAnonKey ?? '', {
