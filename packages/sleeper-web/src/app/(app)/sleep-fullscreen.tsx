@@ -128,9 +128,16 @@ export default function SleepFullscreenScreen() {
         </Pressable>
         <Pressable
           accessibilityRole="button"
-          onPress={() => router.back()}
+          accessibilityLabel="Edytuj start sesji"
+          onPress={() => router.push({ pathname: '/session/[id]', params: { id: session.id } })}
           className="items-center justify-center rounded-2xl border border-cream/30 px-6 py-3">
-          <Text className="text-sm font-semibold text-cream">Wroc</Text>
+          <Text className="text-sm font-semibold text-cream">Edytuj start</Text>
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => router.back()}
+          className="items-center justify-center rounded-2xl px-6 py-3">
+          <Text className="text-sm font-semibold text-cream/70">Wroc</Text>
         </Pressable>
       </View>
     </SafeAreaView>

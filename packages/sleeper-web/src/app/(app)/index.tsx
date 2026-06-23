@@ -200,6 +200,7 @@ function ActiveChildSection({ child }: ActiveChildSectionProps) {
     <>
       {activeSession ? (
         <SleepInProgressCard
+          sessionId={activeSession.id}
           startAt={activeSession.start_at}
           type={activeSession.type}
         />
