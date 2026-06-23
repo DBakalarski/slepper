@@ -259,6 +259,9 @@ function ActiveChildSection({ child }: ActiveChildSectionProps) {
               key={session.id}
               session={session}
               gapBeforeMs={gapMap.get(session.id)}
+              // Lista malejaca (najnowsza u gory) — gap pod sesja, zeby aktywnosc
+              // ladowala miedzy sasiednimi sesjami (wczesniejsza jest nizej).
+              gapPosition="below"
             />
           ))}
         </View>

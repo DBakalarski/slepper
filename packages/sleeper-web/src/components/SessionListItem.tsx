@@ -12,9 +12,15 @@ interface SessionListItemProps {
   // Domyslnie tap nawiguje do edycji sesji. Niektore konteksty (np. lista
   // read-only) moga to wylaczyc — backward-compat z usage'em w `index.tsx`.
   disableNavigation?: boolean;
-  // Gap aktywnosci PRZED ta sesja (ms) — renderowany jako linia "aktywność Xg Ym"
-  // nad itemem. Default: undefined (renderuje sie bez gapu, np. na ekranie Dzisiaj).
+  // Gap aktywnosci PRZED ta sesja (ms) — renderowany jako linia "aktywność Xg Ym".
+  // Default: undefined (renderuje sie bez gapu).
   gapBeforeMs?: number;
+  // Po ktorej stronie wiersza renderowac gap, zaleznie od kierunku sortowania
+  // listy. Lista rosnaca (Historia, najstarsza u gory) -> 'above' (gap nad
+  // pozniejsza sesja = miedzy sesjami). Lista malejaca (Home, najnowsza u gory)
+  // -> 'below' (gap pod pozniejsza sesja, bo wczesniejsza jest nizej). Tak czy
+  // siak aktywnosc ladzie wizualnie MIEDZY dwiema sasiednimi sesjami.
+  gapPosition?: 'above' | 'below';
   // Optional override nawigacji (np. ekran Historia chce uzyc router.push z
   // konkretnym pathname). Gdy podane — uzywane zamiast default `/session/[id]`.
   onPress?: () => void;
@@ -44,6 +50,7 @@ export function SessionListItem({
   session,
   disableNavigation = false,
   gapBeforeMs,
+  gapPosition = 'above',
   onPress,
 }: SessionListItemProps) {
   const router = useRouter();
@@ -99,17 +106,20 @@ export function SessionListItem({
     </View>
   );
 
+  const gapNode = showGap ? (
+    <View className="flex-row items-center gap-2 py-1 pl-14">
+      <View className="h-3 w-px bg-orange/40" />
+      <Text className="text-xs text-orange">
+        aktywność {formatDuration(gapBeforeMs)}
+      </Text>
+    </View>
+  ) : null;
+
   const content = (
     <View>
-      {showGap ? (
-        <View className="flex-row items-center gap-2 py-1 pl-14">
-          <View className="h-3 w-px bg-orange/40" />
-          <Text className="text-xs text-orange">
-            aktywność {formatDuration(gapBeforeMs)}
-          </Text>
-        </View>
-      ) : null}
+      {gapPosition === 'above' ? gapNode : null}
       {row}
+      {gapPosition === 'below' ? gapNode : null}
     </View>
   );
 
