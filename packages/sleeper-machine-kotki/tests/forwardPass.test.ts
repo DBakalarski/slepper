@@ -6,6 +6,11 @@ function hhmm(date: Date): string {
   return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
 }
 
+// Tablica jednakowych długości drzemek dla bucketa (forwardPass przyjmuje napLengths[]).
+function fillNaps(napsCount: number, lengthHours: number): number[] {
+  return Array<number>(napsCount).fill(lengthHours);
+}
+
 describe('forwardPass — generowanie planu', () => {
   it('5m, 3 drzemki, wake 07:00 → plan zbliżony do PDF s.13 (08:45 / 12:30 / 16:15 / 19:00)', () => {
     const bucket = pickBucket(5, null); // 5m, 3 drzemki, WW: 1.75/2/2.25/2.25
@@ -13,7 +18,7 @@ describe('forwardPass — generowanie planu', () => {
     const napLengthHours = Math.min(bucket.maxNapHours, bucket.maxTotalDayNapHours / bucket.typicalNaps);
     const morningWake = new Date(2024, 0, 1, 7, 0, 0, 0); // 07:00
 
-    const plan = forwardPass(morningWake, bucket, napLengthHours);
+    const plan = forwardPass(morningWake, bucket, fillNaps(bucket.typicalNaps, napLengthHours));
 
     expect(plan).toHaveLength(4); // 3 NAP + 1 NIGHT
     expect(plan[0]!.type).toBe('NAP');
@@ -38,7 +43,7 @@ describe('forwardPass — generowanie planu', () => {
     const napLengthHours = Math.min(bucket.maxNapHours, bucket.maxTotalDayNapHours / bucket.typicalNaps);
     const morningWake = new Date(2024, 0, 1, 7, 0, 0, 0);
 
-    const plan = forwardPass(morningWake, bucket, napLengthHours);
+    const plan = forwardPass(morningWake, bucket, fillNaps(bucket.typicalNaps, napLengthHours));
 
     expect(plan).toHaveLength(3); // 2 NAP + 1 NIGHT
     // Drzemka 1: 07:00 + 3h = 10:00 (PDF: 10:00) ✓
@@ -54,7 +59,7 @@ describe('forwardPass — generowanie planu', () => {
     const bucket = pickBucket(8, null);
     const napLength = Math.min(bucket.maxNapHours, bucket.maxTotalDayNapHours / bucket.typicalNaps);
     const morningWake = new Date(2024, 0, 1, 7, 0, 0, 0);
-    const plan = forwardPass(morningWake, bucket, napLength);
+    const plan = forwardPass(morningWake, bucket, fillNaps(bucket.typicalNaps, napLength));
 
     expect(plan[plan.length - 1]!.type).toBe('NIGHT');
   });
@@ -63,7 +68,7 @@ describe('forwardPass — generowanie planu', () => {
     const bucket = pickBucket(18, null);
     const napLength = Math.min(bucket.maxNapHours, bucket.maxTotalDayNapHours / bucket.typicalNaps);
     const morningWake = new Date(2024, 0, 1, 7, 0, 0, 0);
-    const plan = forwardPass(morningWake, bucket, napLength);
+    const plan = forwardPass(morningWake, bucket, fillNaps(bucket.typicalNaps, napLength));
 
     expect(plan).toHaveLength(2);
     expect(plan[0]!.type).toBe('NAP');
@@ -74,7 +79,7 @@ describe('forwardPass — generowanie planu', () => {
     const bucket = pickBucket(9, null);
     const napLength = 1.5;
     const morningWake = new Date(2024, 0, 1, 7, 0, 0, 0);
-    const plan = forwardPass(morningWake, bucket, napLength);
+    const plan = forwardPass(morningWake, bucket, fillNaps(bucket.typicalNaps, napLength));
 
     for (const entry of plan.filter((e) => e.type === 'NAP')) {
       expect(entry.plannedEnd).toBeDefined();
@@ -86,7 +91,7 @@ describe('forwardPass — generowanie planu', () => {
     const bucket = pickBucket(9, null);
     const napLength = 1.5;
     const morningWake = new Date(2024, 0, 1, 7, 0, 0, 0);
-    const plan = forwardPass(morningWake, bucket, napLength);
+    const plan = forwardPass(morningWake, bucket, fillNaps(bucket.typicalNaps, napLength));
     const night = plan.find((e) => e.type === 'NIGHT');
 
     expect(night).toBeDefined();
@@ -100,8 +105,8 @@ describe('forwardPass — generowanie planu', () => {
     const wake700 = new Date(2024, 0, 1, 7, 0, 0, 0);
     const wake630 = new Date(2024, 0, 1, 6, 30, 0, 0);
 
-    const plan700 = forwardPass(wake700, bucket, napLength);
-    const plan630 = forwardPass(wake630, bucket, napLength);
+    const plan700 = forwardPass(wake700, bucket, fillNaps(bucket.typicalNaps, napLength));
+    const plan630 = forwardPass(wake630, bucket, fillNaps(bucket.typicalNaps, napLength));
 
     // Każdy entry w planie 06:30 powinien być dokładnie 30min wcześniej niż w planie 07:00
     for (let i = 0; i < plan700.length; i++) {
@@ -115,8 +120,22 @@ describe('forwardPass — generowanie planu', () => {
     const morningWake = new Date(2024, 0, 1, 7, 0, 0, 0);
     const bucket = pickBucket(18, null);
     // Odwołujemy się do bucket z typicalNaps=1, ale napLength=0 nie wpływa na strukturę
-    const plan = forwardPass(morningWake, bucket, 0);
+    const plan = forwardPass(morningWake, bucket, fillNaps(bucket.typicalNaps, 0));
     // Przy napLength=0 drzemka ma zerowy czas, ale jest zapisana
     expect(plan[plan.length - 1]!.type).toBe('NIGHT');
+  });
+
+  it('napLengths malejące (3 drzemki) → ostatnia drzemka krótsza (reguła przewodnika ~30 min)', () => {
+    const bucket = pickBucket(5, null); // 5m, 3 drzemki
+    const morningWake = new Date(2024, 0, 1, 7, 0, 0, 0);
+    // Przewodnik: na 3 drzemkach ostatnia drzemka celowo ~30 min.
+    const plan = forwardPass(morningWake, bucket, [1.75, 1.75, 0.5]);
+
+    const naps = plan.filter((e) => e.type === 'NAP');
+    expect(naps).toHaveLength(3);
+    const lastNapMs = naps[2]!.plannedEnd!.getTime() - naps[2]!.plannedStart.getTime();
+    const firstNapMs = naps[0]!.plannedEnd!.getTime() - naps[0]!.plannedStart.getTime();
+    expect(lastNapMs).toBe(0.5 * 60 * 60 * 1000); // ostatnia drzemka = 30 min
+    expect(firstNapMs).toBeGreaterThan(lastNapMs); // wcześniejsze dłuższe
   });
 });

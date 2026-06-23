@@ -7,12 +7,36 @@ import type {
   State,
   TimeOfDay,
 } from 'sleeper-machine';
-import { pickBucket } from './lookup.js';
+import { pickBucket, type AgeBucket } from './lookup.js';
 import { forwardPass } from './forwardPass.js';
 
 const MS_PER_DAY = 86_400_000;
 const MS_PER_MIN = 60_000;
-const MS_PER_HOUR = 3_600_000;
+
+// Przewodnik: na 3+ drzemkach ostatnia drzemka celowo jest krótka (~30 min)
+// — "Jak ustalić harmonogram dnia": "Wyjątkiem jest dziecko na 3 drzemkach,
+// gdzie ostatnia drzemka celowo ma być max. 30min".
+const LAST_NAP_HOURS_3PLUS = 0.5;
+
+/**
+ * Długości kolejnych drzemek (h) dla danego bucketa.
+ * - Plany 3+ drzemkowe: ostatnia drzemka = 0.5h, wcześniejsze dzielą resztę
+ *   dziennego limitu po równo (capped maxNapHours).
+ * - Plany 1-2 drzemkowe: równy podział dziennego limitu (capped maxNapHours).
+ */
+function computeNapLengths(bucket: AgeBucket): number[] {
+  const n = bucket.typicalNaps;
+  if (n <= 0) return [];
+  if (n >= 3) {
+    const earlier = Math.min(
+      bucket.maxNapHours,
+      Math.max(0, bucket.maxTotalDayNapHours - LAST_NAP_HOURS_3PLUS) / (n - 1),
+    );
+    return [...Array<number>(n - 1).fill(earlier), LAST_NAP_HOURS_3PLUS];
+  }
+  const equal = Math.min(bucket.maxNapHours, bucket.maxTotalDayNapHours / n);
+  return Array<number>(n).fill(equal);
+}
 
 function validateInput(state: State, profile: ChildProfile): void {
   if (!(state.now instanceof Date) || Number.isNaN(state.now.getTime())) {
@@ -94,13 +118,10 @@ export function recommendKotkiDwa(state: State, profile: ChildProfile): Recommen
 
   const morningWake = buildMorningWake(state.now, wakeTime);
 
-  // Długość drzemki = maxTotalDayNapHours / typicalNaps (lub maxNapHours, whichever is lower)
-  const napLengthHours =
-    bucket.typicalNaps > 0
-      ? Math.min(bucket.maxNapHours, bucket.maxTotalDayNapHours / bucket.typicalNaps)
-      : 0;
+  // Długości kolejnych drzemek (3+ drzemek → ostatnia ~30 min, patrz przewodnik).
+  const napLengths = computeNapLengths(bucket);
 
-  let plan: PlanEntry[] = forwardPass(morningWake, bucket, napLengthHours);
+  let plan: PlanEntry[] = forwardPass(morningWake, bucket, napLengths);
 
   // Override preferredBedtime → nadpisz ostatni NIGHT entry
   let bedtimeOverride: Date | null = null;
@@ -183,13 +204,6 @@ export function recommendKotkiDwa(state: State, profile: ChildProfile): Recommen
         `preferowana godzina nocnego snu daje niezdrową długość nocy (${nightH.toFixed(1)}h) względem targetWakeTime`,
       );
     }
-  }
-
-  // Walidacja merytoryczna: plan czasów nocnych (czy napLength nie przekracza max)
-  if (napLengthHours > 0 && napLengthHours > bucket.maxNapHours) {
-    warnings.push(
-      `długość drzemki (${napLengthHours.toFixed(2)}h) przekracza maksimum dla tego wieku (${bucket.maxNapHours}h)`,
-    );
   }
 
   return {

@@ -13,6 +13,8 @@ export interface Child {
   // Preferencje algorytmu (migracja 0010). null = algorytm decyduje sam.
   preferred_naps_per_day: number | null;
   preferred_bedtime: string | null; // Postgres time 'HH:MM:SS' lub null
+  // Preferowana godzina pobudki (migracja 0012). null = Kotki Dwa uzywa 07:00.
+  preferred_wake_time: string | null; // Postgres time 'HH:MM:SS' lub null
   // Wybor algorytmu rekomendacji (migracja 0011). Domyslnie 'galland'.
   algorithm: 'galland' | 'kotki_dwa';
   created_at: string;
@@ -20,7 +22,7 @@ export interface Child {
 
 const childrenQueryKey = (familyId: string) => ['children', familyId] as const;
 const CHILD_SELECT =
-  'id, family_id, name, birth_date, avatar_color, preferred_naps_per_day, preferred_bedtime, algorithm, created_at';
+  'id, family_id, name, birth_date, avatar_color, preferred_naps_per_day, preferred_bedtime, preferred_wake_time, algorithm, created_at';
 
 interface ChildRow {
   id: string;
@@ -30,6 +32,7 @@ interface ChildRow {
   avatar_color: string;
   preferred_naps_per_day: number | null;
   preferred_bedtime: string | null;
+  preferred_wake_time: string | null;
   algorithm: string;
   created_at: string;
 }
@@ -50,6 +53,7 @@ function rowToChild(row: ChildRow): Child {
     avatar_color: row.avatar_color,
     preferred_naps_per_day: row.preferred_naps_per_day,
     preferred_bedtime: row.preferred_bedtime,
+    preferred_wake_time: row.preferred_wake_time,
     algorithm,
     created_at: row.created_at,
   };
@@ -119,6 +123,8 @@ export interface UpdateChildInput {
   preferredNapsPerDay?: number | null;
   // 'HH:MM:SS' lub null.
   preferredBedtime?: string | null;
+  // 'HH:MM:SS' lub null. Preferowana godzina pobudki.
+  preferredWakeTime?: string | null;
   // Wybor algorytmu rekomendacji. undefined = brak zmiany.
   algorithm?: 'galland' | 'kotki_dwa';
 }
@@ -134,6 +140,7 @@ export function useUpdateChild() {
       avatarColor,
       preferredNapsPerDay,
       preferredBedtime,
+      preferredWakeTime,
       algorithm,
     }: UpdateChildInput) => {
       // Buduj patch tylko z pol jawnie podanych. Pola null sa intencjonalne
@@ -144,6 +151,7 @@ export function useUpdateChild() {
       if (avatarColor !== undefined) patch.avatar_color = avatarColor;
       if (preferredNapsPerDay !== undefined) patch.preferred_naps_per_day = preferredNapsPerDay;
       if (preferredBedtime !== undefined) patch.preferred_bedtime = preferredBedtime;
+      if (preferredWakeTime !== undefined) patch.preferred_wake_time = preferredWakeTime;
       if (algorithm !== undefined) patch.algorithm = algorithm;
 
       const { data, error } = await supabase

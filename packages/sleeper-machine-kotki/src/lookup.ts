@@ -55,7 +55,10 @@ export const BUCKETS: readonly AgeBucket[] = [
     minMonths: 6,
     maxMonths: 6,
     typicalNaps: 2,
-    wakeWindowsHours: [2.5, 2.5, 2.5],
+    // Faza przejsciowa 3->2 drzemki. Przewodnik (harmonogram "6 MIESIECY - 2
+    // DRZEMKI": 7:00->9:30->14:15->19:00 = 2.5/2.75/3.0 + sekcja "Redukcja
+    // drzemek": "zacznij od okien 2h30/2h45/3h").
+    wakeWindowsHours: [2.5, 2.75, 3.0],
     maxNapHours: 2,
     maxTotalDayNapHours: 3.5,
     nightHoursRange: [11, 12],

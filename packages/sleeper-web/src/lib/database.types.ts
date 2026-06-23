@@ -50,6 +50,7 @@ export type Database = {
           name: string
           preferred_bedtime: string | null
           preferred_naps_per_day: number | null
+          preferred_wake_time: string | null
         }
         Insert: {
           algorithm?: string
@@ -61,6 +62,7 @@ export type Database = {
           name: string
           preferred_bedtime?: string | null
           preferred_naps_per_day?: number | null
+          preferred_wake_time?: string | null
         }
         Update: {
           algorithm?: string
@@ -72,6 +74,7 @@ export type Database = {
           name?: string
           preferred_bedtime?: string | null
           preferred_naps_per_day?: number | null
+          preferred_wake_time?: string | null
         }
         Relationships: [
           {

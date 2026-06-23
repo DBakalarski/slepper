@@ -4,7 +4,7 @@
 import { useCallback, useEffect, useMemo } from 'react';
 import { useFocusEffect } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
-import { recommend as recommendGalland, type Recommendation, type TimeOfDay } from 'sleeper-machine';
+import { recommend as recommendGalland, type Recommendation } from 'sleeper-machine';
 import { recommendKotkiDwa } from 'sleeper-machine-kotki';
 import { useSessions } from '@/features/sessions/hooks';
 import { dayKeyInAppTz, startOfDayInAppTz, endOfDayInAppTz } from '@/lib/time';
@@ -23,6 +23,7 @@ export type ChildForRecommendation = {
   readonly birth_date: string;
   readonly preferred_naps_per_day: number | null;
   readonly preferred_bedtime: string | null;
+  readonly preferred_wake_time: string | null;
   readonly algorithm: 'galland' | 'kotki_dwa';
 };
 
@@ -41,7 +42,6 @@ export type ChildForRecommendation = {
 export function useSleepRecommendation(
   child: ChildForRecommendation | null,
   now: Date,
-  targetWakeTime?: TimeOfDay,
 ): UseSleepRecommendationResult {
   const queryClient = useQueryClient();
 
@@ -98,14 +98,14 @@ export function useSleepRecommendation(
     if (!sessionsQuery.data) return null;
     const profile = toLibProfile(
       child.birth_date,
-      targetWakeTime,
+      child.preferred_wake_time,
       child.preferred_naps_per_day,
       child.preferred_bedtime,
     );
     const state = { now, history: toLibSessions(sessionsQuery.data) };
     const fn = child.algorithm === 'kotki_dwa' ? recommendKotkiDwa : recommendGalland;
     return fn(state, profile);
-  }, [child, now, targetWakeTime, sessionsQuery.data]);
+  }, [child, now, sessionsQuery.data]);
 
   return {
     recommendation,

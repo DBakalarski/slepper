@@ -36,6 +36,12 @@ describe('BUCKETS — struktura danych', () => {
     expect(ids).toContain('12m-1nap');
     expect(ids).toContain('18m+');
   });
+
+  it('6m-2naps ma okna aktywności 2.5/2.75/3.0 (przewodnik: harmonogram 6m-2drzemki)', () => {
+    const b = BUCKETS.find((x) => x.id === '6m-2naps');
+    expect(b).toBeDefined();
+    expect(b!.wakeWindowsHours).toEqual([2.5, 2.75, 3.0]);
+  });
 });
 
 describe('pickBucket — selekcja bucketa', () => {

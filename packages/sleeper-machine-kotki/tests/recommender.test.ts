@@ -360,4 +360,22 @@ describe('recommendKotkiDwa — zachowania dodatkowe', () => {
     expect(rec.nextSleepAt).not.toBeNull();
     expect(hhmm(rec.nextSleepAt)).toBe('19:00');
   });
+
+  it('5m (3 drzemki): ostatnia drzemka w planie trwa 30 min (reguła przewodnika)', () => {
+    const now = new Date(2024, 0, 15, 7, 15, 0, 0); // tuż po pobudce — pełny plan przed nami
+    const profile: ChildProfile = {
+      dateOfBirth: dobForAge(now, 5),
+      targetWakeTime: { hour: 7, minute: 0 },
+    };
+    const rec = recommendKotkiDwa({ now, history: [] }, profile);
+
+    const naps = rec.remainingNapsToday.filter((e) => e.type === 'NAP');
+    expect(naps).toHaveLength(3);
+    const lastNap = naps[2]!;
+    const lastNapMin = (lastNap.plannedEnd!.getTime() - lastNap.plannedStart.getTime()) / 60_000;
+    expect(lastNapMin).toBe(30);
+    // Wcześniejsze drzemki dłuższe niż ostatnia
+    const firstNapMin = (naps[0]!.plannedEnd!.getTime() - naps[0]!.plannedStart.getTime()) / 60_000;
+    expect(firstNapMin).toBeGreaterThan(lastNapMin);
+  });
 });

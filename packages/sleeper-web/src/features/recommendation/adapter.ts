@@ -48,7 +48,7 @@ function parseTimeString(value: string): TimeOfDay | null {
 
 export function toLibProfile(
   birthDateIso: string,
-  targetWakeTime?: TimeOfDay,
+  targetWakeTime?: string | null,
   preferredNapsCount?: number | null,
   preferredBedtime?: string | null,
 ): LibChildProfile {
@@ -59,7 +59,10 @@ export function toLibProfile(
     preferredNapsCount?: number;
     preferredBedtime?: TimeOfDay;
   } = { dateOfBirth };
-  if (targetWakeTime) profile.targetWakeTime = targetWakeTime;
+  if (targetWakeTime) {
+    const parsed = parseTimeString(targetWakeTime);
+    if (parsed) profile.targetWakeTime = parsed;
+  }
   if (preferredNapsCount != null) profile.preferredNapsCount = preferredNapsCount;
   if (preferredBedtime) {
     const parsed = parseTimeString(preferredBedtime);

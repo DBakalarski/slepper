@@ -6,7 +6,7 @@ import { extractErrorMessage } from '@/lib/extract-error-message';
 
 const AVATAR_COLORS: string[] = ['#7C6BAD', '#E08B6F', '#1E1B4B', '#5A8B6F', '#B86F8B'];
 const BIRTH_DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
-const BEDTIME_REGEX = /^([01]\d|2[0-3]):[0-5]\d$/;
+const TIME_REGEX = /^([01]\d|2[0-3]):[0-5]\d$/;
 // 'Auto' = brak override (null w bazie). Pozostale = twardy override.
 const NAP_OPTIONS: { value: number | null; label: string }[] = [
   { value: null, label: 'Auto' },
@@ -24,8 +24,8 @@ interface EditChildFormProps {
   onCancel?: () => void;
 }
 
-// Konwersja Postgres 'HH:MM:SS' -> 'HH:MM' dla TextInput (i odwrotnie przy zapisie).
-function bedtimeFromDb(value: string | null): string {
+// Konwersja Postgres 'HH:MM:SS' -> 'HH:MM' dla TextInput (pobudka i sen nocny).
+function timeFromDb(value: string | null): string {
   if (!value) return '';
   return value.slice(0, 5);
 }
@@ -39,8 +39,11 @@ export function EditChildForm({ child, onSuccess, onCancel }: EditChildFormProps
   const [preferredNaps, setPreferredNaps] = useState<number | null>(
     child.preferred_naps_per_day,
   );
+  const [preferredWakeTime, setPreferredWakeTime] = useState(
+    timeFromDb(child.preferred_wake_time),
+  );
   const [preferredBedtime, setPreferredBedtime] = useState(
-    bedtimeFromDb(child.preferred_bedtime),
+    timeFromDb(child.preferred_bedtime),
   );
   const [validationError, setValidationError] = useState<string | null>(null);
 
@@ -65,7 +68,11 @@ export function EditChildForm({ child, onSuccess, onCancel }: EditChildFormProps
       setValidationError('Data urodzenia nie moze byc w przyszlosci');
       return;
     }
-    if (preferredBedtime.length > 0 && !BEDTIME_REGEX.test(preferredBedtime)) {
+    if (preferredWakeTime.length > 0 && !TIME_REGEX.test(preferredWakeTime)) {
+      setValidationError('Godzina pobudki w formacie HH:MM (00:00 - 23:59)');
+      return;
+    }
+    if (preferredBedtime.length > 0 && !TIME_REGEX.test(preferredBedtime)) {
       setValidationError('Godzina nocnego snu w formacie HH:MM (00:00 - 23:59)');
       return;
     }
@@ -79,6 +86,7 @@ export function EditChildForm({ child, onSuccess, onCancel }: EditChildFormProps
         avatarColor,
         algorithm,
         preferredNapsPerDay: preferredNaps,
+        preferredWakeTime: preferredWakeTime.length > 0 ? `${preferredWakeTime}:00` : null,
         preferredBedtime: preferredBedtime.length > 0 ? `${preferredBedtime}:00` : null,
       },
       {
@@ -186,7 +194,7 @@ export function EditChildForm({ child, onSuccess, onCancel }: EditChildFormProps
           </View>
           <Text className="mt-1 text-xs text-purple">
             Naukowy: okna pochodne z norm Galland 2012 + adaptacja z historii.
-            Kotki Dwa: stale okna z lookup table per wiek, pobudka 07:00 (lub preferowana).
+            Kotki Dwa: stale okna z lookup table per wiek, pobudka wg pola ponizej (domyslnie 07:00).
           </Text>
         </View>
 
@@ -221,6 +229,28 @@ export function EditChildForm({ child, onSuccess, onCancel }: EditChildFormProps
           </View>
           <Text className="mt-1 text-xs text-purple">
             Auto = algorytm decyduje na podstawie wieku i historii.
+          </Text>
+        </View>
+
+        <View>
+          <Text className="text-xs font-semibold text-purple">
+            Preferowana godzina pobudki
+          </Text>
+          <TextInput
+            value={preferredWakeTime}
+            onChangeText={setPreferredWakeTime}
+            placeholder="07:00"
+            placeholderTextColor="#7C6BAD"
+            keyboardType="numbers-and-punctuation"
+            autoCapitalize="none"
+            autoCorrect={false}
+            maxLength={5}
+            className="mt-1 rounded-xl border border-purple/30 px-3 py-2 text-base text-navy dark:text-cream"
+            editable={!isPending}
+            accessibilityLabel="Preferowana godzina pobudki w formacie HH:MM"
+          />
+          <Text className="mt-1 text-xs text-purple">
+            Kotki Dwa kotwiczy dzien na tej godzinie. Puste = 07:00. Zalecane 6:00-7:00.
           </Text>
         </View>
 

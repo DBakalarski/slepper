@@ -134,6 +134,7 @@ interface ActiveChildSectionProps {
     birth_date: string;
     preferred_naps_per_day: number | null;
     preferred_bedtime: string | null;
+    preferred_wake_time: string | null;
     algorithm: 'galland' | 'kotki_dwa';
   };
 }

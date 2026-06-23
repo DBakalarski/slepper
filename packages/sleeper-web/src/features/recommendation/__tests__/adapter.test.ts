@@ -60,9 +60,14 @@ describe('toLibProfile', () => {
     expect(profile.preferredBedtime).toBeUndefined();
   });
 
-  it('attaches targetWakeTime when provided', () => {
-    const profile = toLibProfile('2024-01-15', { hour: 7, minute: 30 });
-    expect(profile.targetWakeTime).toEqual({ hour: 7, minute: 30 });
+  it('parses targetWakeTime "HH:MM" / "HH:MM:SS" (Postgres) to TimeOfDay', () => {
+    expect(toLibProfile('2024-01-15', '07:30').targetWakeTime).toEqual({ hour: 7, minute: 30 });
+    expect(toLibProfile('2024-01-15', '06:00:00').targetWakeTime).toEqual({ hour: 6, minute: 0 });
+  });
+
+  it('ignores invalid/null targetWakeTime silently (fail-safe)', () => {
+    expect(toLibProfile('2024-01-15', null).targetWakeTime).toBeUndefined();
+    expect(toLibProfile('2024-01-15', '25:00').targetWakeTime).toBeUndefined();
   });
 
   it('attaches preferredNapsCount only when not null', () => {
