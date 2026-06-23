@@ -31,20 +31,32 @@ export default function SessionEditScreen() {
   const deleteSession = useDeleteSession();
 
   const [form, setForm] = useState<SessionFormState | null>(null);
+  const [initializedSignature, setInitializedSignature] = useState<string | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
 
-  // Inicjalizacja formularza z danych z bazy. Robimy raz, po pierwszym
-  // udanym fetchu — pozniej user moze edytowac bez nadpisania.
+  // Inicjalizacja formularza z danych z bazy. Ekran `session/[id]` jest ukrytym
+  // Tab screenem (patrz `_layout.tsx`) — react-navigation trzyma go zamontowany,
+  // wiec `useState` przezywa nawigacje miedzy sesjami. Guard po samej sygnaturze
+  // sesji (id + czy zakonczona) re-inicjalizuje formularz gdy:
+  //   - user przechodzi do innej sesji (rozne id) — fix stale start_at,
+  //   - aktywna sesja zostala zakonczona (active -> ended) — fix "Sesja w toku"
+  //     po zakonczeniu drzemki.
+  // NIE re-inicjalizujemy przy zwyklym refetchu tej samej sesji w tym samym
+  // stanie — chroni edycje usera przed nadpisaniem przez realtime.
   useEffect(() => {
-    if (sessionQuery.data && form === null) {
-      setForm({
-        startDate: new Date(sessionQuery.data.start_at),
-        endDate: sessionQuery.data.end_at ? new Date(sessionQuery.data.end_at) : null,
-        type: sessionQuery.data.type,
-        notes: sessionQuery.data.notes ?? '',
-      });
-    }
-  }, [sessionQuery.data, form]);
+    const data = sessionQuery.data;
+    if (!data) return;
+    const signature = `${data.id}:${data.end_at === null ? 'active' : 'ended'}`;
+    if (signature === initializedSignature) return;
+    setForm({
+      startDate: new Date(data.start_at),
+      endDate: data.end_at ? new Date(data.end_at) : null,
+      type: data.type,
+      notes: data.notes ?? '',
+    });
+    setInitializedSignature(signature);
+    setValidationError(null);
+  }, [sessionQuery.data, initializedSignature]);
 
   if (!sessionId) {
     return (
