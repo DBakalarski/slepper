@@ -117,6 +117,9 @@ export function ActiveWindowCard({
                   <CountdownRow label="Do łóżeczka" remainingMs={cribRemainingMs} />
                   <CountdownRow label={nextSleepLabel} remainingMs={remainingMs} />
                 </View>
+                <Text className="text-xs text-text-muted">
+                  Okno liczone od pobudki — krótsza drzemka przesuwa łóżeczko i sen wcześniej.
+                </Text>
               </View>
             ) : (
               <View className="mt-4 flex-row items-center justify-between">
