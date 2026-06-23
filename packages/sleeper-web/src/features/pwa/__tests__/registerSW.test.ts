@@ -110,9 +110,9 @@ describe('manifest.json invariants', () => {
     expect(manifest.icons.length).toBeGreaterThanOrEqual(2);
   });
 
-  it('ma theme_color zgodny z app palette (#208AEF — navy from tailwind.config)', () => {
+  it('ma theme_color zgodny z app palette (#1E1B4B — navy z tailwind.config)', () => {
     const manifest = JSON.parse(manifestSrc);
-    expect(manifest.theme_color).toBe('#208AEF');
+    expect(manifest.theme_color).toBe('#1E1B4B');
   });
 
   it('ma background_color zgodny z cream palette (#F5F0E8)', () => {
@@ -163,7 +163,7 @@ describe('public/index.html invariants (PWA shell template)', () => {
   });
 
   it('theme-color tag (light + dark variant)', () => {
-    expect(indexHtmlSrc).toMatch(/<meta name="theme-color" content="#208AEF"/);
+    expect(indexHtmlSrc).toMatch(/<meta name="theme-color" content="#1E1B4B"/);
     expect(indexHtmlSrc).toMatch(/<meta name="theme-color" content="#0F0F1A" media="\(prefers-color-scheme: dark\)"/);
   });
 
