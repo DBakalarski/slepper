@@ -2,7 +2,7 @@
   "name": "sleeper-monorepo",
   "version": "0.0.0",
   "private": true,
-  "description": "Monorepo: sleeper-machine (algorithm library) + sleeper-app (Expo mobile app).",
+  "description": "Monorepo: sleeper-app (Expo mobile) + sleeper-web (PWA) + sleeper-machine (Galland) + sleeper-machine-kotki.",
   "scripts": {
     "test": "pnpm --filter sleeper-machine test",
     "build": "pnpm --filter sleeper-machine build",

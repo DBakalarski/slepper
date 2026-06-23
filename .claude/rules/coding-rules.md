@@ -128,7 +128,7 @@
 - NIGDY nie zakładaj że biblioteka jest dostępna — sprawdź package.json / requirements.txt / go.mod
 - NIGDY nie instaluj nowych zależności bez poinformowania usera
 - Preferuj istniejące biblioteki w projekcie > nowa dependency
-- Nie mieszaj package managerów (jeśli projekt używa `bun` — nie używaj `npm`)
+- Nie mieszaj package managerów. Ten projekt używa `pnpm@8.15.1` (root `package.json#packageManager`) — NIE używaj `npm` ani `yarn`
 - Importy grouped: stdlib, third-party, local
 - Nie importuj bezpośrednio między packages w monorepo — używaj shared layer
 - Pinuj wersje — deklaruj exact versions w package.json

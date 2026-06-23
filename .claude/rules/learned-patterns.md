@@ -2,13 +2,7 @@
 
 Reguły wyciągnięte z rozwiązanych problemów w docs/solutions/. Zarządzane przez /dev-compound i /dev-compound-refresh.
 
-<!-- rule-count: 13 -->
-
-- **Anti-FOWT: inicjalizacja motywu inline w `<head>` przed stylesheetem**: Skrypt ustawiający `data-theme`/klasę dark na `<html>` musi być synchroniczny, inline w `<head>` i **przed** `<link rel="stylesheet">`. Nie używaj `defer`, `async` ani `type="module"` — flash of wrong theme pojawi się od pierwszego paint.
-  Source: docs/solutions/ui-bugs/2026-05-19-flash-of-wrong-theme-fowt.md
-
-- **WCAG AA kontrast: waliduj każdą parę kolor/tło narzędziem, nie na oko**: Dla normalnego tekstu wymagany kontrast ≥ 4.5:1, dla large text ≥ 3.0:1. Subiektywna ocena ("wygląda OK") nie wystarcza — używaj `contrast-cli`, axe DevTools lub WebAIM Contrast Checker przed mergem. Sprawdzaj OBA warianty (jasny i ciemny tryb).
-  Source: docs/solutions/ui-bugs/2026-05-19-wcag-contrast-link-color.md
+<!-- rule-count: 11 -->
 
 - **TZ-safe time: zawsze przez `lib/time.ts` helpers, nigdy `setHours`/`new Date(y,m,d,h,m)` na surowym Date**: Konwersje między domenową strefą (`Europe/Warsaw`) a UTC idą wyłącznie przez `fromZonedTime`/`toZonedTime` (np. `combineDateAndTimeInAppTz`, `dayKeyInAppTz`, `parseAppTzDateTime`). `setHours`/`getDate`/`toDateString` operują w device tz — działają lokalnie w PL, cicho psują się dla usera w innej strefie lub po DST. Operacje "dzień/tydzień" przez `addDays` z `date-fns`, nigdy `+ N * 24 * 60 * 60 * 1000`.
   Source: docs/solutions/runtime-errors/2026-05-27-tz-safe-time-pattern.md

@@ -1,6 +1,15 @@
 # Sleeper — projekt
 
-Aplikacja mobilna (iOS + Android) do trackowania snu i okien aktywnosci dziecka. Solo dev, Expo + Supabase, sync miedzy dwoma telefonami od dnia 1.
+Aplikacja do trackowania snu i okien aktywnosci dziecka. Solo dev, Expo + Supabase, sync miedzy urzadzeniami od dnia 1.
+
+## Scope — WEB ONLY
+
+**Aktualnie wspieramy WYLACZNIE wersje web (PWA, `packages/sleeper-web/`).** Aplikacja mobilna (`packages/sleeper-app/`) NIE jest priorytetem — zmiany w sleeper-app sa OK gdy wynikaja z refaktoru wspoldzielonego kodu, ale nowych ficzerow mobile nie robimy, manual on-device testow nie wymagamy, regresji mobilnych nie scigamy.
+
+Praktyczne implikacje:
+- Nowe ficzery i bugfixy => `packages/sleeper-web/` najpierw, mobile potem (lub wcale).
+- Pre-merge walidacja => `pnpm web:build:check` jest blocking; `pnpm --filter sleeper-app exec tsc --noEmit` jest nice-to-have, nie blocker.
+- Jesli ficzer wymaga native-only API (Notifications, SecureStore, Haptics) — najpierw potwierdz z userem czy w ogole robimy.
 
 ## Expo SDK 54 — LOCK
 
@@ -19,13 +28,16 @@ sleeper/                                  # ← root (TEN katalog)
 ├── package.json                          # root: scripts proxy do filtrow pnpm
 ├── pnpm-workspace.yaml                   # packages/*
 ├── docs/
-│   ├── active/                           # kontekst + plan + zadania aktualnych zadan
+│   ├── active/                           # kontekst + plan + zadania aktualnych zadan (moze byc >1 rownolegle)
 │   ├── completed/mvp-sleep-tracker/      # archiwum ukonczonego MVP
 │   ├── completed/ui-redesign/            # archiwum ukonczonego redesignu UI
 │   ├── completed/fixy-i-kotki-dwa-algorytm/ # archiwum: cross-day edit + progress bar + kotki dwa
 │   ├── completed/sleeper-web-pwa/        # archiwum: PWA web (Expo SDK 54 web-only) + Vercel deploy
 │   ├── commits/                          # log commitow (jeden plik per commit, OBOWIAZKOWE)
-│   └── solutions/                        # baza wiedzy (zarzadzana przez /dev-compound)
+│   ├── solutions/                        # baza wiedzy (zarzadzana przez /dev-compound)
+│   ├── plans/                            # output skilla /dev-plan (Implementation Units)
+│   ├── dev-brainstorms/                  # output skilla /dev-brainstorm (requirements docs)
+│   └── runbook/                          # runbooki operacyjne (np. sleeper-web-deploy.md)
 ├── .claude/
 │   ├── rules/                            # coding-rules.md, learned-patterns.md
 │   ├── docs/dev-pipeline.md              # opis pipeline'u skilli dev-*
@@ -57,10 +69,12 @@ sleeper/                                  # ← root (TEN katalog)
 - Wybor algorytmu per dziecko — pole `children.algorithm` ('galland' | 'kotki_dwa', default 'galland').
 - `docs/` i `.claude/` zostaja w roocie i sa wspolne.
 
-## Aktualny stan (2026-06-05)
+## Aktualny stan (2026-06-06)
 
-- **Branch:** `feature/fixy-edycja-aktywnosc-smart-start`
-- **Aktualne zadanie:** `docs/active/fixy-edycja-aktywnosc-smart-start/` — 3 fixy UX (TimePicker iOS minuty, gap aktywności na home, smart typ sesji z rekomendacji).
+- **Branch:** `main` (poprzednie feature branche zmergowane).
+- **Aktywne zadania** (równolegle w `docs/active/`):
+  - `docs/active/fixy-edycja-aktywnosc-smart-start/` — 3 fixy UX (TimePicker iOS minuty, gap aktywności na home, smart typ sesji z rekomendacji). Jeszcze nie w `completed/`. Status: na hold-zie do uzgodnienia czy port do web ma sens.
+  - `docs/active/active-window-machine/` — hook lifting `useSleepRecommendation` do `ActiveChildSection`, footer badge "Drzemka za" / "Przekroczono okno o" na `ActiveWindowCard`. Status: na hold-zie (dotyka tylko `packages/sleeper-app/`, vs. obecny scope WEB ONLY).
 - **Ukonczone:**
   - MVP sleep tracker → `docs/completed/mvp-sleep-tracker/`
   - UI redesign → `docs/completed/ui-redesign/`
@@ -174,6 +188,7 @@ Pelny opis: `.claude/docs/dev-pipeline.md`. Skille bezargumentowe wyciagaja kont
 ## Czego NIE robic
 
 - Nie podnosic SDK z 54 bez explicit approval.
+- Nie dodawac mobile-only ficzerow do `packages/sleeper-app/` bez explicit approval — scope projektu to web (patrz §Scope — WEB ONLY).
 - Nie mieszac package managerow — projekt uzywa **`pnpm`** (workspaces). NIE wolno `npm install` / `yarn add` w packages.
 - Nie instalowac zaleznosci na poziomie root bez powodu — instaluj per package: `pnpm --filter <name> add <dep>`.
 - Nie instalowac nowych zaleznosci bez poinformowania usera (regula z `coding-rules.md` §8).
