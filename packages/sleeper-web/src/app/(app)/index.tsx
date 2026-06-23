@@ -209,6 +209,7 @@ function ActiveChildSection({ child }: ActiveChildSectionProps) {
           lastSleepEndAt={lastEnded?.end_at ? new Date(lastEnded.end_at) : null}
           recommendation={recommendation}
           now={now}
+          algorithm={child.algorithm}
         />
       )}
 
