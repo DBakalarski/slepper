@@ -55,6 +55,11 @@ export type Recommendation = {
   readonly nextSleepAt: DateTime | null;
   readonly currentWakeWindowDuration: Minutes;
   readonly remainingNapsToday: readonly PlanEntry[];
+  // Przesunięcie najbliższego snu względem idealnego planu, w minutach ze znakiem:
+  // dodatnie = wcześniej niż plan (np. krótsza drzemka), ujemne = później.
+  // `null` gdy nieobliczalne lub algorytm tego nie wspiera (Galland zawsze null —
+  // nie ma stałego planu-baseline; pojęcie dotyczy wyłącznie Kotki Dwa).
+  readonly nextSleepShiftMinutes: number | null;
   readonly confidence: Confidence;
   readonly warnings: readonly string[];
 };

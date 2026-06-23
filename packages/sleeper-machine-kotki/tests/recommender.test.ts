@@ -262,6 +262,50 @@ describe('recommendKotkiDwa — Faza 4 Test: scenariusze PDF', () => {
   });
 });
 
+describe('recommendKotkiDwa — nextSleepShiftMinutes', () => {
+  // 9m bucket: WW [3, 3, 3.5], typicalNaps 2, napLength = min(2, 3.5/2) = 1.75h.
+  // morningWake 7:00 → plan: nap1 10:00–11:45, nap2 14:45–16:30, noc 20:00.
+  const profile9m = (now: Date): ChildProfile => ({
+    dateOfBirth: dobForAge(now, 9),
+    targetWakeTime: { hour: 7, minute: 0 },
+  });
+
+  it('brak historii (slot zgodny z planem) → shift = 0', () => {
+    const now = new Date(2024, 0, 15, 8, 0, 0, 0);
+    const rec = recommendKotkiDwa({ now, history: [] }, profile9m(now));
+
+    expect(rec.nextSleepShiftMinutes).toBe(0);
+  });
+
+  it('krótsza drzemka o 30 min → shift dodatni (+30, wcześniej)', () => {
+    const now = new Date(2024, 0, 15, 12, 0, 0, 0);
+    // Ideał nap1 11:45; realnie 10:00–11:15 (krótsza o 30 min).
+    const nap1Start = new Date(2024, 0, 15, 10, 0, 0, 0);
+    const nap1End = new Date(2024, 0, 15, 11, 15, 0, 0);
+    const rec = recommendKotkiDwa(
+      { now, history: [{ start: nap1Start, end: nap1End, type: 'NAP' }] },
+      profile9m(now),
+    );
+
+    // nextSleepAt = 11:15 + 3h = 14:15; ideał slotu = 14:45 → +30.
+    expect(rec.nextSleepShiftMinutes).toBe(30);
+  });
+
+  it('dłuższa drzemka o 30 min → shift ujemny (-30, później)', () => {
+    const now = new Date(2024, 0, 15, 13, 0, 0, 0);
+    // Ideał nap1 11:45; realnie 10:00–12:15 (dłuższa o 30 min).
+    const nap1Start = new Date(2024, 0, 15, 10, 0, 0, 0);
+    const nap1End = new Date(2024, 0, 15, 12, 15, 0, 0);
+    const rec = recommendKotkiDwa(
+      { now, history: [{ start: nap1Start, end: nap1End, type: 'NAP' }] },
+      profile9m(now),
+    );
+
+    // nextSleepAt = 12:15 + 3h = 15:15; ideał slotu = 14:45 → -30.
+    expect(rec.nextSleepShiftMinutes).toBe(-30);
+  });
+});
+
 describe('recommendKotkiDwa — zachowania dodatkowe', () => {
   it('warning "ryzyko przemęczenia" gdy elapsed > 1.2 × currentWakeWindowDuration', () => {
     const now = new Date(2024, 0, 15, 12, 0, 0, 0); // 5h po pobudce 07:00

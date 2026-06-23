@@ -274,6 +274,9 @@ export function recommend(state: State, profile: ChildProfile): Recommendation {
     nextSleepAt,
     currentWakeWindowDuration,
     remainingNapsToday,
+    // Galland nie ma stałego planu-baseline (okna są pochodną historii, nie
+    // tabelą) — przesunięcie względem planu jest niezdefiniowane.
+    nextSleepShiftMinutes: null,
     confidence,
     warnings,
   };

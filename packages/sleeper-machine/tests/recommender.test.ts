@@ -41,6 +41,10 @@ describe('Scenario 1 — Cold start (4mo, no history)', () => {
   it('remainingNapsToday is empty', () => {
     expect(rec.remainingNapsToday).toHaveLength(0);
   });
+
+  it('nextSleepShiftMinutes is null (Galland nie ma planu-baseline)', () => {
+    expect(rec.nextSleepShiftMinutes).toBeNull();
+  });
 });
 
 // === Scenariusz 2 — Walidacja z Galland Fig. 4 (9mo) ===

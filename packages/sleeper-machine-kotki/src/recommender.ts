@@ -153,6 +153,17 @@ export function recommendKotkiDwa(state: State, profile: ChildProfile): Recommen
     (e) => e.plannedStart.getTime() > state.now.getTime(),
   );
 
+  // Przesunięcie najbliższego snu względem idealnego planu.
+  // Idealny czas dla tego samego slotu = plan[napsDone.length] (forwardPass liczy
+  // plan od morningWake + stałych długości drzemek). nextSleepAt jest kotwiczony
+  // na REALNYM końcu ostatniej drzemki, więc krótsza drzemka → wcześniej → dodatnie.
+  // Znak: dodatnie = wcześniej niż plan, ujemne = później. null gdy slot poza planem.
+  const idealNextStart = plan[napsDone.length]?.plannedStart;
+  const nextSleepShiftMinutes =
+    nextSleepAt !== null && idealNextStart !== undefined
+      ? Math.round((idealNextStart.getTime() - nextSleepAt.getTime()) / MS_PER_MIN)
+      : null;
+
   // Warnings
   const warnings: string[] = [];
   const elapsedMin = (state.now.getTime() - lastWakeMs) / MS_PER_MIN;
@@ -185,6 +196,7 @@ export function recommendKotkiDwa(state: State, profile: ChildProfile): Recommen
     nextSleepAt,
     currentWakeWindowDuration,
     remainingNapsToday,
+    nextSleepShiftMinutes,
     confidence: 'high',
     warnings,
   };
