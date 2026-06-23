@@ -78,6 +78,10 @@ export default function AppTabsLayout() {
   // przekazana przez screenOptions na bazie `effectiveTheme` (manual override).
   return (
     <Tabs
+      // `history` zamiast domyslnego `firstRoute`: router.back() z ukrytych
+      // ekranow (session/[id], sleep-fullscreen, settings) wraca do zakladki
+      // z ktorej user przyszedl, a nie zawsze do pierwszej (Dzisiaj).
+      backBehavior="history"
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: activeColor,
