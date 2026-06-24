@@ -379,3 +379,51 @@ describe('recommendKotkiDwa — zachowania dodatkowe', () => {
     expect(firstNapMin).toBeGreaterThan(lastNapMin);
   });
 });
+
+describe('recommendKotkiDwa — kotwica = realna pobudka (koniec snu nocnego)', () => {
+  it('Wojtek 8m: pobudka 05:45 (koniec NIGHT) → pierwsza drzemka 08:45, nie 10:00', () => {
+    // Regression: algorytm liczył okno od targetWakeTime/07:00, ignorując realny
+    // koniec snu nocnego. 8m WW[0]=3h. Realnie: 05:45 + 3h = 08:45.
+    const now = new Date(2026, 5, 24, 6, 34, 0, 0);
+    const profile: ChildProfile = { dateOfBirth: dobForAge(now, 8) }; // brak targetWakeTime
+    const state: State = {
+      now,
+      history: [
+        { start: new Date(2026, 5, 23, 17, 59), end: new Date(2026, 5, 24, 5, 45), type: 'NIGHT' },
+      ],
+    };
+    const rec = recommendKotkiDwa(state, profile);
+    expect(hhmm(rec.nextSleepAt)).toBe('08:45');
+    expect(rec.remainingNapsToday[0]?.type).toBe('NAP');
+    expect(hhmm(rec.remainingNapsToday[0]?.plannedStart ?? null)).toBe('08:45');
+  });
+
+  it('realna pobudka ma priorytet nad targetWakeTime', () => {
+    // targetWakeTime=07:00, ale dziecko wstało 05:45 → kotwica = 05:45.
+    const now = new Date(2026, 5, 24, 6, 34, 0, 0);
+    const profile: ChildProfile = {
+      dateOfBirth: dobForAge(now, 8),
+      targetWakeTime: { hour: 7, minute: 0 },
+    };
+    const state: State = {
+      now,
+      history: [
+        { start: new Date(2026, 5, 23, 17, 59), end: new Date(2026, 5, 24, 5, 45), type: 'NIGHT' },
+      ],
+    };
+    const rec = recommendKotkiDwa(state, profile);
+    expect(hhmm(rec.nextSleepAt)).toBe('08:45');
+  });
+
+  it('brak snu nocnego dziś → fallback na targetWakeTime', () => {
+    const now = new Date(2026, 5, 24, 8, 0, 0, 0);
+    const profile: ChildProfile = {
+      dateOfBirth: dobForAge(now, 8),
+      targetWakeTime: { hour: 7, minute: 0 },
+    };
+    const state: State = { now, history: [] };
+    const rec = recommendKotkiDwa(state, profile);
+    // 07:00 + 3h = 10:00 (fallback bez realnej pobudki)
+    expect(hhmm(rec.nextSleepAt)).toBe('10:00');
+  });
+});

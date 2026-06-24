@@ -104,6 +104,30 @@ function buildMorningWake(now: Date, wakeTime: TimeOfDay): Date {
   );
 }
 
+/**
+ * Realna pobudka poranna = koniec snu nocnego, który zakończył się dziś rano.
+ * To jest właściwa kotwica okna aktywności — dziecko wstaje, gdy faktycznie
+ * skończyło spać, nie o docelowej godzinie. targetWakeTime to tylko fallback,
+ * gdy brak takiej sesji (np. świeże dziecko, dzień bez zalogowanego snu nocnego).
+ *
+ * Zwraca najpóźniejszy koniec sesji NIGHT, który wypada w kalendarzowym dniu
+ * `now` i nie jest w przyszłości. null gdy brak.
+ */
+function findRealMorningWake(history: State['history'], now: Date): Date | null {
+  let latest: Date | null = null;
+  for (const s of history) {
+    if (
+      s.type === 'NIGHT' &&
+      sameCalendarDay(s.end, now) &&
+      s.end.getTime() <= now.getTime() &&
+      (latest === null || s.end.getTime() > latest.getTime())
+    ) {
+      latest = s.end;
+    }
+  }
+  return latest;
+}
+
 export function recommendKotkiDwa(state: State, profile: ChildProfile): Recommendation {
   validateInput(state, profile);
 
@@ -116,7 +140,10 @@ export function recommendKotkiDwa(state: State, profile: ChildProfile): Recommen
 
   const bucket = pickBucket(ageMonths, profile.preferredNapsCount ?? null);
 
-  const morningWake = buildMorningWake(state.now, wakeTime);
+  // Kotwica okna aktywności: realny koniec snu nocnego z dziś rano ma priorytet
+  // nad targetWakeTime/default. Dziecko, które wstało o 05:45, ma liczone okno od
+  // 05:45, nie od docelowych 07:00. Fallback na targetWakeTime gdy brak sesji.
+  const morningWake = findRealMorningWake(state.history, state.now) ?? buildMorningWake(state.now, wakeTime);
 
   // Długości kolejnych drzemek (3+ drzemek → ostatnia ~30 min, patrz przewodnik).
   const napLengths = computeNapLengths(bucket);
