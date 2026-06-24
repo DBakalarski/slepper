@@ -24,14 +24,29 @@ const MINUTE_MS = 60 * 1000;
 // snu, na 15min przed koncem okna aktywnosci."
 const CRIB_LEAD_MINUTES = 15;
 
-// Wiersz odliczania: label po lewej, badge "za ~X" / "~X temu" po prawej.
-function CountdownRow({ label, remainingMs }: { label: string; remainingMs: number }) {
+// Wiersz odliczania: label po lewej, badge "za ~X (HH:MM)" / "~X temu (HH:MM)"
+// po prawej. `targetAt` to konkretna godzina zdarzenia (odlozenie / zasniecie),
+// pokazywana w nawiasie obok wzglednego czasu.
+function CountdownRow({
+  label,
+  remainingMs,
+  targetAt,
+}: {
+  label: string;
+  remainingMs: number;
+  targetAt: Date;
+}) {
   const isFuture = remainingMs > 0;
+  const clock = formatTime(targetAt);
   return (
     <View className="flex-row items-center justify-between">
       <Text className="text-sm text-navy">{label}</Text>
       <Badge
-        label={isFuture ? `za ~${formatDuration(remainingMs)}` : `~${formatDuration(-remainingMs)} temu`}
+        label={
+          isFuture
+            ? `za ~${formatDuration(remainingMs)} (${clock})`
+            : `~${formatDuration(-remainingMs)} temu (${clock})`
+        }
         variant="orange"
       />
     </View>
@@ -52,13 +67,15 @@ export function ActiveWindowCard({
 
   const targetMs = recommendation ? recommendation.currentWakeWindowDuration * MINUTE_MS : null;
 
-  const remainingMs = recommendation?.nextSleepAt
-    ? recommendation.nextSleepAt.getTime() - nowMs
-    : null;
+  const nextSleepAt = recommendation?.nextSleepAt ?? null;
+  const remainingMs = nextSleepAt ? nextSleepAt.getTime() - nowMs : null;
 
   // Kotki Dwa: pokaz osobno odlozenie do lozeczka (15 min przed `nextSleepAt`)
   // i sam moment zasniecia. Galland zostaje przy pojedynczym badge "Drzemka za".
   const isKotkiDwa = algorithm === 'kotki_dwa';
+  const cribAt = nextSleepAt
+    ? new Date(nextSleepAt.getTime() - CRIB_LEAD_MINUTES * MINUTE_MS)
+    : null;
   const cribRemainingMs = remainingMs === null ? null : remainingMs - CRIB_LEAD_MINUTES * MINUTE_MS;
   // Typ najblizszego snu — etykieta "Drzemka" vs "Sen nocny". Pusty plan = wszystkie
   // drzemki zrobione, wiec kolejny sen to noc.
@@ -119,14 +136,18 @@ export function ActiveWindowCard({
             ) : null}
           </View>
           {lastSleepEndAt ? (
-            isKotkiDwa && remainingMs !== null && cribRemainingMs !== null ? (
+            isKotkiDwa &&
+            remainingMs !== null &&
+            cribRemainingMs !== null &&
+            nextSleepAt !== null &&
+            cribAt !== null ? (
               <View className="mt-4 gap-2">
                 <Text className="text-sm text-text-muted">
                   Pobudka o {formatTime(lastSleepEndAt)}
                 </Text>
                 <View className="gap-1.5">
-                  <CountdownRow label="Do łóżeczka" remainingMs={cribRemainingMs} />
-                  <CountdownRow label={nextSleepLabel} remainingMs={remainingMs} />
+                  <CountdownRow label="Do łóżeczka" remainingMs={cribRemainingMs} targetAt={cribAt} />
+                  <CountdownRow label={nextSleepLabel} remainingMs={remainingMs} targetAt={nextSleepAt} />
                 </View>
                 {correctionText ? (
                   <Text className="text-xs font-medium text-orange">{correctionText}</Text>
@@ -138,7 +159,10 @@ export function ActiveWindowCard({
                   Pobudka o {formatTime(lastSleepEndAt)}
                 </Text>
                 {remainingMs === null ? null : remainingMs > 0 ? (
-                  <Badge label={`Drzemka za ~${formatDuration(remainingMs)}`} variant="orange" />
+                  <Badge
+                    label={`Drzemka za ~${formatDuration(remainingMs)} (${formatTime(new Date(nowMs + remainingMs))})`}
+                    variant="orange"
+                  />
                 ) : (
                   <Badge
                     label={`Przekroczono okno o ~${formatDuration(-remainingMs)}`}
