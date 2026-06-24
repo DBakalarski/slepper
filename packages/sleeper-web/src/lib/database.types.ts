@@ -180,6 +180,7 @@ export type Database = {
           id: string
           notes: string | null
           start_at: string
+          tags: string[]
           type: string
         }
         Insert: {
@@ -190,6 +191,7 @@ export type Database = {
           id?: string
           notes?: string | null
           start_at: string
+          tags?: string[]
           type: string
         }
         Update: {
@@ -200,6 +202,7 @@ export type Database = {
           id?: string
           notes?: string | null
           start_at?: string
+          tags?: string[]
           type?: string
         }
         Relationships: [

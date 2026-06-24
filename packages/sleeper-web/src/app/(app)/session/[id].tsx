@@ -53,6 +53,7 @@ export default function SessionEditScreen() {
       endDate: data.end_at ? new Date(data.end_at) : null,
       type: data.type,
       notes: data.notes ?? '',
+      tags: data.tags,
     });
     setInitializedSignature(signature);
     setValidationError(null);
@@ -128,6 +129,7 @@ export default function SessionEditScreen() {
           // Nie wysylamy end_at dla aktywnej sesji — zostawiamy null bez zmiany.
           ...(isActive ? {} : { end_at: form.endDate ? form.endDate.toISOString() : null }),
           notes: form.notes.trim().length > 0 ? form.notes.trim() : null,
+          tags: form.tags,
         },
       },
       {

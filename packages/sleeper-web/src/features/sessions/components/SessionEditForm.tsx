@@ -4,6 +4,7 @@ import { Chip } from '@/components/Chip';
 import { DatePickerField } from '@/components/DatePickerField';
 import { TimePickerField } from '@/components/TimePickerField';
 import { type SessionType } from '@/features/sessions/hooks';
+import { SESSION_TAGS } from '@/features/sessions/tags';
 import { combineDateAndTimeInAppTz } from '@/lib/time';
 
 export interface SessionFormState {
@@ -11,6 +12,7 @@ export interface SessionFormState {
   endDate: Date | null;
   type: SessionType;
   notes: string;
+  tags: string[];
 }
 
 interface SessionEditFormProps {
@@ -147,6 +149,30 @@ export function SessionEditForm({
             accessibilityLabel="Notatki do sesji"
             textAlignVertical="top"
           />
+        </View>
+
+        <View>
+          <Text className="text-xs font-semibold text-purple">Kontekst (opcjonalnie)</Text>
+          <View className="mt-2 flex-row flex-wrap gap-2">
+            {SESSION_TAGS.map((tag) => {
+              const selected = form.tags.includes(tag.slug);
+              return (
+                <Chip
+                  key={tag.slug}
+                  label={tag.label}
+                  selected={selected}
+                  onPress={() =>
+                    onChange({
+                      ...form,
+                      tags: selected
+                        ? form.tags.filter((slug) => slug !== tag.slug)
+                        : [...form.tags, tag.slug],
+                    })
+                  }
+                />
+              );
+            })}
+          </View>
         </View>
 
         {validationError ? (

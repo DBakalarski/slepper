@@ -9,8 +9,10 @@ import {
   bedtimeRegularityMinutes,
   dailySleepSeries,
   morningWakeRange,
+  tagSleepCorrelation,
   type BedtimeRegularity,
   type DailySleep,
+  type TagCorrelation,
   type WakeRange,
 } from '@/lib/sleep-aggregation';
 import { dayKeyInAppTz, startOfDayInAppTz } from '@/lib/time';
@@ -27,6 +29,7 @@ export interface SleepStats {
   avgSleepMsLast3: number;
   regularity: BedtimeRegularity | null;
   wakeRange: WakeRange | null;
+  tagCorrelations: TagCorrelation[];
   daysCovered: number;
   isLoading: boolean;
   isError: boolean;
@@ -59,6 +62,7 @@ export function useSleepStats(childId: string | null, rangeDays: StatsRange): Sl
       avgSleepMsLast3: averageSleepMsLastDays(series, FORM_WINDOW_DAYS),
       regularity: bedtimeRegularityMinutes(sessions),
       wakeRange: morningWakeRange(sessions),
+      tagCorrelations: tagSleepCorrelation(sessions, rangeStart, rangeEnd),
       daysCovered: series.filter((day) => day.totalSleepMs > 0).length,
     };
   }, [sessions, rangeStart, rangeEnd]);

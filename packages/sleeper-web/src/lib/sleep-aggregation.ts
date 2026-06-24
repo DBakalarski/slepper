@@ -187,3 +187,62 @@ export function sleepForm(
   if (avgHours >= okFloor && avgHours <= okCeil) return 'ok';
   return 'poor';
 }
+
+export interface TagCorrelation {
+  slug: string;
+  taggedDays: number;
+  avgTaggedMs: number;
+  avgUntaggedMs: number;
+  deltaMs: number; // avgTagged - avgUntagged (ujemne = krocej w dni z tagiem)
+}
+
+// Korelacja tag -> sredni dzienny sen. Atrybucja na poziomie DNIA: dzien „ma
+// tag X" jesli ktoras sesja zaczynajaca sie tego dnia ma X. Porownuje sredni
+// dzienny sen (dni z danymi) w dni-z-X vs dni-bez-X. Zwraca tylko tagi z OBIEMA
+// grupami (≥1 dzien z i bez), posortowane malejaco po |delta|.
+export function tagSleepCorrelation(
+  sessions: SleepSession[],
+  rangeStart: Date,
+  rangeEnd: Date,
+): TagCorrelation[] {
+  const series = dailySleepSeries(sessions, rangeStart, rangeEnd);
+  const sleepByDay = new Map(
+    series.filter((day) => day.totalSleepMs > 0).map((day) => [day.dayKey, day.totalSleepMs]),
+  );
+
+  const tagsByDay = new Map<string, Set<string>>();
+  for (const session of sessions) {
+    if (session.tags.length === 0) continue;
+    const key = dayKeyInAppTz(new Date(session.start_at));
+    if (!sleepByDay.has(key)) continue;
+    const set = tagsByDay.get(key) ?? new Set<string>();
+    for (const tag of session.tags) set.add(tag);
+    tagsByDay.set(key, set);
+  }
+
+  const allTags = new Set<string>();
+  for (const set of tagsByDay.values()) {
+    for (const tag of set) allTags.add(tag);
+  }
+
+  const result: TagCorrelation[] = [];
+  for (const slug of allTags) {
+    const tagged: number[] = [];
+    const untagged: number[] = [];
+    for (const [day, ms] of sleepByDay) {
+      if (tagsByDay.get(day)?.has(slug)) tagged.push(ms);
+      else untagged.push(ms);
+    }
+    if (tagged.length === 0 || untagged.length === 0) continue;
+    const avgTaggedMs = tagged.reduce((sum, ms) => sum + ms, 0) / tagged.length;
+    const avgUntaggedMs = untagged.reduce((sum, ms) => sum + ms, 0) / untagged.length;
+    result.push({
+      slug,
+      taggedDays: tagged.length,
+      avgTaggedMs,
+      avgUntaggedMs,
+      deltaMs: avgTaggedMs - avgUntaggedMs,
+    });
+  }
+  return result.sort((a, b) => Math.abs(b.deltaMs) - Math.abs(a.deltaMs));
+}

@@ -9,6 +9,7 @@ import { useActiveChild } from '@/features/children/useActiveChild';
 import { useCurrentFamily } from '@/features/family/hooks';
 import { SleepBarChart } from '@/features/stats/components/SleepBarChart';
 import { SleepFormBadge } from '@/features/stats/components/SleepFormBadge';
+import { SleepTagCorrelation } from '@/features/stats/components/SleepTagCorrelation';
 import { useSleepStats, type StatsRange } from '@/features/stats/useSleepStats';
 import { COLORS } from '@/lib/colors';
 import { sleepForm } from '@/lib/sleep-aggregation';
@@ -122,6 +123,19 @@ function StatsContent({ child }: { child: Child }) {
                 isLast
               />
             ) : null}
+          </Card>
+
+          <Card>
+            <Text className="mb-3 text-base font-semibold text-navy dark:text-cream">
+              Kontekst a sen
+            </Text>
+            {stats.tagCorrelations.length > 0 ? (
+              <SleepTagCorrelation correlations={stats.tagCorrelations} />
+            ) : (
+              <Text className="text-sm text-text-muted dark:text-cream/60">
+                Dodaj tagi do sesji (w szczegółach sesji), aby zobaczyć jak kontekst wpływa na sen.
+              </Text>
+            )}
           </Card>
         </>
       )}

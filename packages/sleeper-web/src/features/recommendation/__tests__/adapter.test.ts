@@ -11,6 +11,7 @@ const baseSession = (overrides: Partial<AppSleepSession>): AppSleepSession => ({
   start_at: '2026-06-05T10:00:00.000Z',
   end_at: '2026-06-05T11:00:00.000Z',
   notes: null,
+  tags: [],
   created_by: 'user-1',
   created_at: '2026-06-05T10:00:00.000Z',
   ...overrides,

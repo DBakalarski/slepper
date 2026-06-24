@@ -8,6 +8,7 @@ import {
   dailySleepSeries,
   morningWakeRange,
   sleepForm,
+  tagSleepCorrelation,
 } from '@/lib/sleep-aggregation';
 import type { SleepSession } from '@/features/sessions/hooks';
 
@@ -19,6 +20,7 @@ function session(
   type: 'nap' | 'night_sleep',
   startIso: string,
   endIso: string | null,
+  tags: string[] = [],
 ): SleepSession {
   return {
     id: `${type}-${startIso}`,
@@ -27,6 +29,7 @@ function session(
     start_at: startIso,
     end_at: endIso,
     notes: null,
+    tags,
     created_by: 'u1',
     created_at: startIso,
   };
@@ -158,5 +161,38 @@ describe('sleepForm', () => {
     expect(sleepForm(9, norm)).toBe('poor'); // < okFloor 9.35
     expect(sleepForm(17, norm)).toBe('poor'); // > okCeil 16.1
     expect(sleepForm(0, norm)).toBe('poor'); // brak danych
+  });
+});
+
+describe('tagSleepCorrelation', () => {
+  // 4 dni [18, 22), kazdy z drzemka o roznej dlugosci; tag 'teething' na dniach 18 i 20.
+  const rangeStart = new Date('2026-06-18T00:00:00+02:00');
+  const rangeEnd = new Date('2026-06-22T00:00:00+02:00');
+  const sessions = [
+    session('nap', '2026-06-18T10:00:00+02:00', '2026-06-18T12:00:00+02:00', ['teething']), // 2h
+    session('nap', '2026-06-19T10:00:00+02:00', '2026-06-19T13:00:00+02:00', []), // 3h
+    session('nap', '2026-06-20T10:00:00+02:00', '2026-06-20T12:00:00+02:00', ['teething']), // 2h
+    session('nap', '2026-06-21T10:00:00+02:00', '2026-06-21T14:00:00+02:00', []), // 4h
+  ];
+
+  it('porownuje sredni dzienny sen w dni z tagiem vs bez', () => {
+    const result = tagSleepCorrelation(sessions, rangeStart, rangeEnd);
+    expect(result).toHaveLength(1);
+    const teething = result[0];
+    expect(teething.slug).toBe('teething');
+    expect(teething.taggedDays).toBe(2);
+    expect(teething.avgTaggedMs).toBe(2 * HOUR); // (2h + 2h) / 2
+    expect(teething.avgUntaggedMs).toBe(3.5 * HOUR); // (3h + 4h) / 2
+    expect(teething.deltaMs).toBe(-1.5 * HOUR); // krocej z tagiem
+  });
+
+  it('pomija tag bez grupy porownawczej (wszystkie dni otagowane)', () => {
+    const allTagged = sessions.map((s) => ({ ...s, tags: ['illness'] }));
+    expect(tagSleepCorrelation(allTagged, rangeStart, rangeEnd)).toEqual([]);
+  });
+
+  it('pusta lista gdy brak tagow', () => {
+    const noTags = sessions.map((s) => ({ ...s, tags: [] }));
+    expect(tagSleepCorrelation(noTags, rangeStart, rangeEnd)).toEqual([]);
   });
 });

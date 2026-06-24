@@ -15,6 +15,11 @@ describe('SessionEditForm static invariants', () => {
     expect(src).toMatch(/combineDateAndTimeInAppTz/);
   });
 
+  it('renderuje selektor tagow kontekstu (SESSION_TAGS + form.tags)', () => {
+    expect(src).toMatch(/SESSION_TAGS/);
+    expect(src).toMatch(/form\.tags/);
+  });
+
   it('uses DatePickerField dla daty (HTML5 input on web)', () => {
     expect(src).toMatch(/DatePickerField/);
   });

@@ -25,6 +25,7 @@ export interface SleepSession {
   start_at: string;
   end_at: string | null;
   notes: string | null;
+  tags: string[];
   created_by: string;
   created_at: string;
 }
@@ -44,6 +45,7 @@ function rowToSession(row: {
   start_at: string;
   end_at: string | null;
   notes: string | null;
+  tags: string[] | null;
   created_by: string;
   created_at: string;
 }): SleepSession {
@@ -54,6 +56,7 @@ function rowToSession(row: {
     start_at: row.start_at,
     end_at: row.end_at,
     notes: row.notes,
+    tags: row.tags ?? [],
     created_by: row.created_by,
     created_at: row.created_at,
   };
@@ -83,7 +86,7 @@ export function useSessions(
       // i skonczyla po start okna (lub trwa).
       const { data, error } = await supabase
         .from('sessions')
-        .select('id, child_id, type, start_at, end_at, notes, created_by, created_at')
+        .select('id, child_id, type, start_at, end_at, notes, tags, created_by, created_at')
         .eq('child_id', childId)
         .lt('start_at', rangeEnd.toISOString())
         .or(`end_at.is.null,end_at.gte.${rangeStart.toISOString()}`)
@@ -108,7 +111,7 @@ export function useSessionById(
       if (!sessionId) return null;
       const { data, error } = await supabase
         .from('sessions')
-        .select('id, child_id, type, start_at, end_at, notes, created_by, created_at')
+        .select('id, child_id, type, start_at, end_at, notes, tags, created_by, created_at')
         .eq('id', sessionId)
         .maybeSingle();
       if (error) throw error;
@@ -128,7 +131,7 @@ export function useActiveSession(
       if (!childId) return null;
       const { data, error } = await supabase
         .from('sessions')
-        .select('id, child_id, type, start_at, end_at, notes, created_by, created_at')
+        .select('id, child_id, type, start_at, end_at, notes, tags, created_by, created_at')
         .eq('child_id', childId)
         .is('end_at', null)
         .maybeSingle();
@@ -149,7 +152,7 @@ export function useLastEndedSession(
       if (!childId) return null;
       const { data, error } = await supabase
         .from('sessions')
-        .select('id, child_id, type, start_at, end_at, notes, created_by, created_at')
+        .select('id, child_id, type, start_at, end_at, notes, tags, created_by, created_at')
         .eq('child_id', childId)
         .not('end_at', 'is', null)
         .order('end_at', { ascending: false })
@@ -198,7 +201,7 @@ export function useStartSession(): UseMutationResult<
           start_at: (startAt ?? new Date()).toISOString(),
           created_by: user.id,
         })
-        .select('id, child_id, type, start_at, end_at, notes, created_by, created_at')
+        .select('id, child_id, type, start_at, end_at, notes, tags, created_by, created_at')
         .single();
       // Map 23505 (partial unique idx — race ze startem na drugim telefonie) i
       // inne typowe bledy na PL. Wrzucamy nowy Error zeby UI mogl wyswietlic
@@ -225,6 +228,7 @@ export function useStartSession(): UseMutationResult<
         start_at: (startAt ?? new Date()).toISOString(),
         end_at: null,
         notes: null,
+        tags: [],
         created_by: user.id,
         created_at: new Date().toISOString(),
       };
@@ -263,7 +267,7 @@ export function useEndSession(): UseMutationResult<
         .from('sessions')
         .update({ end_at: (endAt ?? new Date()).toISOString() })
         .eq('id', sessionId)
-        .select('id, child_id, type, start_at, end_at, notes, created_by, created_at')
+        .select('id, child_id, type, start_at, end_at, notes, tags, created_by, created_at')
         .single();
       if (error) throw error;
       return rowToSession(data);
@@ -318,6 +322,7 @@ interface UpdateSessionInput {
     start_at?: string;
     end_at?: string | null;
     notes?: string | null;
+    tags?: string[];
   };
 }
 
@@ -330,7 +335,7 @@ export function useUpdateSession() {
         .from('sessions')
         .update(patch)
         .eq('id', sessionId)
-        .select('id, child_id, type, start_at, end_at, notes, created_by, created_at')
+        .select('id, child_id, type, start_at, end_at, notes, tags, created_by, created_at')
         .single();
       if (error) throw error;
       return rowToSession(data);
@@ -409,7 +414,7 @@ export function useInsertBackdatedSession() {
           notes: notes?.trim() ? notes.trim() : null,
           created_by: user.id,
         })
-        .select('id, child_id, type, start_at, end_at, notes, created_by, created_at')
+        .select('id, child_id, type, start_at, end_at, notes, tags, created_by, created_at')
         .single();
       if (error) throw error;
       return rowToSession(data);
