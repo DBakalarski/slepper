@@ -3,7 +3,9 @@ import { BarChart3, Calendar, Home, User } from 'lucide-react-native';
 import type { ComponentType } from 'react';
 import { View } from 'react-native';
 
+import { ChangelogBanner } from '@/components/ChangelogBanner';
 import { useAuth } from '@/features/auth/AuthProvider';
+import { useChangelogUpdate } from '@/features/changelog/useChangelogUpdate';
 import { useActiveChild } from '@/features/children/useActiveChild';
 import { useEffectiveTheme } from '@/features/settings/ThemeProvider';
 import { useRealtimeSessions } from '@/features/sessions/useRealtimeSessions';
@@ -63,6 +65,10 @@ export default function AppTabsLayout() {
   // refetchuje to co aktualnie observowane.
   useRealtimeSessions(activeChildId);
 
+  // „Co nowego po deployu" — wykrywa nowy changelog (open + focus), banner
+  // z wymuszeniem restartu. Hook wolany bezwarunkowo (przed early return).
+  const changelog = useChangelogUpdate();
+
   if (status === 'loading') {
     return null;
   }
@@ -77,6 +83,7 @@ export default function AppTabsLayout() {
   // Tabs API expo-router nie obsluguje className — kolorystyka dark/light
   // przekazana przez screenOptions na bazie `effectiveTheme` (manual override).
   return (
+    <>
     <Tabs
       // `history` zamiast domyslnego `firstRoute`: router.back() z ukrytych
       // ekranow (session/[id], sleep-fullscreen, settings) wraca do zakladki
@@ -144,5 +151,14 @@ export default function AppTabsLayout() {
           ActiveChildCard z Profilu. Ukryty w tab barze. */}
       <Tabs.Screen name="child/[id]/edit" options={{ href: null }} />
     </Tabs>
+    {changelog.visible ? (
+      <ChangelogBanner
+        items={changelog.items}
+        extraCount={changelog.extraCount}
+        onRestart={changelog.restart}
+        onDismiss={changelog.dismiss}
+      />
+    ) : null}
+    </>
   );
 }

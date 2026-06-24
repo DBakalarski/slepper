@@ -2,7 +2,7 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "rewrites": [
     {
-      "source": "/((?!_expo|icons|assets|manifest\\.json|sw\\.js|favicon\\.png|robots\\.txt).*)",
+      "source": "/((?!_expo|icons|assets|manifest\\.json|sw\\.js|favicon\\.png|robots\\.txt|changelog\\.json).*)",
       "destination": "/index.html"
     }
   ],
@@ -47,6 +47,19 @@
         {
           "key": "Content-Type",
           "value": "application/manifest+json"
+        }
+      ]
+    },
+    {
+      "source": "/changelog.json",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache"
+        },
+        {
+          "key": "Content-Type",
+          "value": "application/json; charset=utf-8"
         }
       ]
     },
