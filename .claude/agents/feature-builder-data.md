@@ -52,16 +52,16 @@ Obowiązkowe pryncypia (z załadowanych skilli):
 - Type safety: bez `any`, explicit return types
 
 ### 4. Walidacja
-Po napisaniu kodu uruchom kolejno (w `sleeper-app/`):
-1. `npx tsc --noEmit` — MUSI 0 błędów
-2. Testy (gdy setup'owany Jest): `npm test -- <plik>` lub `npx jest <plik>` — wszystkie PASS; n/a jeśli brak setup'u
-3. `npm run lint` (`expo lint`) — 0 errors
+Po napisaniu kodu uruchom kolejno (w `packages/sleeper-web/`):
+1. `pnpm exec tsc --noEmit` — MUSI 0 błędów
+2. Testy (vitest): `pnpm test` (lub `pnpm test <plik>`) — wszystkie PASS
+3. `pnpm lint` (`expo lint`) — 0 errors
 4. Migracja stosuje się czysto na świeżej bazie (jeśli dotyczy) — `supabase db reset`
 5. **RLS test** — fixture: anon user NIE widzi cudzych rekordów (manual sprawdzenie w Supabase Studio lub przez `supabase test db` jeśli skonfigurowane)
 
 Jeśli któryś krok się nie powiedzie — **napraw KOD, nie test, nie politykę bezpieczeństwa**. NIGDY nie osłabiaj RLS żeby test przeszedł.
 
-**Setup testów**: na razie sleeper-app/ **nie ma setup'u testów**. Jeśli IU wymaga testów, a setup'u nie ma — w `Następne kroki dla orkiestratora` wskaż "test setup TBD (patrz `expo-rn-testing` skill)".
+**Setup testów**: sleeper-web ma skonfigurowany **vitest** (`pnpm test`). Pisz testy razem z kodem (happy path + error case + nieautoryzowany dostęp).
 
 ### 5. Raport
 Zwróć dokładnie ten format:

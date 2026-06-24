@@ -37,9 +37,9 @@ Jeśli prompt zawiera blok "Mandatory designerski kontekst" — przeczytaj wszys
 **Reguła brakującego pomiaru:** Jeśli SPEC.md nie pokrywa pomiaru/wariantu — NIE zgaduj. Zwróć `Status: blocked` z notą "brak SPEC.md dla X". Warstwa danych (Data) nie konsumuje SPEC.md — pomiń kontekst designerski przy implementacji schema/RLS/query.
 
 ### 2. Sprawdź wzorce w repo
-PRZED napisaniem kodu uruchom Grep/Glob w `sleeper-app/`:
+PRZED napisaniem kodu uruchom Grep/Glob w `sleeper-web/`:
 - Istniejące podobne fullstack flow (np. inne formularze z Supabase Auth, inne CRUD, Realtime sync)
-- Wzorce hooków danych (`use<X>` w `sleeper-app/src/hooks/`)
+- Wzorce hooków danych (`use<X>` w `sleeper-web/src/hooks/`)
 - Wzorce TanStack Query (`queryKey`, invalidation patterns)
 - Wzorce schematów Zod współdzielonych UI/data
 - RLS policies dla podobnych tabel w `supabase/migrations/`
@@ -51,7 +51,7 @@ NIE wymyślaj nowego patternu. Naśladuj istniejący.
 Kolejność implementacji jest istotna:
 
 1. **Schema Zod (źródło prawdy typów)** — definiuje shape danych dla obu warstw
-2. **Migracja / RLS** — jeśli IU jej wymaga (`sleeper-app/supabase/migrations/` jeśli istnieje, lub `supabase/migrations/`)
+2. **Migracja / RLS** — jeśli IU jej wymaga (`sleeper-web/supabase/migrations/`)
 3. **Query / mutation / Edge Function** — warstwa danych zwraca typed result
 4. **Hook wrapper** (`use<X>` z TanStack Query) — granica między data a UI
 5. **Realtime subscription** (jeśli wymagane) — w hook z cleanup w `useEffect` return
@@ -75,16 +75,16 @@ Obowiązkowe pryncypia (z załadowanych skilli):
 - **Testy minimum** (gdy setup): data → happy path + invalid input + nieautoryzowany dostęp; UI → render + interakcja + stan błędu
 
 ### 4. Walidacja
-Po napisaniu kodu uruchom kolejno (w `sleeper-app/`):
-1. `npx tsc --noEmit` — MUSI 0 błędów
-2. Testy (`npm test` jeśli setup'owane) — wszystkie PASS
-3. `npm run lint` (`expo lint`) — 0 errors
+Po napisaniu kodu uruchom kolejno (w `packages/sleeper-web/`):
+1. `pnpm exec tsc --noEmit` — MUSI 0 błędów
+2. Testy (vitest): `pnpm test` — wszystkie PASS
+3. `pnpm lint` (`expo lint`) — 0 errors
 4. **Migracja stosuje się czysto** (jeśli dotyczy) — `supabase db reset` lub odpowiednik
 5. **RLS test** — fixture: anon user NIE widzi cudzych rekordów (manual sprawdzenie w Supabase Studio)
-6. **Manual on-device** (Expo Go) — `npx expo start`:
-   - Komponent renderuje się bez warningów
+6. **Manual w przeglądarce** — `pnpm web:dev`, http://localhost:8081:
+   - Komponent renderuje się bez warningów (konsola)
    - Formy: keyboard handling, focus, walidacja
-   - Realtime: jeśli dotyczy — uruchom na dwóch urządzeniach i sprawdź sync
+   - Realtime: jeśli dotyczy — uruchom w dwóch kartach/urządzeniach i sprawdź sync
    - Dark mode, a11y
 
 Jeśli któryś krok się nie powiedzie — **napraw KOD**. NIGDY nie osłabiaj testów ani RLS.
@@ -105,7 +105,7 @@ Zwróć dokładnie ten format:
 - lint: ✅ | ❌
 - migracja: ✅ stosuje się czysto | ❌ | n/a
 - RLS: ✅ blokuje anon | ❌ | n/a
-- manual on-device: ✅ | ❌ | n/a
+- manual w przeglądarce: ✅ | ❌ | n/a
 
 **Decyzje implementacyjne:**
 - Dekompozycja: {co było po stronie data, co po UI}
@@ -129,4 +129,4 @@ Zwróć dokładnie ten format:
 7. **Brak refaktoryzacji** — zgłoś w `Następne kroki dla orkiestratora`.
 8. **Source of truth designu (warstwa UI)** — SPEC.md > DESIGN.md > ux-ui-guidelines. Rozjazdy raportuj w `Decyzje implementacyjne` (dekompozycja Data/UI).
 9. **Brakujący pomiar → Status: blocked** — NIE halucynuj wymiarów. Zwróć blocked z notą "brak SPEC.md dla X".
-10. **Web HTML w RN to bug** — gdy widzisz `<div>`, `<button>`, `<input>` w `sleeper-app/` — naprawiaj na komponenty RN i raportuj.
+10. **Surowy web HTML to bug** — kod używa react-native-web; gdy widzisz `<div>`, `<button>`, `<input>` zamiast `<View>`/`<Pressable>`/`<TextInput>` w `sleeper-web/` — naprawiaj na komponenty RN i raportuj.

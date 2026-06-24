@@ -4,12 +4,12 @@ Aplikacja do trackowania snu i okien aktywnosci dziecka. Solo dev, Expo + Supaba
 
 ## Scope — WEB ONLY
 
-**Aktualnie wspieramy WYLACZNIE wersje web (PWA, `packages/sleeper-web/`).** Aplikacja mobilna (`packages/sleeper-app/`) NIE jest priorytetem — zmiany w sleeper-app sa OK gdy wynikaja z refaktoru wspoldzielonego kodu, ale nowych ficzerow mobile nie robimy, manual on-device testow nie wymagamy, regresji mobilnych nie scigamy.
+**Wspieramy WYLACZNIE wersje web (PWA, `packages/sleeper-web/`).** Aplikacja mobilna (`packages/sleeper-app/`) zostala **usunieta** z repo (deprecated 2026-06-24) — nie ma juz kodu mobile do utrzymania.
 
 Praktyczne implikacje:
-- Nowe ficzery i bugfixy => `packages/sleeper-web/` najpierw, mobile potem (lub wcale).
-- Pre-merge walidacja => `pnpm web:build:check` jest blocking; `pnpm --filter sleeper-app exec tsc --noEmit` jest nice-to-have, nie blocker.
-- Jesli ficzer wymaga native-only API (Notifications, SecureStore, Haptics) — najpierw potwierdz z userem czy w ogole robimy.
+- Nowe ficzery i bugfixy => `packages/sleeper-web/`.
+- Pre-merge walidacja => `pnpm web:build:check` jest blocking.
+- Native-only API (Notifications, SecureStore, Haptics) na web sa no-op/crashuja — zawsze przez `Platform.OS` guard + `lib/` wrapper (patrz `learned-patterns.md`).
 
 ## Expo SDK 54 — LOCK
 
@@ -45,14 +45,11 @@ sleeper/                                  # ← root (TEN katalog)
 │   ├── hooks/                            # error-handling, stop-build-check
 │   └── skills/                           # dev-brainstorm, dev-plan, dev-docs, code-review itd.
 └── packages/
-    ├── sleeper-app/                      # ← KOD aplikacji Expo (RN + expo-router)
+    ├── sleeper-web/                      # ← PWA web (Expo SDK 54 web-only) — JEDYNA aplikacja
     │   ├── src/app/                      # routes (expo-router, file-based)
     │   ├── src/components/, src/features/, src/lib/
-    │   └── supabase/{config.toml,migrations/}
-    ├── sleeper-web/                      # ← PWA web (Expo SDK 54 web-only)
-    │   ├── src/app/                      # routes — kopia 1:1 sleeper-app
-    │   ├── src/components/, src/features/, src/lib/
     │   ├── public/                       # manifest.json, sw.js, icons, index.html
+    │   ├── supabase/{config.toml,migrations/}  # schema source-of-truth (shared DB)
     │   ├── scripts/check-no-native-imports.sh
     │   └── vercel.json                   # SPA rewrites + cache headers
     ├── sleeper-machine/                  # ← algorytm Galland (TS, vitest) — naukowy, EWMA
@@ -62,26 +59,27 @@ sleeper/                                  # ← root (TEN katalog)
 ```
 
 **Wazne:**
-- Kod aplikacji zyje w `packages/sleeper-app/`. Komendy `expo/tsc/lint` uruchamiaj z tego katalogu **lub** przez `pnpm --filter sleeper-app <skrypt>` z roota.
-- **PWA web w `packages/sleeper-web/`** — Expo SDK 54 web-only, deploy na Vercel. Komendy: `pnpm web:dev|build|build:check|typecheck|lint|test`. Deploy runbook: `docs/runbook/sleeper-web-deploy.md`. Wspoldzieli baze Supabase z sleeper-app (cross-device sync via Realtime).
+- Kod aplikacji zyje w `packages/sleeper-web/` — Expo SDK 54 web-only, deploy na Vercel. Komendy: `pnpm web:dev|build|build:check|typecheck|lint|test`. Deploy runbook: `docs/runbook/sleeper-web-deploy.md`.
+- **Migracje Supabase** zyja w `packages/sleeper-web/supabase/migrations/` (`config.toml` + SQL) — schema source-of-truth dla wspoldzielonej bazy Supabase.
 - Algorytm Galland w `packages/sleeper-machine/` — importowany jako `sleeper-machine`. Komendy: `pnpm --filter sleeper-machine test|build|smoke`.
 - Algorytm Kotki Dwa w `packages/sleeper-machine-kotki/` — importowany jako `sleeper-machine-kotki`. Komendy: `pnpm --filter sleeper-machine-kotki test|build`. Proxy: `pnpm machine-kotki:test|build`.
 - Wybor algorytmu per dziecko — pole `children.algorithm` ('galland' | 'kotki_dwa', default 'galland').
 - `docs/` i `.claude/` zostaja w roocie i sa wspolne.
 
-## Aktualny stan (2026-06-06)
+## Aktualny stan (2026-06-24)
 
 - **Branch:** `main` (poprzednie feature branche zmergowane).
-- **Aktywne zadania** (równolegle w `docs/active/`):
-  - `docs/active/fixy-edycja-aktywnosc-smart-start/` — 3 fixy UX (TimePicker iOS minuty, gap aktywności na home, smart typ sesji z rekomendacji). Jeszcze nie w `completed/`. Status: na hold-zie do uzgodnienia czy port do web ma sens.
-  - `docs/active/active-window-machine/` — hook lifting `useSleepRecommendation` do `ActiveChildSection`, footer badge "Drzemka za" / "Przekroczono okno o" na `ActiveWindowCard`. Status: na hold-zie (dotyka tylko `packages/sleeper-app/`, vs. obecny scope WEB ONLY).
+- **Mobile usuniete (2026-06-24):** `packages/sleeper-app/` skasowane — projekt jest web-only. `supabase/` przeniesione do `packages/sleeper-web/supabase/`.
+- **Aktywne zadania** (`docs/active/`): oba dotyczyly tylko skasowanego `packages/sleeper-app/`, wiec sa nieaktualne:
+  - `docs/active/fixy-edycja-aktywnosc-smart-start/` — 3 fixy UX (mobile-only, nieaktualne).
+  - `docs/active/active-window-machine/` — hook lifting + footer badge (mobile-only, nieaktualne).
 - **Ukonczone:**
   - MVP sleep tracker → `docs/completed/mvp-sleep-tracker/`
   - UI redesign → `docs/completed/ui-redesign/`
   - fixy-i-kotki-dwa-algorytm → `docs/completed/fixy-i-kotki-dwa-algorytm/` (merged to main 2026-06-05)
   - sleeper-web-pwa → `docs/completed/sleeper-web-pwa/` (kod gotowy 2026-06-06; deploy Vercel + manual-on-device = user action)
 
-## Stack (zainstalowany — sprawdzone w `packages/sleeper-app/package.json`)
+## Stack (zainstalowany — sprawdzone w `packages/sleeper-web/package.json`)
 
 | Warstwa | Wybor | Wersja |
 |---|---|---|
@@ -93,13 +91,13 @@ sleeper/                                  # ← root (TEN katalog)
 | Backend | @supabase/supabase-js | ^2.106 (AsyncStorage persistence, URL polyfill) |
 | Daty | date-fns + date-fns-tz | UTC w bazie, `Europe/Warsaw` w UI |
 | Animacje | react-native-reanimated + worklets | ~4.1 / 0.5 |
-| Ikony | lucide-react-native | ^1.17 |
-| Notyfikacje / wake | expo-notifications, expo-keep-awake | ~0.32 / ~15.0 |
+| Ikony | lucide-react-native (alias → lucide-react na web) | ^1.17 / ^0.469 |
+| Notyfikacje / wake | web wrappery w `lib/` (Wake Lock API, notyfikacje no-op) | — |
 | Algorytm (Galland) | `sleeper-machine` (workspace) | 0.1.0 (vitest, EWMA — naukowy) |
 | Algorytm (Kotki Dwa) | `sleeper-machine-kotki` (workspace) | 0.1.0 (vitest, lookup table per wiek) |
 | TS | strict ON | path alias `@/*` -> `./src/*` |
 
-**Uwaga ws. struktury routingu:** plan w `PLAN.md` zaklada `app/` w roocie, ale template SDK trzyma routes w `packages/sleeper-app/src/app/`. Funkcjonalnie identyczne, alias `@/*` to obsluguje.
+**Uwaga ws. struktury routingu:** plan w `PLAN.md` zaklada `app/` w roocie, ale template SDK trzyma routes w `packages/sleeper-web/src/app/`. Funkcjonalnie identyczne, alias `@/*` to obsluguje.
 
 ## Konwencje specyficzne dla domeny
 
@@ -115,8 +113,6 @@ sleeper/                                  # ← root (TEN katalog)
 Z roota (przez pnpm filter):
 
 ```bash
-pnpm --filter sleeper-app exec tsc --noEmit   # typecheck app — 0 bledow
-pnpm --filter sleeper-app lint                # expo lint
 pnpm --filter sleeper-web exec tsc --noEmit   # typecheck web PWA — 0 bledow
 pnpm --filter sleeper-web lint                # expo lint web
 pnpm --filter sleeper-web test                # vitest web (lib + features)
@@ -128,15 +124,14 @@ pnpm --filter sleeper-machine-kotki test      # vitest (algorytm Kotki Dwa)
 pnpm --filter sleeper-machine-kotki build     # tsc -> dist/
 ```
 
-Alternatywnie wejdz do `packages/sleeper-app/` i uzyj `npx tsc --noEmit` / `pnpm lint` lokalnie.
+Alternatywnie wejdz do `packages/sleeper-web/` i uzyj `npx tsc --noEmit` / `pnpm lint` lokalnie.
 
 Runtime:
-- Mobile: `pnpm app:dev` (alias `pnpm --filter sleeper-app start`) -> QR -> Expo Go na fizycznym urzadzeniu. Symulator iOS wymaga Maca z Xcode.
 - Web PWA: `pnpm web:dev` -> http://localhost:8081 w Safari/Chrome. Deploy prod: `git push origin main` -> Vercel auto-deploy (runbook: `docs/runbook/sleeper-web-deploy.md`).
 
 ## Commit logging — OBOWIAZKOWE
 
-Kazdy commit kodu = osobny follow-up commit z opisem w `docs/commits/` (root projektu, NIE w `sleeper-app/`).
+Kazdy commit kodu = osobny follow-up commit z opisem w `docs/commits/` (root projektu, NIE w `sleeper-web/`).
 
 **Procedura:**
 
@@ -166,7 +161,7 @@ Dlaczego ta zmiana, jakie odchylenia od planu.
 ## Walidacja
 - typecheck: PASS/FAIL
 - test: PASS/FAIL/n/a
-- runtime: jak zweryfikowano (np. "user testowal w Expo Go")
+- runtime: jak zweryfikowano (np. "user testowal w Safari/Chrome", "Vercel preview")
 ```
 
 **Wyjatki:** brak. Zapomnisz — uzupelnij retroaktywnie przed nastepnym commitem.
@@ -188,7 +183,7 @@ Pelny opis: `.claude/docs/dev-pipeline.md`. Skille bezargumentowe wyciagaja kont
 ## Czego NIE robic
 
 - Nie podnosic SDK z 54 bez explicit approval.
-- Nie dodawac mobile-only ficzerow do `packages/sleeper-app/` bez explicit approval — scope projektu to web (patrz §Scope — WEB ONLY).
+- Nie przywracac aplikacji mobilnej (`packages/sleeper-app/`) — zostala skasowana, projekt jest web-only (patrz §Scope — WEB ONLY).
 - Nie mieszac package managerow — projekt uzywa **`pnpm`** (workspaces). NIE wolno `npm install` / `yarn add` w packages.
 - Nie instalowac zaleznosci na poziomie root bez powodu — instaluj per package: `pnpm --filter <name> add <dep>`.
 - Nie instalowac nowych zaleznosci bez poinformowania usera (regula z `coding-rules.md` §8).
