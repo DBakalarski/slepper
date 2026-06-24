@@ -47,6 +47,23 @@ export function formatTime(date: Date): string {
   return format(zoned, 'HH:mm');
 }
 
+// Minuty od polnocy (0..1439) w strefie aplikacji. TZ-safe — przez `format`
+// na zoned date (NIE getHours na raw Date, ktory uzylby device tz).
+export function minutesOfDayInAppTz(date: Date): number {
+  const zoned = toZonedTime(date, APP_TIMEZONE);
+  const hours = Number(format(zoned, 'H'));
+  const minutes = Number(format(zoned, 'm'));
+  return hours * MIN_PER_HOUR + minutes;
+}
+
+// "9:30" z liczby minut od polnocy (0..1439). Czysta formatacja, bez tz.
+export function formatClockMinutes(totalMinutes: number): string {
+  const wrapped = ((Math.round(totalMinutes) % 1440) + 1440) % 1440;
+  const hours = Math.floor(wrapped / MIN_PER_HOUR);
+  const minutes = wrapped % MIN_PER_HOUR;
+  return `${hours}:${minutes.toString().padStart(2, '0')}`;
+}
+
 // "27.05.2026" w strefie aplikacji — krotka forma dla nagłowkow / pickerow.
 export function formatDateShort(date: Date): string {
   const zoned = toZonedTime(date, APP_TIMEZONE);

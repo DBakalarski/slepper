@@ -1,8 +1,9 @@
 import { addDays } from 'date-fns';
 import { useMemo } from 'react';
 
-import { useSessions, type SleepSession } from '@/features/sessions/hooks';
-import { dayKeyInAppTz, endOfDayInAppTz, startOfDayInAppTz } from '@/lib/time';
+import { useSessions } from '@/features/sessions/hooks';
+import { dailySleepTotalsMs } from '@/lib/sleep-aggregation';
+import { dayKeyInAppTz, startOfDayInAppTz } from '@/lib/time';
 
 // Hook agregujacy sredni sen dziecka z ostatnich N pelnych dni (default 7).
 // Reuse istniejacego `useSessions(childId, rangeStart, rangeEnd)` — query klucz
@@ -24,44 +25,8 @@ export interface AvgSleep7d {
   daysCovered: number;
 }
 
-// Liczy czas trwania sesji obcietej do okna `[windowStart, windowEnd)`.
-// Sesja przechodzaca przez polnoc liczy sie do obu dni proporcjonalnie.
-function durationWithinWindow(
-  start: Date,
-  end: Date,
-  windowStart: Date,
-  windowEnd: Date,
-): number {
-  const clampedStart = start < windowStart ? windowStart : start;
-  const clampedEnd = end > windowEnd ? windowEnd : end;
-  if (clampedEnd <= clampedStart) return 0;
-  return clampedEnd.getTime() - clampedStart.getTime();
-}
-
-// Mapuje liste sesji do sumy snu (ms) per dzien w app tz. Sesje cross-midnight
-// dzielone sa miedzy dwa dni. Zwraca Map<dayKey, totalMs>.
-function aggregateByDayInAppTz(sessions: SleepSession[]): Map<string, number> {
-  const totals = new Map<string, number>();
-  for (const session of sessions) {
-    if (session.end_at === null) continue; // pomijamy sesje w toku (= dzisiaj, niepelny dzien)
-    const start = new Date(session.start_at);
-    const end = new Date(session.end_at);
-    if (end <= start) continue;
-
-    // Iteruj po dniach od start do end (inclusive) w app tz.
-    let cursor = startOfDayInAppTz(start);
-    while (cursor < end) {
-      const dayEnd = endOfDayInAppTz(cursor);
-      const ms = durationWithinWindow(start, end, cursor, dayEnd);
-      if (ms > 0) {
-        const key = dayKeyInAppTz(cursor);
-        totals.set(key, (totals.get(key) ?? 0) + ms);
-      }
-      cursor = dayEnd;
-    }
-  }
-  return totals;
-}
+// Day-split cross-midnight wydzielony do `lib/sleep-aggregation.ts`
+// (single source of truth — reuse przez dashboard). Tu tylko srednia 7d.
 
 export function useAvgSleep7d(childId: string | null): AvgSleep7d {
   // Range stabilny dla danego dnia — `dayKeyInAppTz(new Date())` zwraca te sama
@@ -84,7 +49,7 @@ export function useAvgSleep7d(childId: string | null): AvgSleep7d {
   const query = useSessions(childId, rangeStart, rangeEnd);
   const sessions = query.data ?? [];
 
-  const dailyTotals = aggregateByDayInAppTz(sessions);
+  const dailyTotals = dailySleepTotalsMs(sessions);
 
   // daysCovered = min(RANGE_DAYS, ile faktycznych dni mamy dane). Jesli sesje
   // istnieja, czytamy `min(RANGE_DAYS, days since first session)`. Brak sesji -> 0.

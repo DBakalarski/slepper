@@ -1,5 +1,14 @@
 [
   {
+    "v": 2,
+    "date": "2026-06-24",
+    "items": [
+      "Nowy ekran Statystyki — wykres snu na dobę, trendy 7/14/30 dni",
+      "Regularność zasypiania, zakres porannych pobudek i forma snu",
+      "Cofanie zakończenia snu — przycisk „Przywróć” przez 3 sekundy"
+    ]
+  },
+  {
     "v": 1,
     "date": "2026-06-24",
     "items": [
