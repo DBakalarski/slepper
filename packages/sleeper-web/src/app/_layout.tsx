@@ -8,6 +8,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AuthProvider } from '@/features/auth/AuthProvider';
 import { registerSW } from '@/features/pwa/registerSW';
+import { SnackbarProvider } from '@/features/snackbar/SnackbarProvider';
 import { ThemeProvider, useEffectiveTheme } from '@/features/settings/ThemeProvider';
 import { configureNotificationHandler } from '@/lib/notifications';
 import { queryClient, setupFocusManager } from '@/lib/query-client';
@@ -21,11 +22,13 @@ function RootLayoutContent() {
   const effectiveTheme = useEffectiveTheme();
   return (
     <SafeAreaProvider>
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="(auth)" />
-        <Stack.Screen name="(app)" />
-      </Stack>
-      <StatusBar style={effectiveTheme === 'dark' ? 'light' : 'dark'} />
+      <SnackbarProvider>
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="(auth)" />
+          <Stack.Screen name="(app)" />
+        </Stack>
+        <StatusBar style={effectiveTheme === 'dark' ? 'light' : 'dark'} />
+      </SnackbarProvider>
     </SafeAreaProvider>
   );
 }

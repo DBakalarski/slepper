@@ -29,7 +29,9 @@ import {
   useLastEndedSession,
   useSessions,
   useStartSession,
+  useUpdateSession,
 } from '@/features/sessions/hooks';
+import { useSnackbar } from '@/features/snackbar/SnackbarProvider';
 import { COLORS } from '@/lib/colors';
 import { extractErrorMessage } from '@/lib/extract-error-message';
 import { computeGapsBetweenSessions } from '@/lib/session-gaps';
@@ -156,6 +158,8 @@ function ActiveChildSection({ child }: ActiveChildSectionProps) {
 
   const startSession = useStartSession();
   const endSession = useEndSession();
+  const updateSession = useUpdateSession();
+  const snackbar = useSnackbar();
 
   const activeSession = activeSessionQuery.data ?? null;
   const lastEnded = lastEndedQuery.data ?? null;
@@ -182,7 +186,27 @@ function ActiveChildSection({ child }: ActiveChildSectionProps) {
 
   function handleStop() {
     if (!activeSession) return;
-    endSession.mutate({ sessionId: activeSession.id, childId });
+    const sessionId = activeSession.id;
+    endSession.mutate(
+      { sessionId, childId },
+      {
+        onSuccess: () => {
+          // Quick-undo: 3s okno na cofniecie przypadkowego "Zakoncz sen".
+          // Przywrocenie = end_at -> null (sesja znow aktywna). Edge case:
+          // jesli w miedzyczasie wystartowano nowa sesje, partial unique idx
+          // odrzuci update — akcja po cichu nie zadziala (bez UI bledu).
+          snackbar.show({
+            message: 'Sen zakonczony',
+            action: {
+              label: 'Przywroc',
+              onPress: () => {
+                updateSession.mutate({ sessionId, childId, patch: { end_at: null } });
+              },
+            },
+          });
+        },
+      },
+    );
   }
 
   // Smart typ sesji: czyta `recommendation.remainingNapsToday[0].type` z hooka.
