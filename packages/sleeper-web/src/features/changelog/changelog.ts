@@ -3,6 +3,7 @@
 
 export interface ChangelogEntry {
   v: number;
+  version: string;
   date: string;
   items: string[];
 }
@@ -17,10 +18,13 @@ const MAX_ITEMS = 6;
 
 function isChangelogEntry(value: unknown): value is ChangelogEntry {
   if (typeof value !== 'object' || value === null) return false;
-  if (!('v' in value) || !('date' in value) || !('items' in value)) return false;
-  const { v, date, items } = value;
+  if (!('v' in value) || !('version' in value) || !('date' in value) || !('items' in value)) {
+    return false;
+  }
+  const { v, version, date, items } = value;
   return (
     typeof v === 'number' &&
+    typeof version === 'string' &&
     typeof date === 'string' &&
     Array.isArray(items) &&
     items.every((item) => typeof item === 'string')

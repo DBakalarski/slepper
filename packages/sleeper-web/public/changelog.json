@@ -1,6 +1,7 @@
 [
   {
     "v": 3,
+    "version": "0.3.0",
     "date": "2026-06-24",
     "items": [
       "Tagi kontekstu snu (ząbkowanie, choroba, skok rozwojowy, nowa lokalizacja, zmiana opiekuna)",
@@ -9,6 +10,7 @@
   },
   {
     "v": 2,
+    "version": "0.2.0",
     "date": "2026-06-24",
     "items": [
       "Nowy ekran Statystyki — wykres snu na dobę, trendy 7/14/30 dni",
@@ -18,6 +20,7 @@
   },
   {
     "v": 1,
+    "version": "0.1.0",
     "date": "2026-06-24",
     "items": [
       "Cofanie zakończenia snu — przycisk „Przywróć” przez 3 sekundy po zatrzymaniu sesji"

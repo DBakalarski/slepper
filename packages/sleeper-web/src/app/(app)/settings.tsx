@@ -1,5 +1,6 @@
+import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
-import { ChevronLeft } from 'lucide-react-native';
+import { ChevronLeft, ChevronRight } from 'lucide-react-native';
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -26,6 +27,8 @@ export default function SettingsScreen() {
   const family = familyQuery.data ?? null;
   const effectiveTheme = useEffectiveTheme();
   const backIconColor = effectiveTheme === 'dark' ? COLORS.cream : COLORS.navy;
+  const chevronColor = effectiveTheme === 'dark' ? COLORS.purpleLight : COLORS.textMuted;
+  const appVersion = Constants.expoConfig?.version ?? null;
 
   async function handleSignOut() {
     await supabase.auth.signOut();
@@ -80,6 +83,22 @@ export default function SettingsScreen() {
             <NoFamilyFallback />
           )}
         </View>
+
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Historia zmian"
+          onPress={() => router.push('/changelog')}
+          hitSlop={{ top: 4, bottom: 4, left: 0, right: 0 }}
+          style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
+          className="flex-row items-center justify-between rounded-card bg-white p-5 dark:bg-dark-card">
+          <Text className="text-lg font-semibold text-navy dark:text-cream">Historia zmian</Text>
+          <View className="flex-row items-center gap-2">
+            {appVersion ? (
+              <Text className="text-sm text-purple">Wersja {appVersion}</Text>
+            ) : null}
+            <ChevronRight size={20} color={chevronColor} />
+          </View>
+        </Pressable>
 
         <Pressable
           accessibilityRole="button"
