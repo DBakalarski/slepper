@@ -1,5 +1,16 @@
 [
   {
+    "v": 6,
+    "version": "0.6.0",
+    "date": "2026-06-25",
+    "items": [
+      "Tryb nocny ekranu sesji — czarne tło i automatyczne przyciemnianie po chwili bezczynności, żeby ekran nie świecił w nocy obok śpiącego dziecka",
+      "Dotknięcie przyciemnionego ekranu tylko go rozjaśnia (nie kończy snu przez przypadek)",
+      "Zakończenie snu przez przytrzymanie przycisku (~1 s) — chroni przed przypadkowym dotknięciem po ciemku",
+      "Mniejsze zużycie baterii przy włączonej sesji w tle"
+    ]
+  },
+  {
     "v": 5,
     "version": "0.5.0",
     "date": "2026-06-25",
