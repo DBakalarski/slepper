@@ -1,11 +1,18 @@
 import { useRouter } from 'expo-router';
-import { useEffect } from 'react';
+import { useCallback, useEffect } from 'react';
 import { Platform, Pressable, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { HoldToConfirmButton } from '@/components/ui/HoldToConfirmButton';
 import { useActiveChild } from '@/features/children/useActiveChild';
 import { useActiveSession, useEndSession } from '@/features/sessions/hooks';
+import { useIdleDimmer } from '@/features/sessions/useIdleDimmer';
 import { useSessionTimer } from '@/features/sessions/useSessionTimer';
+
+// Poziomy opacity w stanie przygaszonym (auto-dim, R2): timer/etykieta ledwo
+// widoczne (orientacyjna kontrola czasu), CTA blakna mocniej.
+const DIMMED_CONTENT_OPACITY = 0.15;
+const DIMMED_CTA_OPACITY = 0.1;
 
 // Minimalny typ Wake Lock API (Sentinel + Navigator). RN-Web nie ma DOM lib
 // w tsconfig pelnym, wiec definujemy local — zero runtime impactu.
@@ -35,6 +42,7 @@ export default function SleepFullscreenScreen() {
 
   const session = activeQuery.data ?? null;
   const { display } = useSessionTimer(session?.start_at ?? null);
+  const { isDimmed, wake } = useIdleDimmer();
 
   // Auto-redirect jesli nie ma aktywnej sesji (np. inny user zakonczyl).
   useEffect(() => {
@@ -87,45 +95,47 @@ export default function SleepFullscreenScreen() {
     };
   }, []);
 
+  // Memoizowane — HoldToConfirmButton recreuje controller na zmiane onConfirm,
+  // a timer re-renderuje co 1 s; bez useCallback hold byłby anulowany ticiem.
+  const sessionId = session?.id ?? null;
+  const handleEnd = useCallback(() => {
+    if (!sessionId || !activeChildId) return;
+    endSession.mutate(
+      { sessionId, childId: activeChildId },
+      {
+        onSuccess: () => router.replace('/'),
+      },
+    );
+  }, [sessionId, activeChildId, endSession, router]);
+
   if (!session || !activeChildId) {
     return (
-      <SafeAreaView className="flex-1 bg-navy items-center justify-center">
+      <SafeAreaView className="flex-1 bg-black items-center justify-center">
         <Text className="text-cream/70">Brak aktywnej sesji</Text>
       </SafeAreaView>
     );
   }
 
-  function handleEnd() {
-    if (!session || !activeChildId) return;
-    endSession.mutate(
-      { sessionId: session.id, childId: activeChildId },
-      {
-        onSuccess: () => router.replace('/'),
-      },
-    );
-  }
-
   return (
-    <SafeAreaView className="flex-1 bg-navy">
-      <View className="flex-1 items-center justify-center px-6">
+    <SafeAreaView className="flex-1 bg-black">
+      <View
+        className="flex-1 items-center justify-center px-6"
+        style={{ opacity: isDimmed ? DIMMED_CONTENT_OPACITY : 1 }}>
         <Text className="text-xs font-semibold uppercase tracking-widest text-cream/60">
           {session.type === 'nap' ? 'Drzemka w toku' : 'Sen nocny w toku'}
         </Text>
         <Text className="mt-6 font-mono text-7xl font-semibold text-cream">{display}</Text>
       </View>
 
-      <View className="px-6 pb-8 gap-3">
-        <Pressable
-          accessibilityRole="button"
-          onPress={handleEnd}
+      <View
+        className="px-6 pb-8 gap-3"
+        style={{ opacity: isDimmed ? DIMMED_CTA_OPACITY : 1 }}>
+        <HoldToConfirmButton
+          onConfirm={handleEnd}
+          label="Zakoncz sen"
+          holdingLabel="Zapisuje..."
           disabled={endSession.isPending}
-          className={`items-center justify-center rounded-2xl px-6 py-5 ${
-            endSession.isPending ? 'bg-orange/50' : 'bg-orange'
-          }`}>
-          <Text className="text-lg font-semibold text-cream">
-            {endSession.isPending ? 'Zapisuje...' : 'Zakoncz sen'}
-          </Text>
-        </Pressable>
+        />
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Edytuj start sesji"
@@ -140,6 +150,18 @@ export default function SleepFullscreenScreen() {
           <Text className="text-sm font-semibold text-cream/70">Wroc</Text>
         </Pressable>
       </View>
+
+      {/* R3: w stanie przygaszonym przezroczysty overlay przechwytuje pierwszy
+          tap — tylko rozjasnia (wake), NIE wyzwala zadnej akcji sesji. Gdy
+          jasno overlay nie renderuje sie, wiec CTA dzialaja normalnie. */}
+      {isDimmed ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Rozjasnij ekran"
+          onPress={wake}
+          className="absolute inset-0"
+        />
+      ) : null}
     </SafeAreaView>
   );
 }
