@@ -1,5 +1,21 @@
 [
   {
+    "v": 5,
+    "version": "0.5.0",
+    "date": "2026-06-25",
+    "items": [
+      "Eksport danych snu do CSV — ikona na ekranie Historia, do otwarcia w arkuszu lub wysłania pediatrze (zakres 2 tyg / 30 dni / 90 dni)"
+    ]
+  },
+  {
+    "v": 4,
+    "version": "0.4.0",
+    "date": "2026-06-24",
+    "items": [
+      "Historia zmian i numer wersji aplikacji w Ustawieniach — przeglądaj, co nowego w każdej wersji"
+    ]
+  },
+  {
     "v": 3,
     "version": "0.3.0",
     "date": "2026-06-24",
