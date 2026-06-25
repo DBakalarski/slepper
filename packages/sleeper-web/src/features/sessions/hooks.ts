@@ -62,6 +62,27 @@ function rowToSession(row: {
   };
 }
 
+// Sesje dziecka w oknie [rangeStart, rangeEnd) — filtr w UTC, granice wylicza
+// wolajacy z app tz. Wydzielone z useSessions queryFn (single source) i uzywane
+// takze przez eksport CSV (akcja jednorazowa, poza cache TanStack).
+export async function fetchSessionsInRange(
+  childId: string,
+  rangeStart: Date,
+  rangeEnd: Date,
+): Promise<SleepSession[]> {
+  // Filtr: sesja "pasuje" do okna jesli zaczela sie przed end okna
+  // i skonczyla po start okna (lub trwa).
+  const { data, error } = await supabase
+    .from('sessions')
+    .select('id, child_id, type, start_at, end_at, notes, tags, created_by, created_at')
+    .eq('child_id', childId)
+    .lt('start_at', rangeEnd.toISOString())
+    .or(`end_at.is.null,end_at.gte.${rangeStart.toISOString()}`)
+    .order('start_at', { ascending: false });
+  if (error) throw error;
+  return data.map(rowToSession);
+}
+
 // Wszystkie sesje dziecka z danego dnia (filter w UTC, ale dzien wyliczany
 // z app tz przez wolajacego).
 export function useSessions(
@@ -82,17 +103,7 @@ export function useSessions(
     enabled: Boolean(childId),
     queryFn: async (): Promise<SleepSession[]> => {
       if (!childId) return [];
-      // Filtr: sesja "pasuje" do okna jesli zaczela sie przed end okna
-      // i skonczyla po start okna (lub trwa).
-      const { data, error } = await supabase
-        .from('sessions')
-        .select('id, child_id, type, start_at, end_at, notes, tags, created_by, created_at')
-        .eq('child_id', childId)
-        .lt('start_at', rangeEnd.toISOString())
-        .or(`end_at.is.null,end_at.gte.${rangeStart.toISOString()}`)
-        .order('start_at', { ascending: false });
-      if (error) throw error;
-      return data.map(rowToSession);
+      return fetchSessionsInRange(childId, rangeStart, rangeEnd);
     },
   });
 }

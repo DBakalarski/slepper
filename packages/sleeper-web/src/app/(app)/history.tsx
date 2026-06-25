@@ -1,13 +1,15 @@
 import { addDays } from 'date-fns';
 import { useRouter } from 'expo-router';
-import { Calendar, List } from 'lucide-react-native';
+import { Calendar, List, Upload } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
 import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { SessionListItem } from '@/components/SessionListItem';
 import { Card } from '@/components/ui/Card';
+import { IconButton } from '@/components/ui/IconButton';
 import { SegmentedControl, type SegmentOption } from '@/components/ui/SegmentedControl';
+import { ExportSheet } from '@/features/export/components/ExportSheet';
 import { useChildren } from '@/features/children/hooks';
 import { useActiveChild } from '@/features/children/useActiveChild';
 import { useCurrentFamily } from '@/features/family/hooks';
@@ -42,6 +44,7 @@ export default function HistoryScreen() {
   const effectiveTheme = useEffectiveTheme();
 
   const [view, setView] = useState<ViewMode>('list');
+  const [exportVisible, setExportVisible] = useState(false);
 
   // Granice okna dla query — ostatnie 14 dni do koncu dzisiaj. Memo stabilizuje
   // referencje (queryKey w useSessions). `useState` na `now` zeby NIE zmienial
@@ -89,13 +92,24 @@ export default function HistoryScreen() {
           RANGE_DAYS=14 ogranicza skale do typowego MVP; refaktor wymaga
           flat-listy z section headers (np. SectionList z dayKey -> sessions). */}
       <ScrollView contentContainerClassName="px-6 py-6 gap-4">
-        <View>
-          <Text className="font-display text-3xl font-semibold text-navy dark:text-cream">
-            Historia
-          </Text>
-          <Text className="mt-1 text-base text-text-muted dark:text-cream/70">
-            Wszystkie sesje snu
-          </Text>
+        <View className="flex-row items-start justify-between">
+          <View className="flex-1">
+            <Text className="font-display text-3xl font-semibold text-navy dark:text-cream">
+              Historia
+            </Text>
+            <Text className="mt-1 text-base text-text-muted dark:text-cream/70">
+              Wszystkie sesje snu
+            </Text>
+          </View>
+          {hasChild && activeChildId ? (
+            <IconButton
+              icon={Upload}
+              accessibilityLabel="Eksportuj dane snu"
+              variant="ghost"
+              iconColor={iconColor}
+              onPress={() => setExportVisible(true)}
+            />
+          ) : null}
         </View>
 
         <SegmentedControl options={segmentOptions} value={view} onChange={setView} />
@@ -133,6 +147,13 @@ export default function HistoryScreen() {
           />
         )}
       </ScrollView>
+      {activeChildId ? (
+        <ExportSheet
+          visible={exportVisible}
+          onClose={() => setExportVisible(false)}
+          childId={activeChildId}
+        />
+      ) : null}
     </SafeAreaView>
   );
 }
