@@ -1,11 +1,14 @@
 import { Text, View } from 'react-native';
 import type { Recommendation } from 'sleeper-machine';
 
-import { formatTime } from '@/lib/time';
+import { formatDuration, formatTime } from '@/lib/time';
 
 interface RecommendationCardProps {
   readonly recommendation: Recommendation | null;
 }
+
+// currentWakeWindowDuration jest w minutach; formatDuration oczekuje ms.
+const MINUTE_MS = 60 * 1000;
 
 const CONFIDENCE_LABEL: Record<'low' | 'medium' | 'high', string> = {
   low: 'Mała pewność',
@@ -46,7 +49,7 @@ export function RecommendationCard({ recommendation }: RecommendationCardProps) 
             {formatTime(nextSleepAt)}
           </Text>
           <Text className="mt-1 text-sm text-text-muted">
-            Okno czuwania: {Math.round(currentWakeWindowDuration)} min
+            Okno czuwania: {formatDuration(currentWakeWindowDuration * MINUTE_MS)}
           </Text>
         </>
       ) : (

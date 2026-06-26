@@ -266,11 +266,14 @@ interface DayGroupSectionProps {
 }
 
 function DayGroupSection({ group, onPressSession }: DayGroupSectionProps) {
-  // Sortuj rosnaco (chronologicznie) wewnatrz dnia — najwczesniejsza u gory,
-  // zeby gapy "aktywnosci" mialy sens kierunkowy (prev.end → next.start).
+  // Sortuj malejaco wewnatrz dnia — najnowsza u gory (sen nocny), pierwsza
+  // drzemka na dole. Spojnie ze strona glowna ("Sesje dzisiaj"). Gapy
+  // "aktywnosci" licza sie poprawnie niezaleznie od kolejnosci wejscia
+  // (computeGapsBetweenSessions sortuje wewnetrznie), a gapPosition="below"
+  // renderuje je miedzy sasiednimi sesjami (wczesniejsza jest nizej).
   const orderedSessions = useMemo(() => {
     return [...group.sessions].sort((a, b) => {
-      return new Date(a.start_at).getTime() - new Date(b.start_at).getTime();
+      return new Date(b.start_at).getTime() - new Date(a.start_at).getTime();
     });
   }, [group.sessions]);
 
@@ -303,6 +306,7 @@ function DayGroupSection({ group, onPressSession }: DayGroupSectionProps) {
             <SessionListItem
               session={session}
               gapBeforeMs={gapMap.get(session.id)}
+              gapPosition="below"
               onPress={() => onPressSession(session.id)}
             />
           </View>

@@ -1,5 +1,14 @@
 [
   {
+    "v": 7,
+    "version": "0.7.0",
+    "date": "2026-06-26",
+    "items": [
+      "Okno czuwania w rekomendacji pokazywane w godzinach i minutach (np. „2g 15m”) zamiast samych minut",
+      "Lista sesji w Historii w tej samej kolejności co na ekranie głównym — sen nocny na górze, pierwsza drzemka dnia na dole"
+    ]
+  },
+  {
     "v": 6,
     "version": "0.6.0",
     "date": "2026-06-25",
