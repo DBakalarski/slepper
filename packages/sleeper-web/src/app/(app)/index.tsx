@@ -1,10 +1,9 @@
 import { Link, useRouter } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ActiveWindowCard } from '@/components/ActiveWindowCard';
-import { AppLoader } from '@/components/AppLoader';
 import { BigActionButton } from '@/components/BigActionButton';
 import { HomeHeader } from '@/components/HomeHeader';
 import { QuickActions } from '@/components/QuickActions';
@@ -37,7 +36,6 @@ import { COLORS } from '@/lib/colors';
 import { extractErrorMessage } from '@/lib/extract-error-message';
 import { computeGapsBetweenSessions } from '@/lib/session-gaps';
 import { endOfDayInAppTz, startOfDayInAppTz } from '@/lib/time';
-import { useMinElapsedSinceAppStart } from '@/lib/use-min-loader-time';
 import { useNow } from '@/lib/useNow';
 
 const TICK_MS = 30 * 1000; // odswiez "now" co 30s dla agregatow / okna
@@ -56,56 +54,16 @@ export default function TodayScreen() {
   // bez tego useEffect/useMemo nizej widzialyby nowy `children` co render.
   const children = useMemo(() => childrenQuery.data ?? [], [childrenQuery.data]);
 
-  const { activeChildId, setActiveChildId } = useActiveChild();
-
-  // Jesli wybrane dziecko zniknelo lub nigdy nie bylo wybrane — wybierz pierwsze.
-  useEffect(() => {
-    if (children.length === 0) return;
-    const stillExists = activeChildId && children.some((c) => c.id === activeChildId);
-    if (!stillExists) {
-      setActiveChildId(children[0].id);
-    }
-  }, [children, activeChildId, setActiveChildId]);
-
+  // Wybor aktywnego dziecka + jego pierwsze ladowanie obsluguje `(app)/_layout`
+  // (pelnoekranowy loader bez tab baru). Tu czytamy juz gotowy `activeChildId`.
+  const { activeChildId } = useActiveChild();
   const activeChild = useMemo(
     () => children.find((c) => c.id === activeChildId) ?? null,
     [children, activeChildId],
   );
 
-  // Gate pierwszego ladowania: dopoki nie wiemy ktore dziecko jest aktywne ani
-  // nie mamy jego podstawowych danych (aktywna sesja + sesje dzisiaj), pokazujemy
-  // ten sam <AppLoader> co przy starcie — zamiast mignac pusta skorupa "Dzisiaj"
-  // (generyczny header bez dziecka). Hooki sesji wolane z `activeChild?.id` dziela
-  // queryKey z `ActiveChildSection` (TanStack dedupuje — bez podwojnego fetcha,
-  // dane sa juz w cache gdy sekcja sie montuje, wiec renderuje sie od razu pelna).
-  const now = useNow(TICK_MS);
-  const dayStart = useMemo(() => startOfDayInAppTz(now), [now]);
-  const dayEnd = useMemo(() => endOfDayInAppTz(now), [now]);
-  const gateChildId = activeChild?.id ?? null;
-  const activeSessionGate = useActiveSession(gateChildId);
-  const todaySessionsGate = useSessions(gateChildId, dayStart, dayEnd);
-  const lastEndedGate = useLastEndedSession(gateChildId);
-
   const incoming = incomingQuery.data ?? [];
   const hasNoFamily = !familyQuery.isLoading && !family;
-
-  // True tylko gdy SPODZIEWAMY sie tresci, ale jeszcze jej nie ma. Stany terminalne
-  // (brak rodziny, brak dzieci) NIE sa bootstrapem — renderuja swoje wlasciwe UI.
-  const isBootstrapping =
-    familyQuery.isLoading ||
-    (family != null && childrenQuery.isLoading) ||
-    (children.length > 0 && activeChild == null) ||
-    (activeChild != null &&
-      (activeSessionGate.isLoading || todaySessionsGate.isLoading || lastEndedGate.isLoading));
-
-  // Minimalny czas loadera (~1s od startu appki) — gdy auth+dane rozwiazuja sie
-  // bardzo szybko (cache), loader nie miga. Floor, nie ceiling: wolniejszy load
-  // trzyma loader dluzej przez `isBootstrapping`.
-  const minLoaderElapsed = useMinElapsedSinceAppStart();
-
-  if (isBootstrapping || !minLoaderElapsed) {
-    return <AppLoader />;
-  }
 
   return (
     <SafeAreaView className="flex-1 bg-cream dark:bg-dark-bg">

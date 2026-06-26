@@ -1,16 +1,22 @@
 import { Redirect, Tabs } from 'expo-router';
 import { BarChart3, Calendar, Home, User } from '@/lib/icons';
 import type { ComponentType } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { View } from 'react-native';
 
 import { AppLoader } from '@/components/AppLoader';
 import { ChangelogBanner } from '@/components/ChangelogBanner';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { useChangelogUpdate } from '@/features/changelog/useChangelogUpdate';
+import { useChildren } from '@/features/children/hooks';
 import { useActiveChild } from '@/features/children/useActiveChild';
+import { useCurrentFamily } from '@/features/family/hooks';
 import { useEffectiveTheme } from '@/features/settings/ThemeProvider';
+import { useActiveSession, useLastEndedSession, useSessions } from '@/features/sessions/hooks';
 import { useRealtimeSessions } from '@/features/sessions/useRealtimeSessions';
 import { COLORS } from '@/lib/colors';
+import { endOfDayInAppTz, startOfDayInAppTz } from '@/lib/time';
+import { useMinElapsedSinceAppStart } from '@/lib/use-min-loader-time';
 
 // Faza 2 ui-redesign: tab bar z ikonami lucide + outlined chip dla active.
 // Kolory pochodza z palety tailwind (purple-light/navy/cream/text-muted).
@@ -57,7 +63,7 @@ function TabIcon({ Icon, focused, color }: TabIconProps) {
 
 export default function AppTabsLayout() {
   const { status } = useAuth();
-  const { activeChildId } = useActiveChild();
+  const { activeChildId, setActiveChildId } = useActiveChild();
   const effectiveTheme = useEffectiveTheme();
   const isDark = effectiveTheme === 'dark';
 
@@ -70,12 +76,72 @@ export default function AppTabsLayout() {
   // z wymuszeniem restartu. Hook wolany bezwarunkowo (przed early return).
   const changelog = useChangelogUpdate();
 
+  // --- Bootstrap startowy ---
+  // Rozwiazujemy aktywne dziecko + jego podstawowe dane ZANIM pokazemy shell z
+  // tab barem. Dzieki temu pelnoekranowy loader zaslania CALY ekran (bez dolnego
+  // menu), a kazda zakladka montuje sie z gotowymi danymi (TanStack dedupuje te
+  // same queryKey z ekranami).
+  const familyQuery = useCurrentFamily();
+  const family = familyQuery.data;
+  const familyId = family?.id ?? null;
+  const childrenQuery = useChildren(familyId);
+  const children = useMemo(() => childrenQuery.data ?? [], [childrenQuery.data]);
+
+  // Wybor aktywnego dziecka (gdy brak/zniknelo) — na poziomie layoutu, zeby dzialal
+  // dla wszystkich zakladek i podczas bootstrapu (zanim zamontuje sie ekran).
+  useEffect(() => {
+    if (children.length === 0) return;
+    const stillExists = activeChildId && children.some((c) => c.id === activeChildId);
+    if (!stillExists) {
+      setActiveChildId(children[0].id);
+    }
+  }, [children, activeChildId, setActiveChildId]);
+
+  const activeChild = useMemo(
+    () => children.find((c) => c.id === activeChildId) ?? null,
+    [children, activeChildId],
+  );
+
+  // Zakres "dzisiaj" stabilny przez useMemo([]) — ten sam dzien (dayKey) co liczy
+  // ekran, wiec queryKey sie zgadza i TanStack dedupuje (bez podwojnego fetcha).
+  const dayStart = useMemo(() => startOfDayInAppTz(new Date()), []);
+  const dayEnd = useMemo(() => endOfDayInAppTz(new Date()), []);
+  const gateChildId = activeChild?.id ?? null;
+  const activeSessionGate = useActiveSession(gateChildId);
+  const todaySessionsGate = useSessions(gateChildId, dayStart, dayEnd);
+  const lastEndedGate = useLastEndedSession(gateChildId);
+
+  // True dopoki SPODZIEWAMY sie tresci, ale jej nie mamy. Stany terminalne (brak
+  // rodziny / brak dzieci) NIE sa bootstrapem — ekran renderuje swoje wlasciwe UI.
+  const isBootstrapping =
+    familyQuery.isLoading ||
+    (family != null && childrenQuery.isLoading) ||
+    (children.length > 0 && activeChild == null) ||
+    (activeChild != null &&
+      (activeSessionGate.isLoading || todaySessionsGate.isLoading || lastEndedGate.isLoading));
+
+  // Floor ~1s od startu appki — loader nie miga przy szybkim (cache) loadzie.
+  const minLoaderElapsed = useMinElapsedSinceAppStart();
+  const ready = !isBootstrapping && minLoaderElapsed;
+
+  // Latch: pelnoekranowy loader (chowajacy tab bar) pokazujemy TYLKO przy pierwszym
+  // ladowaniu. Po nim przelaczanie dziecka odswieza tresc in-place — bez chowania
+  // menu i bez powrotu do pelnoekranowego loadera.
+  const [hasBootstrapped, setHasBootstrapped] = useState(false);
+  useEffect(() => {
+    if (ready) setHasBootstrapped(true);
+  }, [ready]);
+
   if (status === 'loading') {
     return <AppLoader />;
   }
 
   if (status === 'signed_out') {
     return <Redirect href="/sign-in" />;
+  }
+
+  if (!hasBootstrapped && !ready) {
+    return <AppLoader />;
   }
 
   const activeColor = isDark ? ACTIVE_DARK : ACTIVE_LIGHT;
