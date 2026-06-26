@@ -37,6 +37,7 @@ import { COLORS } from '@/lib/colors';
 import { extractErrorMessage } from '@/lib/extract-error-message';
 import { computeGapsBetweenSessions } from '@/lib/session-gaps';
 import { endOfDayInAppTz, startOfDayInAppTz } from '@/lib/time';
+import { useMinElapsedSinceAppStart } from '@/lib/use-min-loader-time';
 import { useNow } from '@/lib/useNow';
 
 const TICK_MS = 30 * 1000; // odswiez "now" co 30s dla agregatow / okna
@@ -97,7 +98,12 @@ export default function TodayScreen() {
     (activeChild != null &&
       (activeSessionGate.isLoading || todaySessionsGate.isLoading || lastEndedGate.isLoading));
 
-  if (isBootstrapping) {
+  // Minimalny czas loadera (~1s od startu appki) — gdy auth+dane rozwiazuja sie
+  // bardzo szybko (cache), loader nie miga. Floor, nie ceiling: wolniejszy load
+  // trzyma loader dluzej przez `isBootstrapping`.
+  const minLoaderElapsed = useMinElapsedSinceAppStart();
+
+  if (isBootstrapping || !minLoaderElapsed) {
     return <AppLoader />;
   }
 
