@@ -1,5 +1,5 @@
-import type { LucideIcon } from 'lucide-react-native';
-import { Moon, Plus, Sun } from 'lucide-react-native';
+import type { LucideIcon } from '@/lib/icons';
+import { Moon, Plus, Sun } from '@/lib/icons';
 import { Pressable, Text, View } from 'react-native';
 
 import { COLORS } from '@/lib/colors';

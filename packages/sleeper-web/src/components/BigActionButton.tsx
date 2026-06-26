@@ -1,5 +1,5 @@
 import * as Haptics from 'expo-haptics';
-import { Moon } from 'lucide-react-native';
+import { Moon } from '@/lib/icons';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 
 import type { SessionType } from '@/features/sessions/hooks';

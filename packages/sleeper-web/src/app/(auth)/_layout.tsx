@@ -1,12 +1,13 @@
 import { Redirect, Stack } from 'expo-router';
 
+import { AppLoader } from '@/components/AppLoader';
 import { useAuth } from '@/features/auth/AuthProvider';
 
 export default function AuthLayout() {
   const { status } = useAuth();
 
   if (status === 'loading') {
-    return null;
+    return <AppLoader />;
   }
 
   if (status === 'signed_in') {

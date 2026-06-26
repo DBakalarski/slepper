@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { Bell, ChevronRight, Moon, Settings as SettingsIcon } from 'lucide-react-native';
+import { Bell, ChevronRight, Moon, Settings as SettingsIcon } from '@/lib/icons';
 import { useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';

@@ -1,4 +1,4 @@
-import { Bell, ChevronDown } from 'lucide-react-native';
+import { Bell, ChevronDown } from '@/lib/icons';
 import { Text, View } from 'react-native';
 
 import { Avatar } from '@/components/ui/Avatar';

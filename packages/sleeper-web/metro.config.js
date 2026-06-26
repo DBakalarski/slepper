@@ -25,14 +25,12 @@ config.resolver.nodeModulesPaths = [
 //    other workspaces (pnpm isolation guarantees + Metro determinism).
 config.resolver.disableHierarchicalLookup = true;
 
-// 4. Alias lucide-react-native → lucide-react on web. Skopiowany kod z sleeper-app
-//    importuje 'lucide-react-native', który na web renderuje przez react-native-svg
-//    adapter (~2-3× większy bundle). lucide-react ma natywne SVG DOM exporty z tymi
-//    samymi nazwami — alias transparentny dla importów. (review P1.4)
-config.resolver.alias = {
-  ...config.resolver.alias,
-  'lucide-react-native': 'lucide-react',
-};
+// 4. Ikony lucide: kod aplikacji importuje wylacznie przez `@/lib/icons`
+//    (deep importy per-ikona z `lucide-react`). NIE ma juz aliasu
+//    `lucide-react-native` -> `lucide-react`, bo `resolver.alias` i tak byl
+//    cicho ignorowany przy `expo export` (custom `resolveRequest` ponizej go
+//    przeslanial), przez co bundle wciagal pelne `lucide-react-native` ze
+//    WSZYSTKIMI ~1500 ikonami (~1.3 MB). Patrz `src/lib/icons.ts`.
 
 // 5. Custom resolveRequest dla zustand → wymuszone CJS buildy.
 //    zustand@5 ESM (`esm/index.mjs`, `esm/middleware.mjs`) używa

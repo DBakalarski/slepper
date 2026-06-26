@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { ChevronRight, Moon, Sun } from 'lucide-react-native';
+import { ChevronRight, Moon, Sun } from '@/lib/icons';
 import { Pressable, Text, View } from 'react-native';
 
 import type { SleepSession } from '@/features/sessions/hooks';

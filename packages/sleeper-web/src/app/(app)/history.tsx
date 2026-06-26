@@ -1,6 +1,6 @@
 import { addDays } from 'date-fns';
 import { useRouter } from 'expo-router';
-import { Calendar, List, Upload } from 'lucide-react-native';
+import { Calendar, List, Upload } from '@/lib/icons';
 import { useMemo, useState } from 'react';
 import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';

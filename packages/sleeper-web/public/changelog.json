@@ -1,5 +1,14 @@
 [
   {
+    "v": 8,
+    "version": "0.8.0",
+    "date": "2026-06-26",
+    "items": [
+      "Aplikacja uruchamia się szybciej — paczka do pobrania i wczytania na telefonie schudła o ok. 40%",
+      "Ekran startowy z logo Sleeper podczas wczytywania, zamiast pustej i „skaczącej” strony"
+    ]
+  },
+  {
     "v": 7,
     "version": "0.7.0",
     "date": "2026-06-26",

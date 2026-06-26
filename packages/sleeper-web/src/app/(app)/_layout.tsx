@@ -1,8 +1,9 @@
 import { Redirect, Tabs } from 'expo-router';
-import { BarChart3, Calendar, Home, User } from 'lucide-react-native';
+import { BarChart3, Calendar, Home, User } from '@/lib/icons';
 import type { ComponentType } from 'react';
 import { View } from 'react-native';
 
+import { AppLoader } from '@/components/AppLoader';
 import { ChangelogBanner } from '@/components/ChangelogBanner';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { useChangelogUpdate } from '@/features/changelog/useChangelogUpdate';
@@ -70,7 +71,7 @@ export default function AppTabsLayout() {
   const changelog = useChangelogUpdate();
 
   if (status === 'loading') {
-    return null;
+    return <AppLoader />;
   }
 
   if (status === 'signed_out') {

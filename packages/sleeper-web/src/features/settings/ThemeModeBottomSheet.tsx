@@ -1,4 +1,4 @@
-import { Check, Moon, Smartphone, Sun, type LucideIcon } from 'lucide-react-native';
+import { Check, Moon, Smartphone, Sun, type LucideIcon } from '@/lib/icons';
 import { Modal, Pressable, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
