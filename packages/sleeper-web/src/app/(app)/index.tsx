@@ -4,6 +4,7 @@ import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ActiveWindowCard } from '@/components/ActiveWindowCard';
+import { AppLoader } from '@/components/AppLoader';
 import { BigActionButton } from '@/components/BigActionButton';
 import { HomeHeader } from '@/components/HomeHeader';
 import { QuickActions } from '@/components/QuickActions';
@@ -70,8 +71,35 @@ export default function TodayScreen() {
     [children, activeChildId],
   );
 
+  // Gate pierwszego ladowania: dopoki nie wiemy ktore dziecko jest aktywne ani
+  // nie mamy jego podstawowych danych (aktywna sesja + sesje dzisiaj), pokazujemy
+  // ten sam <AppLoader> co przy starcie — zamiast mignac pusta skorupa "Dzisiaj"
+  // (generyczny header bez dziecka). Hooki sesji wolane z `activeChild?.id` dziela
+  // queryKey z `ActiveChildSection` (TanStack dedupuje — bez podwojnego fetcha,
+  // dane sa juz w cache gdy sekcja sie montuje, wiec renderuje sie od razu pelna).
+  const now = useNow(TICK_MS);
+  const dayStart = useMemo(() => startOfDayInAppTz(now), [now]);
+  const dayEnd = useMemo(() => endOfDayInAppTz(now), [now]);
+  const gateChildId = activeChild?.id ?? null;
+  const activeSessionGate = useActiveSession(gateChildId);
+  const todaySessionsGate = useSessions(gateChildId, dayStart, dayEnd);
+  const lastEndedGate = useLastEndedSession(gateChildId);
+
   const incoming = incomingQuery.data ?? [];
   const hasNoFamily = !familyQuery.isLoading && !family;
+
+  // True tylko gdy SPODZIEWAMY sie tresci, ale jeszcze jej nie ma. Stany terminalne
+  // (brak rodziny, brak dzieci) NIE sa bootstrapem — renderuja swoje wlasciwe UI.
+  const isBootstrapping =
+    familyQuery.isLoading ||
+    (family != null && childrenQuery.isLoading) ||
+    (children.length > 0 && activeChild == null) ||
+    (activeChild != null &&
+      (activeSessionGate.isLoading || todaySessionsGate.isLoading || lastEndedGate.isLoading));
+
+  if (isBootstrapping) {
+    return <AppLoader />;
+  }
 
   return (
     <SafeAreaView className="flex-1 bg-cream dark:bg-dark-bg">
