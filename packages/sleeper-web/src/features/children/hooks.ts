@@ -15,7 +15,8 @@ export interface Child {
   preferred_bedtime: string | null; // Postgres time 'HH:MM:SS' lub null
   // Preferowana godzina pobudki (migracja 0012). null = Kotki Dwa uzywa 07:00.
   preferred_wake_time: string | null; // Postgres time 'HH:MM:SS' lub null
-  // Wybor algorytmu rekomendacji (migracja 0011). Domyslnie 'galland'.
+  // Algorytm rekomendacji. Domyslnie 'kotki_dwa' (migracja 0014); 'galland'
+  // zachowany w kodzie, ale niewybieralny z UI.
   algorithm: 'galland' | 'kotki_dwa';
   created_at: string;
 }
@@ -125,8 +126,6 @@ export interface UpdateChildInput {
   preferredBedtime?: string | null;
   // 'HH:MM:SS' lub null. Preferowana godzina pobudki.
   preferredWakeTime?: string | null;
-  // Wybor algorytmu rekomendacji. undefined = brak zmiany.
-  algorithm?: 'galland' | 'kotki_dwa';
 }
 
 export function useUpdateChild() {
@@ -141,7 +140,6 @@ export function useUpdateChild() {
       preferredNapsPerDay,
       preferredBedtime,
       preferredWakeTime,
-      algorithm,
     }: UpdateChildInput) => {
       // Buduj patch tylko z pol jawnie podanych. Pola null sa intencjonalne
       // (clear preferencji) i powinny isc do bazy.
@@ -152,7 +150,6 @@ export function useUpdateChild() {
       if (preferredNapsPerDay !== undefined) patch.preferred_naps_per_day = preferredNapsPerDay;
       if (preferredBedtime !== undefined) patch.preferred_bedtime = preferredBedtime;
       if (preferredWakeTime !== undefined) patch.preferred_wake_time = preferredWakeTime;
-      if (algorithm !== undefined) patch.algorithm = algorithm;
 
       const { data, error } = await supabase
         .from('children')

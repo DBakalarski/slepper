@@ -82,17 +82,6 @@ export function ActiveWindowCard({
   const nextSleepLabel =
     recommendation?.remainingNapsToday[0]?.type === 'NIGHT' ? 'Sen nocny' : 'Drzemka';
 
-  // Korekta okna: o ile realna drzemka przesunela kolejny sen wzgledem planu.
-  // Dodatnie = wczesniej (krotsza drzemka), ujemne = pozniej (dluzsza). Pokazujemy
-  // dopiero od 10 min — drobne odchylki to szum, nie sygnal dla rodzica.
-  const shiftMin = recommendation?.nextSleepShiftMinutes ?? null;
-  const correctionText =
-    shiftMin !== null && Math.abs(shiftMin) >= 10
-      ? shiftMin > 0
-        ? `Korekta za krótszą drzemkę +${shiftMin} min`
-        : `Korekta za dłuższą drzemkę −${Math.abs(shiftMin)} min`
-      : null;
-
   const progressValue =
     sinceMs !== null && targetMs !== null && targetMs > 0
       ? Math.min(1, sinceMs / targetMs)
@@ -149,9 +138,6 @@ export function ActiveWindowCard({
                   <CountdownRow label="Do łóżeczka" remainingMs={cribRemainingMs} targetAt={cribAt} />
                   <CountdownRow label={nextSleepLabel} remainingMs={remainingMs} targetAt={nextSleepAt} />
                 </View>
-                {correctionText ? (
-                  <Text className="text-xs font-medium text-orange">{correctionText}</Text>
-                ) : null}
               </View>
             ) : (
               <View className="mt-4 flex-row items-center justify-between">
