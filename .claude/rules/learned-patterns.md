@@ -2,7 +2,7 @@
 
 Reguły wyciągnięte z rozwiązanych problemów w docs/solutions/. Zarządzane przez /dev-compound i /dev-compound-refresh.
 
-<!-- rule-count: 11 -->
+<!-- rule-count: 12 -->
 
 - **TZ-safe time: zawsze przez `lib/time.ts` helpers, nigdy `setHours`/`new Date(y,m,d,h,m)` na surowym Date**: Konwersje między domenową strefą (`Europe/Warsaw`) a UTC idą wyłącznie przez `fromZonedTime`/`toZonedTime` (np. `combineDateAndTimeInAppTz`, `dayKeyInAppTz`, `parseAppTzDateTime`). `setHours`/`getDate`/`toDateString` operują w device tz — działają lokalnie w PL, cicho psują się dla usera w innej strefie lub po DST. Operacje "dzień/tydzień" przez `addDays` z `date-fns`, nigdy `+ N * 24 * 60 * 60 * 1000`.
   Source: docs/solutions/runtime-errors/2026-05-27-tz-safe-time-pattern.md
@@ -36,3 +36,6 @@ Reguły wyciągnięte z rozwiązanych problemów w docs/solutions/. Zarządzane 
 
 - **Static-invariants testing > pełny jsdom+RNTL dla architektury**: Dla regresji architektury (queryKey stability, `useEffect` cleanup, dependency array, `Platform.OS` guard, brak raw `Alert.alert`/`useColorScheme`) używaj testów `static-invariants` — `readFileSync` + regex/grep w vitest. Niska bariera (1 plik, 5 min na invariant), szybkie (1-2s na 100 grepów), łapie regresje architektury które jsdom+RNTL przepuszcza. NIE używaj static-invariants do logiki biznesowej (= vitest unit na pure functions) ani user flow (= RNTL tylko dla critical paths). Granica: gdy regex robi się skomplikowany (>3 alternacje, lookahead) — przepisz na ESLint custom rule albo AST.
   Source: docs/solutions/testing-issues/2026-06-06-static-invariants-testing-strategy.md
+
+- **Zmiana user-facing = wpis w changelog.json + bump wersji w TYM SAMYM commicie (wymuszane hookiem)**: Baner „co nowego” po deployu czyta `public/changelog.json` — bez nowego wpisu user cicho nie dowie się o zmianie ani o potrzebie restartu. Invariant `version-sync.test.ts` łapie tylko rozjazd wersji, NIE brak całego wpisu (stare wersje są „spójne”). Dlatego `.githooks/commit-msg` blokuje commit `feat|fix|perf(web)` bez zmiany `changelog.json` (escape hatch: `[no-changelog]` dla zmian niewidocznych dla usera). Meta-reguła: proces bez deterministycznego wymuszenia (hook/test) będzie pomijany — dokumentacja to za mało.
+  Source: docs/solutions/deployment-issues/2026-07-09-changelog-entry-enforcement-commit-msg-hook.md

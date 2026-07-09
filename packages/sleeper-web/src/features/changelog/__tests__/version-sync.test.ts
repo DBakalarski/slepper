@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { readFileSync, statSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
@@ -11,10 +11,11 @@ import { describe, expect, it } from 'vitest';
 // bez wpisu w changelogu) — deploy idzie z bledna lub niezapowiedziana wersja.
 // Ten test wymusza: app.json == package.json == najnowszy wpis changelogu.
 //
-// UWAGA (swiadome ograniczenie): test NIE wykryje sytuacji "zapomniano calego
-// wpisu", gdy wszystkie trzy zostana na starej wersji (sa wtedy spojne). Lapie
-// rozjazd, nie brak bumpa. Pelne wymuszenie "user-facing zmiana => wpis"
-// wymagaloby pre-push guarda (swiadomie odrzucone na rzecz tego lzejszego gate).
+// UWAGA: test NIE wykryje sytuacji "zapomniano calego wpisu", gdy wszystkie
+// trzy zostana na starej wersji (sa wtedy spojne). Lapie rozjazd, nie brak
+// bumpa. Brak wpisu wymusza git hook `.githooks/commit-msg` (blokuje commit
+// feat|fix|perf(web) bez zmiany changelog.json) — jego istnienie pilnowane
+// jest testem ponizej.
 
 const PKG_ROOT = resolve(__dirname, '../../../..');
 
@@ -59,5 +60,13 @@ describe('version sync invariant', () => {
   it('kazde v w changelogu jest unikalne (brak duplikatow numeru wersji)', () => {
     const versionNumbers = changelog.map((e) => e.v);
     expect(new Set(versionNumbers).size).toBe(versionNumbers.length);
+  });
+
+  it('git hook commit-msg (wymuszenie wpisu changelogu) istnieje i jest wykonywalny', () => {
+    const hookPath = resolve(PKG_ROOT, '../../.githooks/commit-msg');
+    const stat = statSync(hookPath);
+    expect(stat.isFile()).toBe(true);
+    // 0o111 — bit wykonywalnosci dla user/group/other (wystarczy ktorykolwiek).
+    expect(stat.mode & 0o111).not.toBe(0);
   });
 });

@@ -129,6 +129,17 @@ Alternatywnie wejdz do `packages/sleeper-web/` i uzyj `npx tsc --noEmit` / `pnpm
 Runtime:
 - Web PWA: `pnpm web:dev` -> http://localhost:8081 w Safari/Chrome. Deploy prod: `git push origin main` -> Vercel auto-deploy (runbook: `docs/runbook/sleeper-web-deploy.md`).
 
+## Changelog dla usera — OBOWIAZKOWE (wymuszane git hookiem)
+
+Kazda zmiana user-facing (typ `feat|fix|perf` ze scope `web`) MUSI w TYM SAMYM commicie zawierac:
+
+1. Nowy wpis na gorze `packages/sleeper-web/public/changelog.json` — `v` +1, wersja semver, data, `items` po polsku z perspektywy usera (co zyskuje / co sie zmienia, nie szczegoly techniczne).
+2. Bump `version` w `packages/sleeper-web/app.json` i `packages/sleeper-web/package.json` na te sama wersje (spojnosc pilnuje `version-sync.test.ts` w `web:build:check`).
+
+Po deployu aplikacja sama pokaze userowi baner "co nowego" + prosbe o restart (`useChangelogUpdate`). Brak wpisu = user nie dowie sie o zmianie — dlatego hook `.githooks/commit-msg` BLOKUJE commit `feat|fix|perf(web)` bez zmiany `changelog.json`. Escape hatch dla zmian realnie niewidocznych dla usera: `[no-changelog]` w tresci commit message (ale najpierw rozwaz typ `refactor|chore|test`).
+
+Hook instaluje sie przez root `prepare` script (`git config core.hooksPath .githooks`) — uruchamia sie przy `pnpm install`; po swiezym klonie wystarczy `pnpm install`.
+
 ## Commit logging — OBOWIAZKOWE
 
 Kazdy commit kodu = osobny follow-up commit z opisem w `docs/commits/` (root projektu, NIE w `sleeper-web/`).

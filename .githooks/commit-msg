@@ -1,0 +1,40 @@
+#!/bin/sh
+# Guard: commit user-facing (feat|fix|perf ze scope web) MUSI zawierac zmiane
+# packages/sleeper-web/public/changelog.json (wpis "co nowego" dla usera).
+# Spojnosc wersji wpisu z app.json/package.json wymusza osobno
+# version-sync.test.ts (web:build:check) — ten hook pilnuje tylko OBECNOSCI wpisu.
+#
+# Escape hatch: dopisz [no-changelog] w tresci commita, gdy zmiana faktycznie
+# nie jest widoczna dla usera (wtedy rozwaz tez scope/typ: refactor|chore|test).
+#
+# Instalacja: git config core.hooksPath .githooks (robi to root "prepare" script).
+
+MSG_FILE="$1"
+SUBJECT=$(head -n 1 "$MSG_FILE")
+
+case "$SUBJECT" in
+  feat\(*web*\)* | fix\(*web*\)* | perf\(*web*\)*) ;;
+  *) exit 0 ;;
+esac
+
+if grep -q '\[no-changelog\]' "$MSG_FILE"; then
+  exit 0
+fi
+
+if git diff --cached --name-only | grep -q '^packages/sleeper-web/public/changelog\.json$'; then
+  exit 0
+fi
+
+echo "BLAD: commit '$SUBJECT' wyglada na zmiane user-facing (feat|fix|perf(web))," >&2
+echo "a nie zawiera zmiany packages/sleeper-web/public/changelog.json." >&2
+echo "" >&2
+echo "Bez wpisu w changelogu user NIE zobaczy banera 'co nowego' + prosby o restart po deployu." >&2
+echo "" >&2
+echo "Zrob jedno z dwojga:" >&2
+echo "  1. Dodaj wpis do packages/sleeper-web/public/changelog.json (nowy obiekt na gorze:" >&2
+echo "     v+1, wersja semver, data, items po polsku z perspektywy usera)" >&2
+echo "     + bump 'version' w packages/sleeper-web/app.json i package.json na te sama wersje," >&2
+echo "     po czym 'git add' tych plikow do tego samego commita." >&2
+echo "  2. Jesli zmiana NAPRAWDE nie jest widoczna dla usera — dopisz [no-changelog]" >&2
+echo "     w tresci commit message." >&2
+exit 1

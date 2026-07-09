@@ -1,5 +1,14 @@
 [
   {
+    "v": 9,
+    "version": "0.9.0",
+    "date": "2026-07-09",
+    "items": [
+      "Prostsze ustawienia dziecka — usunięty wybór algorytmu rekomendacji, aplikacja zawsze korzysta z jednego, dopracowanego algorytmu",
+      "Czytelniejsza karta okna aktywności — bez technicznej pozycji „korekta za drzemkę”"
+    ]
+  },
+  {
     "v": 8,
     "version": "0.8.0",
     "date": "2026-06-26",

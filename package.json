@@ -4,6 +4,7 @@
   "private": true,
   "description": "Monorepo: sleeper-web (PWA) + sleeper-machine (Galland) + sleeper-machine-kotki.",
   "scripts": {
+    "prepare": "git config core.hooksPath .githooks",
     "test": "pnpm --filter sleeper-machine test",
     "build": "pnpm --filter sleeper-machine build",
     "machine-kotki:test": "pnpm --filter sleeper-machine-kotki test",
