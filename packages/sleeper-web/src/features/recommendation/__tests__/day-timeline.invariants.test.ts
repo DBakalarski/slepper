@@ -62,4 +62,9 @@ describe('day-timeline static invariants', () => {
     expect(COMPONENT_SRC).toMatch(/accessibilityLabel=\{summaryLabel\}/);
     expect(COMPONENT_SRC).toMatch(/Rytm dnia/);
   });
+
+  it('komponent NIE wrapuje sie we wlasny Card — konsument osadza go w chrome karty (fix Card-w-Card, review Task 5)', () => {
+    expect(COMPONENT_SRC).not.toMatch(/<Card/);
+    expect(COMPONENT_SRC).not.toMatch(/from '@\/components\/ui\/Card'/);
+  });
 });

@@ -1,7 +1,6 @@
 import type { PlanEntry } from 'sleeper-machine';
 import { Text, View } from 'react-native';
 
-import { Card } from '@/components/ui/Card';
 import type { SleepSession } from '@/features/sessions/hooks';
 import { formatTime, pluralizePL } from '@/lib/time';
 
@@ -75,7 +74,10 @@ function LegendItem({
 
 // Reużywalny, read-only pas doby: bloki faktow (<= now) i predykcji (> now),
 // znacznik "teraz" i sparse etykiety godzin. Komponent glupi — bez hookow
-// danych, bez timera (`now` przychodzi propem).
+// danych, bez timera (`now` przychodzi propem). Renderuje sie BEZ wlasnego
+// Card wrappera — jedyny konsument (RecommendationTimelineView) osadza go
+// wewnatrz chrome'u karty rekomendacji; wlasny Card dawal karte-w-karcie
+// (podwojny padding/shadow, zwezona os). Review fix Task 5 (IMPORTANT 1).
 export function DayTimeline({ sessions, plan, now }: DayTimelineProps) {
   const geometry = computeDayTimelineGeometry(sessions, plan, now);
   const napsFactCount = geometry.factSegments.filter((s) => s.kind === 'fact-nap').length;
@@ -83,7 +85,7 @@ export function DayTimeline({ sessions, plan, now }: DayTimelineProps) {
   const allSegments = [...geometry.factSegments, ...geometry.planSegments];
 
   return (
-    <Card>
+    <View>
       <Text className="text-xs font-semibold uppercase tracking-wide text-text-muted">
         Rytm dnia
       </Text>
@@ -126,6 +128,6 @@ export function DayTimeline({ sessions, plan, now }: DayTimelineProps) {
         <LegendItem swatchClassName="bg-orange/25 border border-orange" label="Plan drzemki" />
         <LegendItem swatchClassName="bg-orange" label="Teraz" shape="bar" />
       </View>
-    </Card>
+    </View>
   );
 }

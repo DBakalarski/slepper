@@ -17,11 +17,12 @@ interface RecommendationTimelineViewProps {
   readonly hasPreferredWakeTime: boolean;
 }
 
-// Copy prognozy wg specyfikacji Taska 5: 'within' -> "w normie (min–max g)",
+// Copy prognozy wg specyfikacji Taska 5: 'within' -> "w normie (label normy
+// z sleep-norms, np. 14-17g/dobe — bez duplikowania formatowania)",
 // 'below'/'above' -> delta ze znakiem wzgledem najblizszej krawedzi normy.
 function forecastLabel(forecast: DayForecast): string {
   if (forecast.verdict === 'within') {
-    return `w normie (${forecast.norm.minHours}–${forecast.norm.maxHours} g)`;
+    return `w normie (${forecast.norm.label})`;
   }
   const delta = formatDuration(forecast.deltaMs);
   return forecast.verdict === 'below' ? `−${delta} do normy` : `+${delta} ponad normę`;
