@@ -1,14 +1,30 @@
 import { Text, View } from 'react-native';
 import type { Recommendation } from 'sleeper-machine';
 
-import { formatDuration, formatTime } from '@/lib/time';
+import { SegmentedControl, type SegmentOption } from '@/components/ui/SegmentedControl';
+import type { SleepSession } from '@/features/sessions/hooks';
+
+import { RecommendationListView } from './components/RecommendationListView';
+import { RecommendationTimelineView } from './components/RecommendationTimelineView';
+import { useRecommendationViewStore, type RecommendationView } from './useRecommendationViewStore';
 
 interface RecommendationCardProps {
   readonly recommendation: Recommendation | null;
+  // Sesje dzisiejsze (app tz) — zrodlo dla DayTimeline i day-forecast. Zakres
+  // pokrywa poranny ogon nocy z wczoraj (fetchSessionsInRange filtruje przez
+  // overlap z oknem, nie tylko `start_at`), wiec to ten sam zbior co karta
+  // "Sesje dzisiaj" na home — bez nowego query.
+  readonly sessions: readonly SleepSession[];
+  readonly now: Date;
+  readonly birthDate: Date;
+  // `child.preferred_wake_time !== null` — do noty o defaultowej pobudce 07:00.
+  readonly hasPreferredWakeTime: boolean;
 }
 
-// currentWakeWindowDuration jest w minutach; formatDuration oczekuje ms.
-const MINUTE_MS = 60 * 1000;
+const VIEW_OPTIONS: SegmentOption<RecommendationView>[] = [
+  { value: 'timeline', label: 'Oś' },
+  { value: 'list', label: 'Lista' },
+];
 
 const CONFIDENCE_LABEL: Record<'low' | 'medium' | 'high', string> = {
   low: 'Mała pewność',
@@ -22,11 +38,22 @@ const CONFIDENCE_DOT: Record<'low' | 'medium' | 'high', string> = {
   high: 'bg-navy',
 };
 
-export function RecommendationCard({ recommendation }: RecommendationCardProps) {
-  if (!recommendation) return null;
+// Karta rekomendacji — cienki orchestrator: naglowek (confidence) +
+// przelacznik widoku (persystowany w useRecommendationViewStore) + delegacja
+// do RecommendationListView / RecommendationTimelineView. Stan ladowania:
+// karta zwraca `null` przy braku rekomendacji (bez skeletonu — decyzja
+// odroczona, patrz raport Taska 5).
+export function RecommendationCard({
+  recommendation,
+  sessions,
+  now,
+  birthDate,
+  hasPreferredWakeTime,
+}: RecommendationCardProps) {
+  const view = useRecommendationViewStore((s) => s.view);
+  const setView = useRecommendationViewStore((s) => s.setView);
 
-  const { nextSleepAt, currentWakeWindowDuration, remainingNapsToday, confidence, warnings } =
-    recommendation;
+  if (!recommendation) return null;
 
   return (
     <View className="rounded-card bg-white p-5 shadow-card dark:bg-dark-card">
@@ -35,57 +62,30 @@ export function RecommendationCard({ recommendation }: RecommendationCardProps) 
           Rekomendacja
         </Text>
         <View className="flex-row items-center gap-1.5">
-          <View className={`h-2 w-2 rounded-pill ${CONFIDENCE_DOT[confidence]}`} />
-          <Text className="text-xs text-text-muted">{CONFIDENCE_LABEL[confidence]}</Text>
+          <View className={`h-2 w-2 rounded-pill ${CONFIDENCE_DOT[recommendation.confidence]}`} />
+          <Text className="text-xs text-text-muted">
+            {CONFIDENCE_LABEL[recommendation.confidence]}
+          </Text>
         </View>
       </View>
 
-      {nextSleepAt ? (
-        <>
-          <Text className="mt-2 text-xs text-text-muted">Następny sen</Text>
-          <Text
-            className="font-display text-6xl font-semibold text-navy dark:text-cream"
-            style={{ fontVariant: ['tabular-nums'] }}>
-            {formatTime(nextSleepAt)}
-          </Text>
-          <Text className="mt-1 text-sm text-text-muted">
-            Okno czuwania: {formatDuration(currentWakeWindowDuration * MINUTE_MS)}
-          </Text>
-        </>
-      ) : (
-        <Text className="mt-3 text-base text-text-muted">
-          Brak kotwicy — dodaj sesję snu nocnego lub ustaw godzinę pobudki.
-        </Text>
-      )}
+      <View className="mt-3">
+        <SegmentedControl options={VIEW_OPTIONS} value={view} onChange={setView} />
+      </View>
 
-      {remainingNapsToday.length > 0 ? (
-        <View className="mt-4 gap-1">
-          <Text className="text-xs font-semibold uppercase tracking-wide text-text-muted">
-            Plan reszty dnia
-          </Text>
-          {remainingNapsToday.map((entry) => {
-            const time = formatTime(entry.plannedStart);
-            const endTime = entry.plannedEnd ? formatTime(entry.plannedEnd) : null;
-            const label = entry.type === 'NIGHT' ? 'Sen nocny' : 'Drzemka';
-            return (
-              <Text key={entry.plannedStart.toISOString()} className="text-sm text-navy dark:text-cream">
-                {label} · {time}
-                {endTime ? ` – ${endTime}` : ''}
-              </Text>
-            );
-          })}
-        </View>
-      ) : null}
-
-      {warnings.length > 0 ? (
-        <View className="mt-4 gap-1">
-          {warnings.map((message, i) => (
-            <Text key={i} className="text-xs text-orange">
-              {message}
-            </Text>
-          ))}
-        </View>
-      ) : null}
+      <View className="mt-4">
+        {view === 'timeline' ? (
+          <RecommendationTimelineView
+            recommendation={recommendation}
+            sessions={sessions}
+            now={now}
+            birthDate={birthDate}
+            hasPreferredWakeTime={hasPreferredWakeTime}
+          />
+        ) : (
+          <RecommendationListView recommendation={recommendation} sessions={sessions} />
+        )}
+      </View>
     </View>
   );
 }

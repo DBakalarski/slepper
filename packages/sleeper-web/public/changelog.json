@@ -1,5 +1,15 @@
 [
   {
+    "v": 10,
+    "version": "0.10.0",
+    "date": "2026-07-10",
+    "items": [
+      "Nowy widok „Oś” w karcie rekomendacji — cały rytm dnia (sen i drzemki) na jednym pasku 24h, z podziałem na to, co już było i co planowane",
+      "Prognoza bilansu snu na koniec dnia względem normy wiekowej, widoczna w widoku osi",
+      "Przełącznik lista/oś w karcie rekomendacji zapamiętuje wybrany widok"
+    ]
+  },
+  {
     "v": 9,
     "version": "0.9.0",
     "date": "2026-07-09",

@@ -143,6 +143,7 @@ function ActiveChildSection({ child }: ActiveChildSectionProps) {
   // endOfDay = poczatek nastepnego dnia w app tz (uwzglednia DST, w odroznieniu
   // od start + 24h ktore dwa razy w roku przesuwa granice o godzine).
   const endOfDay = useMemo(() => endOfDayInAppTz(now), [now]);
+  const birthDate = useMemo(() => new Date(child.birth_date), [child.birth_date]);
 
   const activeSessionQuery = useActiveSession(childId);
   const lastEndedQuery = useLastEndedSession(childId);
@@ -292,7 +293,13 @@ function ActiveChildSection({ child }: ActiveChildSectionProps) {
         startOfDay={startOfDay}
       />
 
-      <RecommendationCard recommendation={recommendation} />
+      <RecommendationCard
+        recommendation={recommendation}
+        sessions={todaySessions}
+        now={now}
+        birthDate={birthDate}
+        hasPreferredWakeTime={child.preferred_wake_time !== null}
+      />
 
       <BackdatedSessionModal
         visible={isBackdatedOpen}

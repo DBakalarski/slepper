@@ -50,10 +50,24 @@ function segmentKey(segment: DayTimelineSegment): string {
   return `${segment.kind}:${segment.leftPct.toFixed(4)}:${segment.widthPct.toFixed(4)}`;
 }
 
-function LegendItem({ swatchClassName, label }: { swatchClassName: string; label: string }) {
+// `dot` = wypelniona kropka (fakty). `bar` = pionowa kreska (znacznik "teraz")
+// — celowo odrozniona ksztaltem od `dot`, zeby "Teraz" nie mylilo sie z
+// "Drzemka" (oba maja ten sam kolor bg-orange). Review fixy Task 4.
+type LegendSwatchShape = 'dot' | 'bar';
+
+function LegendItem({
+  swatchClassName,
+  label,
+  shape = 'dot',
+}: {
+  swatchClassName: string;
+  label: string;
+  shape?: LegendSwatchShape;
+}) {
+  const swatchShapeClassName = shape === 'bar' ? 'h-2.5 w-0.5' : 'h-2 w-2 rounded-pill';
   return (
     <View className="flex-row items-center gap-1.5">
-      <View className={`h-2 w-2 rounded-pill ${swatchClassName}`} />
+      <View className={`${swatchShapeClassName} ${swatchClassName}`} />
       <Text className="text-[11px] text-text-muted dark:text-cream/60">{label}</Text>
     </View>
   );
@@ -105,8 +119,12 @@ export function DayTimeline({ sessions, plan, now }: DayTimelineProps) {
       <View className="mt-3 flex-row flex-wrap gap-x-3 gap-y-1">
         <LegendItem swatchClassName="bg-purple dark:bg-purple-light" label="Sen nocny" />
         <LegendItem swatchClassName="bg-orange" label="Drzemka" />
-        <LegendItem swatchClassName="bg-purple/25 border border-purple" label="Plan" />
-        <LegendItem swatchClassName="bg-orange" label="Teraz" />
+        <LegendItem
+          swatchClassName="bg-purple/25 border border-purple dark:bg-purple-light/20 dark:border-purple-light"
+          label="Plan snu nocnego"
+        />
+        <LegendItem swatchClassName="bg-orange/25 border border-orange" label="Plan drzemki" />
+        <LegendItem swatchClassName="bg-orange" label="Teraz" shape="bar" />
       </View>
     </Card>
   );
