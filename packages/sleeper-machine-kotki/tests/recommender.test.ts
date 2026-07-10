@@ -73,6 +73,28 @@ describe('recommendKotkiDwa — walidacja inputu', () => {
     };
     expect(() => recommendKotkiDwa(state, profile)).toThrow('must be after start');
   });
+
+  it('activeSession z invalid start (NaN Date) → throw', () => {
+    const now = new Date(2024, 0, 15, 10, 0, 0, 0);
+    const profile: ChildProfile = { dateOfBirth: dobForAge(now, 9) };
+    const state: State = {
+      now,
+      history: [],
+      activeSession: { start: new Date('invalid'), type: 'NAP' },
+    };
+    expect(() => recommendKotkiDwa(state, profile)).toThrow('activeSession.start must be a valid Date');
+  });
+
+  it('activeSession.start w przyszłości względem now → throw', () => {
+    const now = new Date(2024, 0, 15, 10, 0, 0, 0);
+    const profile: ChildProfile = { dateOfBirth: dobForAge(now, 9) };
+    const state: State = {
+      now,
+      history: [],
+      activeSession: { start: new Date(2024, 0, 15, 11, 0, 0, 0), type: 'NAP' },
+    };
+    expect(() => recommendKotkiDwa(state, profile)).toThrow('must not be after state.now');
+  });
 });
 
 describe('recommendKotkiDwa — Faza 4 Test: scenariusze PDF', () => {
@@ -425,5 +447,138 @@ describe('recommendKotkiDwa — kotwica = realna pobudka (koniec snu nocnego)', 
     const rec = recommendKotkiDwa(state, profile);
     // 07:00 + 3h = 10:00 (fallback bez realnej pobudki)
     expect(hhmm(rec.nextSleepAt)).toBe('10:00');
+  });
+});
+
+// Task 1 (feat/plan-dnia-os-24h): re-kotwiczony łańcuch planu + sesja aktywna.
+// Wzorzec 'Faza 4 Test: scenariusze PDF' — fixtures scenariuszowe, jawny `now`.
+describe('recommendKotkiDwa — re-kotwiczony łańcuch (Task 1)', () => {
+  // 9m bucket: WW [3, 3, 3.5], typicalNaps 2, napLength = 1.75h każda.
+  // Ideał od 07:00: nap1 10:00–11:45, nap2 14:45–16:30, noc 20:00.
+  const profile9m = (now: Date): ChildProfile => ({
+    dateOfBirth: dobForAge(now, 9),
+    targetWakeTime: { hour: 7, minute: 0 },
+  });
+
+  it('krótsza drzemka (30 min zamiast 105) → cały łańcuch przesunięty wcześniej; nextSleepAt == pierwszy wpis', () => {
+    const now = new Date(2024, 0, 15, 10, 45, 0, 0);
+    const nap1Start = new Date(2024, 0, 15, 10, 0, 0, 0);
+    const nap1End = new Date(2024, 0, 15, 10, 30, 0, 0); // 30 min zamiast 105
+    const rec = recommendKotkiDwa(
+      { now, history: [{ start: nap1Start, end: nap1End, type: 'NAP' }] },
+      profile9m(now),
+    );
+
+    // nap2 re-kotwiczona od 10:30 (nie od idealnych 11:45): 10:30 + WW[1]=3h = 13:30.
+    const nap2 = rec.remainingNapsToday.find((e) => e.type === 'NAP');
+    expect(nap2).toBeDefined();
+    expect(hhmm(nap2!.plannedStart)).toBe('13:30');
+    // Noc też wcześniej niż ideał 20:00.
+    const night = rec.remainingNapsToday.find((e) => e.type === 'NIGHT');
+    expect(night!.plannedStart.getTime()).toBeLessThan(new Date(2024, 0, 15, 20, 0).getTime());
+    // Invariant: nextSleepAt === pierwszy wpis łańcucha.
+    expect(rec.nextSleepAt?.getTime()).toBe(rec.remainingNapsToday[0]?.plannedStart.getTime());
+  });
+
+  it('dłuższa drzemka → łańcuch później; bedtime niezmienny; kolizja → warning', () => {
+    const now = new Date(2024, 0, 15, 13, 0, 0, 0);
+    const nap1Start = new Date(2024, 0, 15, 10, 0, 0, 0);
+    const nap1End = new Date(2024, 0, 15, 13, 0, 0, 0); // 3h zamiast 1h45m
+    const profile: ChildProfile = { ...profile9m(now), preferredBedtime: { hour: 18, minute: 0 } };
+    const rec = recommendKotkiDwa(
+      { now, history: [{ start: nap1Start, end: nap1End, type: 'NAP' }] },
+      profile,
+    );
+
+    // nap2 re-kotwiczona od 13:00: 13:00 + 3h = 16:00 (później niż ideał 14:45).
+    const nap2 = rec.remainingNapsToday.find((e) => e.type === 'NAP');
+    expect(nap2).toBeDefined();
+    expect(hhmm(nap2!.plannedStart)).toBe('16:00');
+    // Bedtime STAŁY — mimo że naturalna projekcja (16:00+1:45+3:30=21:15) koliduje z 18:00.
+    const night = rec.remainingNapsToday.find((e) => e.type === 'NIGHT');
+    expect(hhmm(night!.plannedStart)).toBe('18:00');
+    expect(rec.warnings.length).toBeGreaterThan(0);
+    expect(rec.warnings.some((w) => /koliduje|kolizj/.test(w))).toBe(true);
+  });
+
+  it('drzemka w toku, now < przewidywany koniec → kotwica = przewidywany koniec drzemki', () => {
+    const nap1Start = new Date(2024, 0, 15, 10, 0, 0, 0);
+    const now = new Date(2024, 0, 15, 11, 0, 0, 0); // przed przewidywanym końcem 11:45
+    const rec = recommendKotkiDwa(
+      { now, history: [], activeSession: { start: nap1Start, type: 'NAP' } },
+      profile9m(now),
+    );
+
+    // Kotwica = 11:45 (przewidywany koniec), nap2 = 11:45 + 3h = 14:45 (zgodnie z ideałem).
+    expect(hhmm(rec.remainingNapsToday[0]!.plannedStart)).toBe('14:45');
+    expect(rec.remainingNapsToday[0]!.type).toBe('NAP');
+  });
+
+  it('drzemka w toku, now > przewidywany koniec (przeciąga się) → kotwica = now', () => {
+    const nap1Start = new Date(2024, 0, 15, 10, 0, 0, 0);
+    const now = new Date(2024, 0, 15, 12, 30, 0, 0); // po przewidywanym końcu 11:45
+    const rec = recommendKotkiDwa(
+      { now, history: [], activeSession: { start: nap1Start, type: 'NAP' } },
+      profile9m(now),
+    );
+
+    // Kotwica = now (12:30), nap2 = 12:30 + 3h = 15:30.
+    expect(hhmm(rec.remainingNapsToday[0]!.plannedStart)).toBe('15:30');
+  });
+
+  it('noc w toku → plan od preferowanej pobudki; brak wpisów nocnych poza finalnym NIGHT', () => {
+    // now = 02:00 w trakcie nocy (noc zaczęła się poprzedniego wieczoru) — plan
+    // od preferowanej pobudki (07:00) jest wciąż w przyszłości względem now.
+    const now = new Date(2024, 0, 15, 2, 0, 0, 0);
+    const rec = recommendKotkiDwa(
+      { now, history: [], activeSession: { start: new Date(2024, 0, 14, 19, 30), type: 'NIGHT' } },
+      profile9m(now),
+    );
+
+    // Plan od 07:00 (jak cold start), niezależnie od tego że "now" jest wieczorem.
+    const naps = rec.remainingNapsToday.filter((e) => e.type === 'NAP');
+    const nights = rec.remainingNapsToday.filter((e) => e.type === 'NIGHT');
+    expect(naps).toHaveLength(2);
+    expect(nights).toHaveLength(1); // dokładnie jeden NIGHT — na końcu łańcucha
+    expect(hhmm(naps[0]!.plannedStart)).toBe('10:00');
+  });
+
+  it('napsDone > typicalNaps → tylko NIGHT (bez drzemki widmo)', () => {
+    const now = new Date(2024, 0, 15, 18, 0, 0, 0);
+    // 9m bucket: typicalNaps=2. Symulujemy 3 ukończone drzemki (przekroczenie).
+    const history: State['history'] = [
+      { start: new Date(2024, 0, 15, 9, 0), end: new Date(2024, 0, 15, 10, 0), type: 'NAP' },
+      { start: new Date(2024, 0, 15, 11, 0), end: new Date(2024, 0, 15, 12, 0), type: 'NAP' },
+      { start: new Date(2024, 0, 15, 13, 0), end: new Date(2024, 0, 15, 14, 0), type: 'NAP' },
+    ];
+    const rec = recommendKotkiDwa({ now, history }, profile9m(now));
+
+    expect(rec.remainingNapsToday).toHaveLength(1);
+    expect(rec.remainingNapsToday[0]!.type).toBe('NIGHT');
+    expect(rec.nextSleepAt?.getTime()).toBe(rec.remainingNapsToday[0]!.plannedStart.getTime());
+  });
+
+  it('okno czuwania przekroczone (plan w przeszłości) → pierwszy wpis od now + warning "ryzyko przemęczenia"', () => {
+    const now = new Date(2024, 0, 15, 12, 0, 0, 0); // 5h po pobudce 07:00 (5m bucket, WW[0]=105min)
+    const profile: ChildProfile = {
+      dateOfBirth: dobForAge(now, 5),
+      targetWakeTime: { hour: 7, minute: 0 },
+    };
+    const rec = recommendKotkiDwa({ now, history: [] }, profile);
+
+    expect(rec.warnings).toContain('ryzyko przemęczenia');
+    // Pierwszy wpis łańcucha clampowany do `now` (naturalny start był w przeszłości).
+    expect(rec.remainingNapsToday[0]!.plannedStart.getTime()).toBe(now.getTime());
+    expect(rec.nextSleepAt?.getTime()).toBe(now.getTime());
+  });
+
+  it('cold start bez historii i bez preferencji → plan od 7:00 (bez throw)', () => {
+    const now = new Date(2024, 0, 15, 8, 0, 0, 0);
+    const profile: ChildProfile = { dateOfBirth: dobForAge(now, 9) };
+
+    expect(() => recommendKotkiDwa({ now, history: [] }, profile)).not.toThrow();
+    const rec = recommendKotkiDwa({ now, history: [] }, profile);
+    expect(rec.nextSleepAt).not.toBeNull();
+    expect(hhmm(rec.remainingNapsToday[0]!.plannedStart)).toBe('10:00'); // 07:00 default + WW[0]=3h
   });
 });

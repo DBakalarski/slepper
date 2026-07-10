@@ -8,7 +8,7 @@ import type {
   TimeOfDay,
 } from 'sleeper-machine';
 import { pickBucket, type AgeBucket } from './lookup.js';
-import { forwardPass } from './forwardPass.js';
+import { buildIdealPlan, buildRemainingChain, hasChainBedtimeCollision, overrideNightEntry } from './chain.js';
 
 const MS_PER_DAY = 86_400_000;
 const MS_PER_MIN = 60_000;
@@ -76,6 +76,15 @@ function validateInput(state: State, profile: ChildProfile): void {
       );
     }
   }
+  if (state.activeSession !== undefined) {
+    const { start } = state.activeSession;
+    if (!(start instanceof Date) || Number.isNaN(start.getTime())) {
+      throw new Error('recommendKotkiDwa: state.activeSession.start must be a valid Date');
+    }
+    if (start.getTime() > state.now.getTime()) {
+      throw new Error('recommendKotkiDwa: state.activeSession.start must not be after state.now');
+    }
+  }
 }
 
 function sameCalendarDay(a: Date, b: Date): boolean {
@@ -128,98 +137,35 @@ function findRealMorningWake(history: State['history'], now: Date): Date | null 
   return latest;
 }
 
-export function recommendKotkiDwa(state: State, profile: ChildProfile): Recommendation {
-  validateInput(state, profile);
+function resolveBedtimeOverride(profile: ChildProfile, now: Date): Date | null {
+  if (profile.preferredBedtime === undefined) return null;
+  const { hour, minute } = profile.preferredBedtime;
+  return new Date(now.getFullYear(), now.getMonth(), now.getDate(), hour, minute, 0, 0);
+}
 
-  const wakeTime: TimeOfDay = profile.targetWakeTime ?? { hour: 7, minute: 0 };
-
-  // Wiek w miesiącach (przybliżony przez 30.4 dni/miesiąc)
-  const ageMonths = Math.floor(
-    (state.now.getTime() - profile.dateOfBirth.getTime()) / (30.4 * MS_PER_DAY),
-  );
-
-  const bucket = pickBucket(ageMonths, profile.preferredNapsCount ?? null);
-
-  // Kotwica okna aktywności: realny koniec snu nocnego z dziś rano ma priorytet
-  // nad targetWakeTime/default. Dziecko, które wstało o 05:45, ma liczone okno od
-  // 05:45, nie od docelowych 07:00. Fallback na targetWakeTime gdy brak sesji.
-  const morningWake = findRealMorningWake(state.history, state.now) ?? buildMorningWake(state.now, wakeTime);
-
-  // Długości kolejnych drzemek (3+ drzemek → ostatnia ~30 min, patrz przewodnik).
-  const napLengths = computeNapLengths(bucket);
-
-  let plan: PlanEntry[] = forwardPass(morningWake, bucket, napLengths);
-
-  // Override preferredBedtime → nadpisz ostatni NIGHT entry
-  let bedtimeOverride: Date | null = null;
-  if (profile.preferredBedtime !== undefined) {
-    const { hour, minute } = profile.preferredBedtime;
-    bedtimeOverride = new Date(
-      state.now.getFullYear(),
-      state.now.getMonth(),
-      state.now.getDate(),
-      hour,
-      minute,
-      0,
-      0,
-    );
-    const idx = plan.length - 1;
-    const last = plan[idx];
-    if (last !== undefined && last.type === 'NIGHT') {
-      const replaced: PlanEntry =
-        last.plannedEnd !== undefined
-          ? { plannedStart: bedtimeOverride, plannedEnd: last.plannedEnd, type: 'NIGHT' }
-          : { plannedStart: bedtimeOverride, type: 'NIGHT' };
-      const mutable = [...plan];
-      mutable[idx] = replaced;
-      plan = mutable;
-    }
-  }
-
-  // Krok 8 — currentWakeWindowDuration + nextSleepAt + remainingNapsToday
-  const napsDone = napsDoneToday(state.history, state.now);
-  const i = Math.min(napsDone.length, bucket.wakeWindowsHours.length - 1);
-  const currentWwHours = bucket.wakeWindowsHours[i] ?? bucket.wakeWindowsHours[bucket.wakeWindowsHours.length - 1]!;
-  const currentWakeWindowDuration = makeMinutes(currentWwHours * 60);
-
-  // lastWake = morningWake lub koniec ostatniej drzemki dziś
-  let lastWakeMs = morningWake.getTime();
-  for (const nap of napsDone) {
-    if (nap.end.getTime() > lastWakeMs) {
-      lastWakeMs = nap.end.getTime();
-    }
-  }
-
-  let nextSleepAt: Date | null = new Date(lastWakeMs + currentWakeWindowDuration * MS_PER_MIN);
-
-  // Gdy bedtimeOverride i wszystkie drzemki zrobione — nextSleepAt = bedtime
-  if (bedtimeOverride !== null && napsDone.length >= bucket.typicalNaps) {
-    nextSleepAt = bedtimeOverride;
-  }
-
-  const remainingNapsToday = plan.filter(
-    (e) => e.plannedStart.getTime() > state.now.getTime(),
-  );
-
-  // Przesunięcie najbliższego snu względem idealnego planu.
-  // Idealny czas dla tego samego slotu = plan[napsDone.length] (forwardPass liczy
-  // plan od morningWake + stałych długości drzemek). nextSleepAt jest kotwiczony
-  // na REALNYM końcu ostatniej drzemki, więc krótsza drzemka → wcześniej → dodatnie.
-  // Znak: dodatnie = wcześniej niż plan, ujemne = później. null gdy slot poza planem.
-  const idealNextStart = plan[napsDone.length]?.plannedStart;
-  const nextSleepShiftMinutes =
-    nextSleepAt !== null && idealNextStart !== undefined
-      ? Math.round((idealNextStart.getTime() - nextSleepAt.getTime()) / MS_PER_MIN)
-      : null;
-
-  // Warnings
+function computeWarnings(params: {
+  readonly hasActiveSession: boolean;
+  readonly elapsedMin: number;
+  readonly currentWakeWindowDuration: Minutes;
+  readonly bedtimeOverride: Date | null;
+  readonly chainPlan: readonly PlanEntry[];
+  readonly bucket: AgeBucket;
+  readonly profile: ChildProfile;
+}): string[] {
+  const { hasActiveSession, elapsedMin, currentWakeWindowDuration, bedtimeOverride, chainPlan, bucket, profile } =
+    params;
   const warnings: string[] = [];
-  const elapsedMin = (state.now.getTime() - lastWakeMs) / MS_PER_MIN;
-  if (currentWakeWindowDuration > 0 && elapsedMin > 1.2 * currentWakeWindowDuration) {
+
+  // Ryzyko przemęczenia liczone tylko gdy dziecko faktycznie jest w oknie
+  // aktywności (brak sesji w toku) — podczas snu to pojęcie nie ma sensu.
+  if (!hasActiveSession && currentWakeWindowDuration > 0 && elapsedMin > 1.2 * currentWakeWindowDuration) {
     warnings.push('ryzyko przemęczenia');
   }
 
-  // Sprawdź czy preferredBedtime powoduje za krótką lub za długą noc
+  if (bedtimeOverride !== null && hasChainBedtimeCollision(chainPlan, bedtimeOverride.getTime(), bucket)) {
+    warnings.push('plan drzemek koliduje z preferowaną godziną snu nocnego');
+  }
+
   if (profile.preferredBedtime !== undefined && profile.targetWakeTime !== undefined) {
     const bedMin = profile.preferredBedtime.hour * 60 + profile.preferredBedtime.minute;
     const wakeMin = profile.targetWakeTime.hour * 60 + profile.targetWakeTime.minute;
@@ -232,6 +178,83 @@ export function recommendKotkiDwa(state: State, profile: ChildProfile): Recommen
       );
     }
   }
+
+  return warnings;
+}
+
+/** currentWakeWindowDuration + realny koniec ostatniej ukończonej drzemki dziś. */
+function resolveCurrentWindow(
+  state: State,
+  bucket: AgeBucket,
+  morningWake: Date,
+): {
+  readonly napsDone: State['history'][number][];
+  readonly currentWakeWindowDuration: Minutes;
+  readonly lastWakeMs: number;
+} {
+  const napsDone = napsDoneToday(state.history, state.now);
+  const wwIdx = Math.min(napsDone.length, bucket.wakeWindowsHours.length - 1);
+  const currentWwHours = bucket.wakeWindowsHours[wwIdx] ?? bucket.wakeWindowsHours[bucket.wakeWindowsHours.length - 1]!;
+  const currentWakeWindowDuration = makeMinutes(currentWwHours * 60);
+
+  let lastWakeMs = morningWake.getTime();
+  for (const nap of napsDone) {
+    if (nap.end.getTime() > lastWakeMs) lastWakeMs = nap.end.getTime();
+  }
+
+  return { napsDone, currentWakeWindowDuration, lastWakeMs };
+}
+
+export function recommendKotkiDwa(state: State, profile: ChildProfile): Recommendation {
+  validateInput(state, profile);
+
+  const wakeTime: TimeOfDay = profile.targetWakeTime ?? { hour: 7, minute: 0 };
+  const ageMonths = _computeAgeMonths(state.now, profile.dateOfBirth);
+  const bucket = pickBucket(ageMonths, profile.preferredNapsCount ?? null);
+
+  // Kotwica okna aktywności: realny koniec snu nocnego z dziś rano ma priorytet
+  // nad targetWakeTime/default. Dziecko, które wstało o 05:45, ma liczone okno od
+  // 05:45, nie od docelowych 07:00. Fallback na targetWakeTime gdy brak sesji.
+  const morningWake = findRealMorningWake(state.history, state.now) ?? buildMorningWake(state.now, wakeTime);
+
+  // Długości kolejnych drzemek (3+ drzemek → ostatnia ~30 min, patrz przewodnik).
+  const napLengths = computeNapLengths(bucket);
+  const bedtimeOverride = resolveBedtimeOverride(profile, state.now);
+
+  const idealPlanFinal = buildIdealPlan(morningWake, bucket, napLengths, bedtimeOverride);
+  const { napsDone, currentWakeWindowDuration, lastWakeMs } = resolveCurrentWindow(state, bucket, morningWake);
+  const chainPlan = buildRemainingChain({
+    now: state.now,
+    activeSession: state.activeSession,
+    napsDoneCount: napsDone.length,
+    lastRealWakeMs: lastWakeMs,
+    morningWakeMs: morningWake.getTime(),
+    napLengths,
+    bucket,
+  });
+
+  const warnings = computeWarnings({
+    hasActiveSession: state.activeSession !== undefined,
+    elapsedMin: (state.now.getTime() - lastWakeMs) / MS_PER_MIN,
+    currentWakeWindowDuration,
+    bedtimeOverride,
+    chainPlan,
+    bucket,
+    profile,
+  });
+
+  const remainingNapsToday = bedtimeOverride !== null ? overrideNightEntry(chainPlan, bedtimeOverride) : chainPlan;
+
+  // Invariant: nextSleepAt === remainingNapsToday[0].plannedStart (jedno źródło prawdy).
+  const nextSleepAt: Date | null = remainingNapsToday[0]?.plannedStart ?? null;
+
+  // Przesunięcie najbliższego snu względem idealnego planu (slot napsDone.length).
+  // Znak: dodatnie = wcześniej niż plan, ujemne = później. null gdy slot poza planem.
+  const idealNextStart = idealPlanFinal[napsDone.length]?.plannedStart;
+  const nextSleepShiftMinutes =
+    nextSleepAt !== null && idealNextStart !== undefined
+      ? Math.round((idealNextStart.getTime() - nextSleepAt.getTime()) / MS_PER_MIN)
+      : null;
 
   return {
     nextSleepAt,

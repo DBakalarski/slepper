@@ -138,4 +138,31 @@ describe('forwardPass — generowanie planu', () => {
     expect(lastNapMs).toBe(0.5 * 60 * 60 * 1000); // ostatnia drzemka = 30 min
     expect(firstNapMs).toBeGreaterThan(lastNapMs); // wcześniejsze dłuższe
   });
+
+  it('startIndex parametryzuje punkt startowy łańcucha (re-kotwiczenie, Task 1)', () => {
+    const bucket = pickBucket(9, null); // 9m, 2 drzemki, WW: 3/3/3.5
+    const napLengthHours = Math.min(bucket.maxNapHours, bucket.maxTotalDayNapHours / bucket.typicalNaps);
+    // anchor = koniec pierwszej drzemki (11:45), startIndex=1 pomija slot drzemki 1.
+    const anchor = new Date(2024, 0, 1, 11, 45, 0, 0);
+
+    const plan = forwardPass(anchor, bucket, fillNaps(bucket.typicalNaps, napLengthHours), 1);
+
+    // Tylko drzemka 2 + NIGHT — brak drzemki 1 (już się odbyła, poza zakresem tego wywołania).
+    expect(plan).toHaveLength(2);
+    expect(plan[0]!.type).toBe('NAP');
+    // 11:45 + WW[1]=3h = 14:45
+    expect(hhmm(plan[0]!.plannedStart)).toBe('14:45');
+    expect(plan[1]!.type).toBe('NIGHT');
+  });
+
+  it('startIndex >= typicalNaps → plan ma tylko NIGHT (bez drzemki widmo)', () => {
+    const bucket = pickBucket(9, null);
+    const napLengthHours = Math.min(bucket.maxNapHours, bucket.maxTotalDayNapHours / bucket.typicalNaps);
+    const anchor = new Date(2024, 0, 1, 16, 0, 0, 0);
+
+    const plan = forwardPass(anchor, bucket, fillNaps(bucket.typicalNaps, napLengthHours), 2);
+
+    expect(plan).toHaveLength(1);
+    expect(plan[0]!.type).toBe('NIGHT');
+  });
 });

@@ -38,9 +38,18 @@ export type ChildProfile = {
   readonly preferredBedtime?: TimeOfDay;
 };
 
+// Sesja snu w toku (brak `end` — jeszcze nie zakończona). Używana przez Kotki Dwa
+// do re-kotwiczenia łańcucha planu (patrz `sleeper-machine-kotki/src/chain.ts`).
+// OPCJONALNE, non-breaking — Galland (`recommend()`) to pole ignoruje.
+export type ActiveSleepSession = {
+  readonly start: DateTime;
+  readonly type: SleepType;
+};
+
 export type State = {
   readonly now: DateTime;
   readonly history: readonly SleepSession[];
+  readonly activeSession?: ActiveSleepSession;
 };
 
 export type Confidence = 'low' | 'medium' | 'high';

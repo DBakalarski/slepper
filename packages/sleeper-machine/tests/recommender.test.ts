@@ -474,3 +474,38 @@ describe('recommend — input validation', () => {
     ).toThrow(/end.*start|SleepSession/);
   });
 });
+
+// === Task 1 (feat/plan-dnia-os-24h): State.activeSession jest non-breaking dla Gallanda ===
+// Galland nie zna pojęcia "łańcucha re-kotwiczonego" (to jest koncepcja Kotki Dwa) —
+// pole musi być całkowicie ignorowane, wynik identyczny z/bez niego.
+describe('recommend — State.activeSession jest ignorowane (non-breaking)', () => {
+  it('wynik identyczny z i bez activeSession (NAP w toku)', () => {
+    const history = buildHistory(END_Y, END_M, END_D, 14, PATTERN_9MO);
+    const { state, profile } = buildState({
+      now: NOW_DEFAULT,
+      dateOfBirth: new Date(2025, 7, 27),
+      targetWakeTime: { hour: 7, minute: 0 },
+      history,
+    });
+
+    const withoutSession = recommend(state, profile);
+    const withSession = recommend(
+      { ...state, activeSession: { start: new Date(2026, 4, 27, 14, 0), type: 'NAP' } },
+      profile,
+    );
+
+    expect(withSession).toEqual(withoutSession);
+  });
+
+  it('wynik identyczny z i bez activeSession (NIGHT w toku)', () => {
+    const { state, profile } = loadFixture('cold-start');
+
+    const withoutSession = recommend(state, profile);
+    const withSession = recommend(
+      { ...state, activeSession: { start: new Date(2026, 4, 27, 19, 30), type: 'NIGHT' } },
+      profile,
+    );
+
+    expect(withSession).toEqual(withoutSession);
+  });
+});

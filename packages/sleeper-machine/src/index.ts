@@ -10,6 +10,7 @@ export type {
   TimeOfDay,
   SleepType,
   SleepSession,
+  ActiveSleepSession,
   ChildProfile,
   State,
   Confidence,
