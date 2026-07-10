@@ -543,6 +543,40 @@ describe('recommendKotkiDwa — re-kotwiczony łańcuch (Task 1)', () => {
     expect(hhmm(naps[0]!.plannedStart)).toBe('10:00');
   });
 
+  it('noc w toku zaczęta dziś wieczorem (wake <= now) → pusty plan, nextSleepAt = null (bez fantomowych drzemek)', () => {
+    // Regression (review Task 1): NIGHT start 22:00, now 22:15, wake 07:00 DZIŚ
+    // (przeszłość) — stary kod clampował pierwszy wpis do now i generował
+    // drzemki w środku nocy. Dziecko śpi na noc → plan drzemek na dziś pusty.
+    const now = new Date(2024, 0, 15, 22, 15, 0, 0);
+    const rec = recommendKotkiDwa(
+      { now, history: [], activeSession: { start: new Date(2024, 0, 15, 22, 0), type: 'NIGHT' } },
+      profile9m(now),
+    );
+
+    expect(rec.remainingNapsToday).toHaveLength(0);
+    expect(rec.nextSleepAt).toBeNull();
+    expect(rec.warnings).not.toContain('ryzyko przemęczenia');
+  });
+
+  it('sesja w toku tłumi warning "ryzyko przemęczenia" (dziecko śpi — pojęcie nie ma sensu)', () => {
+    // NAP w toku od 10:00, now 15:00 — dawno po przewidywanym końcu 11:45.
+    // Bez tłumienia elapsed od lastWake (07:00) = 8h >> 1.2 × WW → fałszywy warning.
+    const now = new Date(2024, 0, 15, 15, 0, 0, 0);
+    const rec = recommendKotkiDwa(
+      { now, history: [], activeSession: { start: new Date(2024, 0, 15, 10, 0), type: 'NAP' } },
+      profile9m(now),
+    );
+
+    expect(rec.warnings).not.toContain('ryzyko przemęczenia');
+  });
+
+  it('kontrolnie: te same warunki BEZ sesji w toku → warning "ryzyko przemęczenia" obecny', () => {
+    const now = new Date(2024, 0, 15, 15, 0, 0, 0); // 8h po pobudce 07:00, WW=3h
+    const rec = recommendKotkiDwa({ now, history: [] }, profile9m(now));
+
+    expect(rec.warnings).toContain('ryzyko przemęczenia');
+  });
+
   it('napsDone > typicalNaps → tylko NIGHT (bez drzemki widmo)', () => {
     const now = new Date(2024, 0, 15, 18, 0, 0, 0);
     // 9m bucket: typicalNaps=2. Symulujemy 3 ukończone drzemki (przekroczenie).

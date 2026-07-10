@@ -63,6 +63,9 @@ export type PlanEntry = {
 export type Recommendation = {
   readonly nextSleepAt: DateTime | null;
   readonly currentWakeWindowDuration: Minutes;
+  // Kotki Dwa: re-kotwiczony łańcuch pozostałego planu na dziś; po clampie
+  // pierwszego wpisu do `now` późne wpisy mogą przekraczać północ — UI
+  // przycina je do końca doby.
   readonly remainingNapsToday: readonly PlanEntry[];
   // Przesunięcie najbliższego snu względem idealnego planu, w minutach ze znakiem:
   // dodatnie = wcześniej niż plan (np. krótsza drzemka), ujemne = później.

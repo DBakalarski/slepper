@@ -50,17 +50,30 @@ describe('resolveChainAnchor — kaskada kotwicy łańcucha', () => {
     expect(anchor.startIndex).toBe(1);
   });
 
-  it('activeSession NIGHT → anchor = morningWakeMs, startIndex = 0 (jak cold start)', () => {
+  it('activeSession NIGHT zaczęta dziś wieczorem (morningWake <= now) → null (pusty łańcuch, dziecko śpi na noc)', () => {
     const anchor = resolveChainAnchor({
       now: new Date(2024, 0, 15, 22, 0),
       activeSession: { start: new Date(2024, 0, 15, 19, 30), type: 'NIGHT' },
       napsDoneCount: 2, // historia sprzed nocy — ma być zignorowana
       lastRealWakeMs: new Date(2024, 0, 15, 16, 0).getTime(),
-      morningWakeMs: new Date(2024, 0, 15, 7, 0).getTime(),
+      morningWakeMs: new Date(2024, 0, 15, 7, 0).getTime(), // dzisiejsza pobudka — już przeszłość
       napLengths: [1.75, 1.75],
     });
-    expect(anchor.anchorMs).toBe(new Date(2024, 0, 15, 7, 0).getTime());
-    expect(anchor.startIndex).toBe(0);
+    expect(anchor).toBeNull();
+  });
+
+  it('activeSession NIGHT z wczoraj, now w środku nocy (morningWake > now) → anchor = morningWakeMs, startIndex = 0', () => {
+    const anchor = resolveChainAnchor({
+      now: new Date(2024, 0, 15, 2, 0),
+      activeSession: { start: new Date(2024, 0, 14, 19, 30), type: 'NIGHT' },
+      napsDoneCount: 0,
+      lastRealWakeMs: new Date(2024, 0, 15, 7, 0).getTime(),
+      morningWakeMs: new Date(2024, 0, 15, 7, 0).getTime(), // pobudka przed nami
+      napLengths: [1.75, 1.75],
+    });
+    expect(anchor).not.toBeNull();
+    expect(anchor?.anchorMs).toBe(new Date(2024, 0, 15, 7, 0).getTime());
+    expect(anchor?.startIndex).toBe(0);
   });
 });
 
@@ -106,6 +119,13 @@ describe('buildChain — generowanie re-kotwiczonego łańcucha', () => {
 
     // nap1 clamped: start 12:00, end 13:45. nap2 = 13:45 + WW[1]=3h = 16:45 (nie nakłada się).
     expect(chain[1]!.plannedStart.getTime()).toBeGreaterThan(chain[0]!.plannedEnd!.getTime());
+  });
+
+  it('anchor = null (noc w toku zaczęta wieczorem) → pusty łańcuch', () => {
+    const now = new Date(2024, 0, 15, 22, 15);
+    const chain = buildChain(null, now, bucket9m, napLengths);
+
+    expect(chain).toHaveLength(0);
   });
 });
 

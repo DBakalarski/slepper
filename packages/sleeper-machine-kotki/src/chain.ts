@@ -11,6 +11,11 @@ export type ChainAnchor = {
   readonly startIndex: number;
 };
 
+/** Ostatnie okno czuwania bucketa (przed nocą). Fallback 0 — BUCKETS nigdy nie ma pustej tablicy. */
+function lastWakeWindow(bucket: AgeBucket): number {
+  return bucket.wakeWindowsHours[bucket.wakeWindowsHours.length - 1] ?? 0;
+}
+
 /**
  * Kaskada kotwicy re-kotwiczonego łańcucha planu (Task 1, feat/plan-dnia-os-24h).
  *
@@ -18,11 +23,16 @@ export type ChainAnchor = {
  * 1. Sesja NAP w toku → kotwica = max(now, przewidywany koniec tej drzemki
  *    wg długości dla jej slotu). Ta drzemka liczy się jako "zrobiona" po swoim
  *    przewidywanym końcu — kolejny slot łańcucha zaczyna się o napsDoneCount+1.
- * 2. Sesja NIGHT w toku → kotwica = morningWake, jak przy cold starcie. Dziecko
- *    jeszcze nie wstało — cała historia sprzed nocy jest nieistotna dla planu
- *    kolejnego dnia.
+ * 2. Sesja NIGHT w toku:
+ *    - pobudka (morningWake) przed nami (`morningWakeMs > now`, np. now = 02:00
+ *      w środku nocy z wczoraj) → kotwica = morningWake, plan dnia jak cold start;
+ *    - pobudka już za nami (`morningWakeMs <= now`, noc zaczęta dziś wieczorem)
+ *      → `null` = pusty łańcuch. Dziecko śpi na noc — plan drzemek na dziś jest
+ *      zamknięty; bez tego clamp-do-now generowałby fantomowe drzemki w środku nocy.
  * 3. Brak sesji w toku → kotwica = realny koniec ostatniej ukończonej drzemki
  *    dziś (lub morningWake, gdy brak drzemek).
+ *
+ * Zwraca `null`, gdy łańcuch na dziś ma być pusty (wyłącznie przypadek 2b).
  */
 export function resolveChainAnchor(params: {
   readonly now: Date;
@@ -31,7 +41,7 @@ export function resolveChainAnchor(params: {
   readonly lastRealWakeMs: number;
   readonly morningWakeMs: number;
   readonly napLengths: readonly number[];
-}): ChainAnchor {
+}): ChainAnchor | null {
   const { now, activeSession, napsDoneCount, lastRealWakeMs, morningWakeMs, napLengths } = params;
 
   if (activeSession?.type === 'NAP') {
@@ -42,6 +52,7 @@ export function resolveChainAnchor(params: {
   }
 
   if (activeSession?.type === 'NIGHT') {
+    if (morningWakeMs <= now.getTime()) return null;
     return { anchorMs: morningWakeMs, startIndex: 0 };
   }
 
@@ -50,24 +61,31 @@ export function resolveChainAnchor(params: {
 
 /**
  * Buduje re-kotwiczony łańcuch pozostałego planu (NAP × pozostałe + 1 × NIGHT)
- * od podanej kotwicy. Pierwszy wpis, który wypadłby w przeszłości względem
- * `now` (okno czuwania przekroczone), jest clampowany do `now` — jego długość
- * (dla NAP) jest zachowana, a kolejne wpisy liczą się dalej od tego punktu,
- * bez nakładania się.
+ * od podanej kotwicy. `anchor = null` (noc w toku zaczęta dziś wieczorem) →
+ * pusty łańcuch — plan drzemek na dziś jest zamknięty.
+ *
+ * Pierwszy wpis, który wypadłby w przeszłości względem `now` (okno czuwania
+ * przekroczone), jest clampowany do `now` — jego długość (dla NAP) jest
+ * zachowana, a kolejne wpisy liczą się dalej od tego punktu, bez nakładania się.
+ * Uwaga: po clampie późne wpisy łańcucha mogą przekraczać północ — UI przycina
+ * je do końca doby. W gałęzi NIGHT-in-progress clamp nigdy nie zachodzi:
+ * kotwica (morningWake) jest tam z definicji w przyszłości względem `now`.
  */
 export function buildChain(
-  anchor: ChainAnchor,
+  anchor: ChainAnchor | null,
   now: Date,
   bucket: AgeBucket,
   napLengths: readonly number[],
 ): PlanEntry[] {
+  if (anchor === null) return [];
+
   const plan: PlanEntry[] = [];
   const nowMs = now.getTime();
   let lastWakeMs = anchor.anchorMs;
   let clamped = false;
 
   for (let i = anchor.startIndex; i < bucket.typicalNaps; i++) {
-    const ww = bucket.wakeWindowsHours[i] ?? bucket.wakeWindowsHours[bucket.wakeWindowsHours.length - 1]!;
+    const ww = bucket.wakeWindowsHours[i] ?? lastWakeWindow(bucket);
     const napLenHours = napLengths[i] ?? napLengths[napLengths.length - 1] ?? 0;
     let napStartMs = lastWakeMs + ww * MS_PER_HOUR;
     if (!clamped && napStartMs < nowMs) {
@@ -79,7 +97,7 @@ export function buildChain(
     lastWakeMs = napEndMs;
   }
 
-  const nightWw = bucket.wakeWindowsHours[bucket.wakeWindowsHours.length - 1]!;
+  const nightWw = lastWakeWindow(bucket);
   let nightStartMs = lastWakeMs + nightWw * MS_PER_HOUR;
   if (!clamped && nightStartMs < nowMs) {
     nightStartMs = nowMs;
@@ -103,8 +121,7 @@ export function hasChainBedtimeCollision(
   const lastNap = [...chain].reverse().find((e) => e.type === 'NAP');
   if (lastNap?.plannedEnd === undefined) return false;
 
-  const nightWw = bucket.wakeWindowsHours[bucket.wakeWindowsHours.length - 1]!;
-  const projectedNightStartMs = lastNap.plannedEnd.getTime() + nightWw * MS_PER_HOUR;
+  const projectedNightStartMs = lastNap.plannedEnd.getTime() + lastWakeWindow(bucket) * MS_PER_HOUR;
   return projectedNightStartMs > bedtimeOverrideMs;
 }
 
