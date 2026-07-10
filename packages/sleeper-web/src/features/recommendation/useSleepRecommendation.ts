@@ -8,7 +8,7 @@ import { recommend as recommendGalland, type Recommendation } from 'sleeper-mach
 import { recommendKotkiDwa } from 'sleeper-machine-kotki';
 import { useSessions } from '@/features/sessions/hooks';
 import { dayKeyInAppTz, startOfDayInAppTz, endOfDayInAppTz } from '@/lib/time';
-import { toLibSessions, toLibProfile } from './adapter';
+import { toLibSessions, toLibActiveSession, toLibProfile } from './adapter';
 
 export type UseSleepRecommendationResult = {
   readonly recommendation: Recommendation | null;
@@ -31,7 +31,10 @@ export type ChildForRecommendation = {
  * Compute live sleep recommendation for a child.
  *
  * - Pulls last 14 days of sessions via existing `useSessions` query.
- * - Skips active session (`end_at === null`) at adapter layer.
+ * - Active session (`end_at === null`) is excluded from `history` but
+ *   passed separately as `state.activeSession` — the engine uses it to
+ *   re-anchor the plan (kaskada kotwicy). No extra query: the 14-day
+ *   range already includes the in-progress session.
  * - Re-computes on each render (recommend is <1 ms; memoized on inputs).
  * - Returns `null` while sessions are loading or child is null.
  *
@@ -102,7 +105,11 @@ export function useSleepRecommendation(
       child.preferred_naps_per_day,
       child.preferred_bedtime,
     );
-    const state = { now, history: toLibSessions(sessionsQuery.data) };
+    const state = {
+      now,
+      history: toLibSessions(sessionsQuery.data),
+      activeSession: toLibActiveSession(sessionsQuery.data),
+    };
     const fn = child.algorithm === 'kotki_dwa' ? recommendKotkiDwa : recommendGalland;
     return fn(state, profile);
   }, [child, now, sessionsQuery.data]);

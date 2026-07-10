@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { SleepSession as AppSleepSession } from '@/features/sessions/hooks';
 
-import { toLibProfile, toLibSessions } from '../adapter';
+import { toLibActiveSession, toLibProfile, toLibSessions } from '../adapter';
 
 const baseSession = (overrides: Partial<AppSleepSession>): AppSleepSession => ({
   id: 'session-1',
@@ -49,6 +49,34 @@ describe('toLibSessions', () => {
 
   it('returns empty array for empty input', () => {
     expect(toLibSessions([])).toEqual([]);
+  });
+});
+
+describe('toLibActiveSession', () => {
+  it('maps the active session (end_at === null) to { start, type }, absent from history', () => {
+    const sessions = [
+      baseSession({ id: 'ended' }),
+      baseSession({ id: 'active', type: 'night_sleep', start_at: '2026-06-05T20:00:00.000Z', end_at: null }),
+    ];
+    const active = toLibActiveSession(sessions);
+    expect(active).toEqual({ start: new Date('2026-06-05T20:00:00.000Z'), type: 'NIGHT' });
+    // Active session is excluded from history (regression: toLibSessions filter kept intact).
+    expect(toLibSessions(sessions)).toHaveLength(1);
+    expect(toLibSessions(sessions)[0]?.type).toBe('NAP');
+  });
+
+  it('maps NAP type correctly', () => {
+    const sessions = [baseSession({ id: 'active', type: 'nap', end_at: null })];
+    expect(toLibActiveSession(sessions)?.type).toBe('NAP');
+  });
+
+  it('returns undefined when no session is active', () => {
+    const sessions = [baseSession({ id: 'ended-1' }), baseSession({ id: 'ended-2' })];
+    expect(toLibActiveSession(sessions)).toBeUndefined();
+  });
+
+  it('returns undefined for empty input', () => {
+    expect(toLibActiveSession([])).toBeUndefined();
   });
 });
 

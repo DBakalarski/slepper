@@ -5,6 +5,7 @@
 
 import type {
   SleepSession as LibSleepSession,
+  ActiveSleepSession as LibActiveSleepSession,
   ChildProfile as LibChildProfile,
   TimeOfDay,
 } from 'sleeper-machine';
@@ -32,6 +33,25 @@ export function toLibSessions(appSessions: readonly AppSleepSession[]): LibSleep
     });
   }
   return out;
+}
+
+/**
+ * Extract the active (in-progress) session — `end_at === null` — and map it
+ * to the lib's `ActiveSleepSession` shape (`{ start, type }`, no `end`).
+ * Returns `undefined` when no session is in progress. Consumed as
+ * `state.activeSession` so the engine can re-anchor the plan (kaskada
+ * kotwicy: NAP w toku / NIGHT w toku / brak). At most one active session
+ * exists per child (DB constraint), so the first match wins.
+ */
+export function toLibActiveSession(
+  appSessions: readonly AppSleepSession[],
+): LibActiveSleepSession | undefined {
+  const active = appSessions.find((s) => s.end_at === null);
+  if (!active) return undefined;
+  return {
+    start: new Date(active.start_at),
+    type: toLibType(active.type),
+  };
 }
 
 // Parser Postgres 'HH:MM:SS' (lub 'HH:MM') -> TimeOfDay. Zwraca null gdy
