@@ -103,7 +103,7 @@ Krytyczna luka odkryta w researchu: adapter **odfiltrowuje sesję w toku** (`ada
 
 ## Implementation Units
 
-- [ ] **Unit 1: Silnik kotki_dwa — re-kotwiczony łańcuch planu + sesja aktywna**
+- [x] **Unit 1: Silnik kotki_dwa — re-kotwiczony łańcuch planu + sesja aktywna**
 
 **Cel:** `remainingNapsToday` liczone łańcuchowo od realnej kotwicy (koniec ostatniego snu / przewidywany koniec sesji w toku), bedtime stały, warning przy kolizji; `nextSleepAt` = pierwszy wpis łańcucha.
 
@@ -150,7 +150,7 @@ Krytyczna luka odkryta w researchu: adapter **odfiltrowuje sesję w toku** (`ada
 
 ---
 
-- [ ] **Unit 2: Web lib — prognoza bilansu dnia (`day-forecast`)**
+- [x] **Unit 2: Web lib — prognoza bilansu dnia (`day-forecast`)**
 
 **Cel:** Czysta funkcja licząca prognozę snu na koniec doby (fakty + plan) i klasyfikującą względem przedziału normy.
 
@@ -190,7 +190,7 @@ Krytyczna luka odkryta w researchu: adapter **odfiltrowuje sesję w toku** (`ada
 
 ---
 
-- [ ] **Unit 3: Adapter + hook — sesja aktywna do silnika**
+- [x] **Unit 3: Adapter + hook — sesja aktywna do silnika**
 
 **Cel:** `useSleepRecommendation` przekazuje sesję w toku do silnika; rekomendacja (z re-kotwiczonym planem) płynie do istniejących konsumentów bez zmian ich API.
 
@@ -227,7 +227,7 @@ Krytyczna luka odkryta w researchu: adapter **odfiltrowuje sesję w toku** (`ada
 
 ---
 
-- [ ] **Unit 4: Komponent osi 24h (geometria + prezentacja)**
+- [x] **Unit 4: Komponent osi 24h (geometria + prezentacja)**
 
 **Cel:** Reużywalny, read-only komponent „rytm dnia": pas doby z blokami faktów (`≤ now`) i predykcji (`> now`), znacznikiem „teraz" i etykietami godzin; geometria w czystym module.
 
@@ -270,7 +270,7 @@ Krytyczna luka odkryta w researchu: adapter **odfiltrowuje sesję w toku** (`ada
 
 ---
 
-- [ ] **Unit 5: Integracja karty — przełącznik widoku, prognoza, changelog**
+- [x] **Unit 5: Integracja karty — przełącznik widoku, prognoza, changelog**
 
 **Cel:** Karta rekomendacji z przełącznikiem lista ↔ oś (persystowany, default oś), prognozą bilansu w widoku osi i notą o domyślnej pobudce; wpis changelog + bump wersji (zmiana user-facing).
 
