@@ -3,6 +3,7 @@ import type { AgeBucket } from './lookup.js';
 import { forwardPass } from './forwardPass.js';
 
 const MS_PER_HOUR = 3_600_000;
+const MS_PER_DAY = 86_400_000;
 
 export type ChainAnchor = {
   // Punkt startowy (ms) od którego liczony jest pierwszy WW w łańcuchu.
@@ -14,6 +15,23 @@ export type ChainAnchor = {
 /** Ostatnie okno czuwania bucketa (przed nocą). Fallback 0 — BUCKETS nigdy nie ma pustej tablicy. */
 function lastWakeWindow(bucket: AgeBucket): number {
   return bucket.wakeWindowsHours[bucket.wakeWindowsHours.length - 1] ?? 0;
+}
+
+/**
+ * Przewidywany koniec drzemki w toku wg długości dla jej slotu, nigdy
+ * wcześniej niż `now` (drzemka, która się przeciąga, "kończy się" najwcześniej
+ * teraz). Wspólna dla `resolveChainAnchor` (kaskada #1) i
+ * `resolveActiveSessionPredictedEnd` — jedno miejsce liczące tę wartość.
+ */
+function predictedNapEndMs(
+  napStartMs: number,
+  napIndex: number,
+  napLengths: readonly number[],
+  now: Date,
+): number {
+  const napLenHours = napLengths[napIndex] ?? napLengths[napLengths.length - 1] ?? 0;
+  const predictedEndMs = napStartMs + napLenHours * MS_PER_HOUR;
+  return Math.max(now.getTime(), predictedEndMs);
 }
 
 /**
@@ -46,9 +64,8 @@ export function resolveChainAnchor(params: {
 
   if (activeSession?.type === 'NAP') {
     const idx = napsDoneCount;
-    const napLenHours = napLengths[idx] ?? napLengths[napLengths.length - 1] ?? 0;
-    const predictedEndMs = activeSession.start.getTime() + napLenHours * MS_PER_HOUR;
-    return { anchorMs: Math.max(now.getTime(), predictedEndMs), startIndex: idx + 1 };
+    const anchorMs = predictedNapEndMs(activeSession.start.getTime(), idx, napLengths, now);
+    return { anchorMs, startIndex: idx + 1 };
   }
 
   if (activeSession?.type === 'NIGHT') {
@@ -165,4 +182,45 @@ export function buildRemainingChain(params: {
 }): PlanEntry[] {
   const anchor = resolveChainAnchor(params);
   return buildChain(anchor, params.now, params.bucket, params.napLengths);
+}
+
+/**
+ * Przewidywany koniec/pobudka sesji w toku (Task C2, review finalne
+ * feat/plan-dnia-os-24h). `remainingNapsToday` (chain.ts) zwraca wyłącznie
+ * PRZYSZŁE sloty — podczas sesji w toku jej przewidywany "ogon" (now →
+ * przewidywany koniec) nie jest ani faktem (fakty kończą się na `now`), ani
+ * częścią łańcucha. Bez tej wartości prognoza/oś na webie miały dziurę
+ * (skok bilansu przy starcie sesji, "absurdalny minus" przy nocy w toku).
+ *
+ * - NAP w toku → kaskada #1 (jak `resolveChainAnchor`), przez wspólny
+ *   `predictedNapEndMs` — bez duplikacji.
+ * - NIGHT w toku, pobudka jeszcze przed nami (`morningWakeMs > now`, np.
+ *   now=02:00 w środku nocy z wczoraj) → pobudka = `morningWake`.
+ * - NIGHT w toku, noc zaczęta dziś wieczorem (`morningWakeMs <= now`) →
+ *   pobudka JUTRO (`morningWakeMs + MS_PER_DAY`). Wartość ma tylko wykroczyć
+ *   poza dzisiejszą dobę — web (day-forecast/day-timeline) przycina do końca
+ *   doby, więc precyzja DST nie ma tu znaczenia (ta sama zasada "brak
+ *   new Date() z zegara" — arytmetyka na już policzonym `morningWakeMs`).
+ * - Brak sesji w toku → `null`.
+ */
+export function resolveActiveSessionPredictedEnd(params: {
+  readonly now: Date;
+  readonly activeSession: ActiveSleepSession | undefined;
+  readonly napsDoneCount: number;
+  readonly morningWakeMs: number;
+  readonly napLengths: readonly number[];
+}): Date | null {
+  const { now, activeSession, napsDoneCount, morningWakeMs, napLengths } = params;
+
+  if (activeSession?.type === 'NAP') {
+    const endMs = predictedNapEndMs(activeSession.start.getTime(), napsDoneCount, napLengths, now);
+    return new Date(endMs);
+  }
+
+  if (activeSession?.type === 'NIGHT') {
+    const wakeMs = morningWakeMs > now.getTime() ? morningWakeMs : morningWakeMs + MS_PER_DAY;
+    return new Date(wakeMs);
+  }
+
+  return null;
 }

@@ -508,4 +508,22 @@ describe('recommend — State.activeSession jest ignorowane (non-breaking)', () 
 
     expect(withSession).toEqual(withoutSession);
   });
+
+  it('activeSessionPredictedEnd pozostaje undefined niezależnie od activeSession (Galland nie liczy ogona, Task C2)', () => {
+    const { state, profile } = loadFixture('cold-start');
+
+    const withoutSession = recommend(state, profile);
+    const withNapSession = recommend(
+      { ...state, activeSession: { start: new Date(2026, 4, 27, 14, 0), type: 'NAP' } },
+      profile,
+    );
+    const withNightSession = recommend(
+      { ...state, activeSession: { start: new Date(2026, 4, 27, 19, 30), type: 'NIGHT' } },
+      profile,
+    );
+
+    expect(withoutSession.activeSessionPredictedEnd).toBeUndefined();
+    expect(withNapSession.activeSessionPredictedEnd).toBeUndefined();
+    expect(withNightSession.activeSessionPredictedEnd).toBeUndefined();
+  });
 });

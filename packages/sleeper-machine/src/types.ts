@@ -74,4 +74,12 @@ export type Recommendation = {
   readonly nextSleepShiftMinutes: number | null;
   readonly confidence: Confidence;
   readonly warnings: readonly string[];
+  // Przewidywany koniec (NAP) / pobudka (NIGHT) sesji w toku (`state.activeSession`).
+  // OPCJONALNE i non-breaking — dodane dla Kotki Dwa (re-kotwiczony łańcuch
+  // zwraca wyłącznie przyszłe sloty; ten "ogon" sesji w toku nie jest ani
+  // faktem, ani planem, patrz `sleeper-machine-kotki/src/chain.ts`
+  // `resolveActiveSessionPredictedEnd`). Galland (`recommend()`) tego pola
+  // NIE ustawia (zawsze `undefined`) — nie ma pojęcia "sesji w toku" osobno
+  // od `history`. Konsumenci: web prognoza/oś (`day-forecast.ts`, `DayTimeline`).
+  readonly activeSessionPredictedEnd?: Date | null;
 };

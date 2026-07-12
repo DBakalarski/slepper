@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { resolveChainAnchor, buildChain, hasChainBedtimeCollision } from '../src/chain.js';
+import {
+  resolveChainAnchor,
+  buildChain,
+  hasChainBedtimeCollision,
+  resolveActiveSessionPredictedEnd,
+} from '../src/chain.js';
 import { pickBucket } from '../src/lookup.js';
 
 function hhmm(date: Date): string {
@@ -165,5 +170,69 @@ describe('hasChainBedtimeCollision — kolizja łańcucha z preferredBedtime', (
     const bedtimeMs = new Date(2024, 0, 15, 19, 0).getTime();
 
     expect(hasChainBedtimeCollision(chain, bedtimeMs, bucket9m)).toBe(false);
+  });
+});
+
+describe('resolveActiveSessionPredictedEnd — ogon sesji w toku (Task C2, review finalne)', () => {
+  const napLengths = [1.75, 1.75];
+
+  it('brak sesji w toku → null', () => {
+    const end = resolveActiveSessionPredictedEnd({
+      now: new Date(2024, 0, 15, 12, 0),
+      activeSession: undefined,
+      napsDoneCount: 0,
+      morningWakeMs: new Date(2024, 0, 15, 7, 0).getTime(),
+      napLengths,
+    });
+    expect(end).toBeNull();
+  });
+
+  it('NAP w toku, now przed przewidywanym końcem → przewidywany koniec drzemki (spójne z resolveChainAnchor)', () => {
+    const napStart = new Date(2024, 0, 15, 10, 0);
+    const end = resolveActiveSessionPredictedEnd({
+      now: new Date(2024, 0, 15, 11, 0), // przed 11:45
+      activeSession: { start: napStart, type: 'NAP' },
+      napsDoneCount: 0,
+      morningWakeMs: new Date(2024, 0, 15, 7, 0).getTime(),
+      napLengths,
+    });
+    expect(end?.getTime()).toBe(new Date(2024, 0, 15, 11, 45).getTime());
+  });
+
+  it('NAP w toku, now po przewidywanym końcu (przeciąga się) → koniec = now (nigdy w przeszłości)', () => {
+    const napStart = new Date(2024, 0, 15, 10, 0);
+    const end = resolveActiveSessionPredictedEnd({
+      now: new Date(2024, 0, 15, 12, 30), // po 11:45
+      activeSession: { start: napStart, type: 'NAP' },
+      napsDoneCount: 0,
+      morningWakeMs: new Date(2024, 0, 15, 7, 0).getTime(),
+      napLengths,
+    });
+    expect(end?.getTime()).toBe(new Date(2024, 0, 15, 12, 30).getTime());
+  });
+
+  it('NIGHT w toku, now w środku nocy (morningWake w przyszłości, np. 02:00) → pobudka = morningWake', () => {
+    const end = resolveActiveSessionPredictedEnd({
+      now: new Date(2024, 0, 15, 2, 0),
+      activeSession: { start: new Date(2024, 0, 14, 19, 30), type: 'NIGHT' },
+      napsDoneCount: 0,
+      morningWakeMs: new Date(2024, 0, 15, 7, 0).getTime(), // dzisiejsza pobudka — jeszcze przed nami
+      napLengths,
+    });
+    expect(end?.getTime()).toBe(new Date(2024, 0, 15, 7, 0).getTime());
+  });
+
+  it('NIGHT w toku, noc zaczęta dziś wieczorem (morningWake już za nami) → pobudka JUTRO (+24h)', () => {
+    const morningWakeMs = new Date(2024, 0, 15, 7, 0).getTime();
+    const end = resolveActiveSessionPredictedEnd({
+      now: new Date(2024, 0, 15, 22, 15),
+      activeSession: { start: new Date(2024, 0, 15, 22, 0), type: 'NIGHT' },
+      napsDoneCount: 2,
+      morningWakeMs,
+      napLengths,
+    });
+    expect(end?.getTime()).toBe(morningWakeMs + 24 * 60 * 60 * 1000);
+    // Wykracza poza dzisiejszą dobę (web ma to przyciąć do końca doby).
+    expect(end!.getTime()).toBeGreaterThan(new Date(2024, 0, 15, 23, 59, 59).getTime());
   });
 });

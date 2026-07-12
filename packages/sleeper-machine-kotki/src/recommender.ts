@@ -8,7 +8,13 @@ import type {
   TimeOfDay,
 } from 'sleeper-machine';
 import { pickBucket, type AgeBucket } from './lookup.js';
-import { buildIdealPlan, buildRemainingChain, hasChainBedtimeCollision, overrideNightEntry } from './chain.js';
+import {
+  buildIdealPlan,
+  buildRemainingChain,
+  hasChainBedtimeCollision,
+  overrideNightEntry,
+  resolveActiveSessionPredictedEnd,
+} from './chain.js';
 
 const MS_PER_DAY = 86_400_000;
 const MS_PER_MIN = 60_000;
@@ -248,6 +254,16 @@ export function recommendKotkiDwa(state: State, profile: ChildProfile): Recommen
   // Invariant: nextSleepAt === remainingNapsToday[0].plannedStart (jedno źródło prawdy).
   const nextSleepAt: Date | null = remainingNapsToday[0]?.plannedStart ?? null;
 
+  // Ogon sesji w toku (Task C2, review finalne) — NIE wpływa na
+  // remainingNapsToday/nextSleepAt, osobne pole na Recommendation.
+  const activeSessionPredictedEnd = resolveActiveSessionPredictedEnd({
+    now: state.now,
+    activeSession: state.activeSession,
+    napsDoneCount: napsDone.length,
+    morningWakeMs: morningWake.getTime(),
+    napLengths,
+  });
+
   // Przesunięcie najbliższego snu względem idealnego planu (slot napsDone.length).
   // Znak: dodatnie = wcześniej niż plan, ujemne = później. null gdy slot poza planem.
   const idealNextStart = idealPlanFinal[napsDone.length]?.plannedStart;
@@ -263,6 +279,7 @@ export function recommendKotkiDwa(state: State, profile: ChildProfile): Recommen
     nextSleepShiftMinutes,
     confidence: 'high',
     warnings,
+    activeSessionPredictedEnd,
   };
 }
 

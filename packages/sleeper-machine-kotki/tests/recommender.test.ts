@@ -616,3 +616,68 @@ describe('recommendKotkiDwa — re-kotwiczony łańcuch (Task 1)', () => {
     expect(hhmm(rec.remainingNapsToday[0]!.plannedStart)).toBe('10:00'); // 07:00 default + WW[0]=3h
   });
 });
+
+// Task C2 (review finalne): ogon sesji w toku — Recommendation.activeSessionPredictedEnd.
+describe('recommendKotkiDwa — activeSessionPredictedEnd (Task C2)', () => {
+  // 9m bucket: WW [3, 3, 3.5], typicalNaps 2, napLength = 1.75h.
+  const profile9m = (now: Date): ChildProfile => ({
+    dateOfBirth: dobForAge(now, 9),
+    targetWakeTime: { hour: 7, minute: 0 },
+  });
+
+  it('brak sesji w toku → null', () => {
+    const now = new Date(2024, 0, 15, 12, 0, 0, 0);
+    const rec = recommendKotkiDwa({ now, history: [] }, profile9m(now));
+
+    expect(rec.activeSessionPredictedEnd).toBeNull();
+  });
+
+  it('NAP w toku → przewidywany koniec drzemki wg bucketa; spójny z kotwicą łańcucha', () => {
+    const now = new Date(2024, 0, 15, 11, 0, 0, 0);
+    const rec = recommendKotkiDwa(
+      { now, history: [], activeSession: { start: new Date(2024, 0, 15, 10, 0), type: 'NAP' } },
+      profile9m(now),
+    );
+
+    // 10:00 + 1.75h = 11:45.
+    expect(hhmm(rec.activeSessionPredictedEnd ?? null)).toBe('11:45');
+    // Spójność: następny slot łańcucha startuje od tego samego punktu + WW[1]=3h.
+    expect(rec.remainingNapsToday[0]!.plannedStart.getTime()).toBe(
+      rec.activeSessionPredictedEnd!.getTime() + 3 * 60 * 60 * 1000,
+    );
+  });
+
+  it('NAP w toku przeciągnięty poza przewidywany koniec → koniec = now (nigdy w przeszłości)', () => {
+    const now = new Date(2024, 0, 15, 12, 30, 0, 0); // po 11:45
+    const rec = recommendKotkiDwa(
+      { now, history: [], activeSession: { start: new Date(2024, 0, 15, 10, 0), type: 'NAP' } },
+      profile9m(now),
+    );
+
+    expect(rec.activeSessionPredictedEnd?.getTime()).toBe(now.getTime());
+  });
+
+  it('NIGHT w toku o 2:00 (noc z wczoraj) → przewidywana pobudka = morningWake (07:00)', () => {
+    const now = new Date(2024, 0, 15, 2, 0, 0, 0);
+    const rec = recommendKotkiDwa(
+      { now, history: [], activeSession: { start: new Date(2024, 0, 14, 19, 30), type: 'NIGHT' } },
+      profile9m(now),
+    );
+
+    expect(rec.activeSessionPredictedEnd?.getTime()).toBe(new Date(2024, 0, 15, 7, 0).getTime());
+  });
+
+  it('NIGHT w toku zaczęta dziś wieczorem → pobudka JUTRO (wykracza poza dzisiejszą dobę)', () => {
+    const now = new Date(2024, 0, 15, 22, 15, 0, 0);
+    const rec = recommendKotkiDwa(
+      { now, history: [], activeSession: { start: new Date(2024, 0, 15, 22, 0), type: 'NIGHT' } },
+      profile9m(now),
+    );
+
+    // Pobudka jutro 07:00 — wartość poza dzisiejszą dobą; UI przycina do końca doby.
+    expect(rec.activeSessionPredictedEnd?.getTime()).toBe(new Date(2024, 0, 16, 7, 0).getTime());
+    // remainingNapsToday pozostaje pusty (invariant Task 1 nietknięty).
+    expect(rec.remainingNapsToday).toHaveLength(0);
+    expect(rec.nextSleepAt).toBeNull();
+  });
+});
