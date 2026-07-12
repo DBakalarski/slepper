@@ -12,7 +12,10 @@ import type {
 import type { SleepSession as AppSleepSession } from '@/features/sessions/hooks';
 
 // App stores type as 'nap' | 'night_sleep'. Lib uses 'NAP' | 'NIGHT'.
-function toLibType(t: AppSleepSession['type']): LibSleepSession['type'] {
+// Exported: also reused by active-session-tail-entry.ts (synthesizing a
+// PlanEntry for the in-progress session's tail, finding C2) — single boundary
+// for this mapping, no duplication.
+export function toLibType(t: AppSleepSession['type']): LibSleepSession['type'] {
   return t === 'nap' ? 'NAP' : 'NIGHT';
 }
 
@@ -42,14 +45,25 @@ export function toLibSessions(appSessions: readonly AppSleepSession[]): LibSleep
  * `state.activeSession` so the engine can re-anchor the plan (kaskada
  * kotwicy: NAP w toku / NIGHT w toku / brak). At most one active session
  * exists per child (DB constraint), so the first match wins.
+ *
+ * Clamps `start` to `now` when `start > now`. The engine validates
+ * `activeSession.start <= state.now` and throws otherwise — a refetch right
+ * after START can race a stale `now` tick (`useNow` ticks every 30s), so the
+ * freshly-created session's `start_at` can be a few seconds ahead of the
+ * `now` still held by the render. Clamping here (rather than loosening the
+ * engine's invariant) keeps the boundary validation strict while making the
+ * UI-side adapter tolerant of this specific clock race (finding C1, final
+ * review feat/plan-dnia-os-24h).
  */
 export function toLibActiveSession(
   appSessions: readonly AppSleepSession[],
+  now: Date,
 ): LibActiveSleepSession | undefined {
   const active = appSessions.find((s) => s.end_at === null);
   if (!active) return undefined;
+  const start = new Date(active.start_at);
   return {
-    start: new Date(active.start_at),
+    start: start.getTime() > now.getTime() ? now : start,
     type: toLibType(active.type),
   };
 }

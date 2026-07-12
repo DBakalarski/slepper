@@ -53,12 +53,14 @@ describe('toLibSessions', () => {
 });
 
 describe('toLibActiveSession', () => {
+  const now = new Date('2026-06-05T21:00:00.000Z');
+
   it('maps the active session (end_at === null) to { start, type }, absent from history', () => {
     const sessions = [
       baseSession({ id: 'ended' }),
       baseSession({ id: 'active', type: 'night_sleep', start_at: '2026-06-05T20:00:00.000Z', end_at: null }),
     ];
-    const active = toLibActiveSession(sessions);
+    const active = toLibActiveSession(sessions, now);
     expect(active).toEqual({ start: new Date('2026-06-05T20:00:00.000Z'), type: 'NIGHT' });
     // Active session is excluded from history (regression: toLibSessions filter kept intact).
     expect(toLibSessions(sessions)).toHaveLength(1);
@@ -67,16 +69,35 @@ describe('toLibActiveSession', () => {
 
   it('maps NAP type correctly', () => {
     const sessions = [baseSession({ id: 'active', type: 'nap', end_at: null })];
-    expect(toLibActiveSession(sessions)?.type).toBe('NAP');
+    expect(toLibActiveSession(sessions, now)?.type).toBe('NAP');
   });
 
   it('returns undefined when no session is active', () => {
     const sessions = [baseSession({ id: 'ended-1' }), baseSession({ id: 'ended-2' })];
-    expect(toLibActiveSession(sessions)).toBeUndefined();
+    expect(toLibActiveSession(sessions, now)).toBeUndefined();
   });
 
   it('returns undefined for empty input', () => {
-    expect(toLibActiveSession([])).toBeUndefined();
+    expect(toLibActiveSession([], now)).toBeUndefined();
+  });
+
+  it('clamps start to now when start_at is after now (finding C1: stale now tick after START)', () => {
+    // Fresh session just started 15s after the `now` still held by a stale
+    // 30s useNow tick — start_at > now would otherwise throw inside the
+    // engine's validateInput (start.getTime() > state.now.getTime()).
+    const sessions = [
+      baseSession({ id: 'active', type: 'nap', start_at: '2026-06-05T21:00:15.000Z', end_at: null }),
+    ];
+    const active = toLibActiveSession(sessions, now);
+    expect(active).toEqual({ start: now, type: 'NAP' });
+  });
+
+  it('does not clamp when start_at is before or equal to now', () => {
+    const sessions = [
+      baseSession({ id: 'active', type: 'nap', start_at: '2026-06-05T20:00:00.000Z', end_at: null }),
+    ];
+    const active = toLibActiveSession(sessions, now);
+    expect(active?.start).toEqual(new Date('2026-06-05T20:00:00.000Z'));
   });
 });
 

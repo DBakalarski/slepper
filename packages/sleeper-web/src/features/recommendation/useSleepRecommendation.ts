@@ -108,10 +108,21 @@ export function useSleepRecommendation(
     const state = {
       now,
       history: toLibSessions(sessionsQuery.data),
-      activeSession: toLibActiveSession(sessionsQuery.data),
+      activeSession: toLibActiveSession(sessionsQuery.data, now),
     };
     const fn = child.algorithm === 'kotki_dwa' ? recommendKotkiDwa : recommendGalland;
-    return fn(state, profile);
+    // Fail-safe (finding C1, final review): the engine validates its input
+    // and throws on invariant violations (e.g. stale `now` racing a fresh
+    // active session). This runs inside useMemo — an uncaught throw here
+    // happens during render with no ErrorBoundary above this tree, so it
+    // would white-screen the whole app. Swallow, log, and degrade to "no
+    // recommendation" rather than crash.
+    try {
+      return fn(state, profile);
+    } catch (err) {
+      console.error('[useSleepRecommendation] recommend() threw, degrading to null', err);
+      return null;
+    }
   }, [child, now, sessionsQuery.data]);
 
   return {

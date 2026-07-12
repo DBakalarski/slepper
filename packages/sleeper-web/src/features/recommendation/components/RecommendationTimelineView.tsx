@@ -6,6 +6,7 @@ import type { SleepSession } from '@/features/sessions/hooks';
 import { computeDayForecast, type DayForecast } from '@/lib/day-forecast';
 import { formatDuration } from '@/lib/time';
 
+import { withActiveSessionTail } from '../active-session-tail-entry';
 import { hasCompletedNightSessionToday, nextSleepEmptyCopy } from '../next-sleep-copy';
 import { DayTimeline } from './DayTimeline';
 
@@ -43,7 +44,15 @@ export function RecommendationTimelineView({
   birthDate,
   hasPreferredWakeTime,
 }: RecommendationTimelineViewProps) {
-  const plan = recommendation.remainingNapsToday;
+  // Ogon sesji w toku (finding C2) dołączony do planu — jedno źródło dla
+  // prognozy bilansu I dla osi. `computeDayForecast`/`computeDayTimelineGeometry`
+  // przycinają wpisy do doby, więc synteza tu nie musi clampować sama.
+  const plan = withActiveSessionTail(
+    recommendation.remainingNapsToday,
+    sessions,
+    recommendation.activeSessionPredictedEnd,
+    now,
+  );
   const forecast = computeDayForecast(sessions, plan, now, birthDate);
   const showDefaultWakeNote = !hasPreferredWakeTime && !hasCompletedNightSessionToday(sessions);
 
