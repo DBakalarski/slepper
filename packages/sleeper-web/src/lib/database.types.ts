@@ -171,6 +171,101 @@ export type Database = {
           },
         ]
       }
+      nap_schedule: {
+        Row: {
+          child_id: string
+          next_sleep_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          child_id: string
+          next_sleep_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          child_id?: string
+          next_sleep_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nap_schedule_child_id_fkey"
+            columns: ["child_id"]
+            isOneToOne: true
+            referencedRelation: "children"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      push_deliveries: {
+        Row: {
+          child_id: string
+          next_sleep_at: string
+          sent_at: string
+          subscription_id: string
+        }
+        Insert: {
+          child_id: string
+          next_sleep_at: string
+          sent_at?: string
+          subscription_id: string
+        }
+        Update: {
+          child_id?: string
+          next_sleep_at?: string
+          sent_at?: string
+          subscription_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "push_deliveries_child_id_fkey"
+            columns: ["child_id"]
+            isOneToOne: false
+            referencedRelation: "children"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "push_deliveries_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "push_subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      push_subscriptions: {
+        Row: {
+          auth: string
+          created_at: string
+          enabled: boolean
+          endpoint: string
+          id: string
+          lead_minutes: number
+          p256dh: string
+          user_id: string
+        }
+        Insert: {
+          auth: string
+          created_at?: string
+          enabled?: boolean
+          endpoint: string
+          id?: string
+          lead_minutes?: number
+          p256dh: string
+          user_id: string
+        }
+        Update: {
+          auth?: string
+          created_at?: string
+          enabled?: boolean
+          endpoint?: string
+          id?: string
+          lead_minutes?: number
+          p256dh?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       sessions: {
         Row: {
           child_id: string
