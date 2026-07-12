@@ -11,7 +11,7 @@
 // Wersjonowanie: bump CACHE_NAME nadal zalecany przy zmianie strategii (sw.js samo),
 // ale dla zwyklych bundle changes network-first dla `/` to obroni.
 
-const CACHE_NAME = 'sleeper-shell-v8';
+const CACHE_NAME = 'sleeper-shell-v9';
 const SHELL_URLS = ['/', '/manifest.json'];
 
 self.addEventListener('install', (event) => {
@@ -102,6 +102,35 @@ self.addEventListener('fetch', (event) => {
         .catch(() => {
           return new Response('', { status: 503, statusText: 'Service Unavailable' });
         });
+    }),
+  );
+});
+
+// Web Push: payload JSON { title, body } z edge function send-nap-push.
+self.addEventListener('push', (event) => {
+  if (!event.data) return;
+  let payload;
+  try {
+    payload = event.data.json();
+  } catch {
+    payload = { title: 'Sleeper', body: event.data.text() };
+  }
+  event.waitUntil(
+    self.registration.showNotification(payload.title || 'Sleeper', {
+      body: payload.body || '',
+      icon: '/icons/icon-192.png',
+      badge: '/icons/icon-192.png',
+    }),
+  );
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      const client = clientList.find((c) => 'focus' in c);
+      if (client) return client.focus();
+      return self.clients.openWindow('/');
     }),
   );
 });
