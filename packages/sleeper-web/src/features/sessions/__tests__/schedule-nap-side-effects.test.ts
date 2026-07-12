@@ -2,7 +2,20 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+// Do 2026-07-12 ten plik testowal no-op mock (push poza scope PWA). Feature
+// web-push wypelnil implementacje — testujemy delegacje do recomputeNapSchedule
+// i fail-safe (fire-and-forget). Spec:
+// docs/superpowers/specs/2026-07-12-web-push-notifications-design.md.
+
+const { recomputeMock } = vi.hoisted(() => ({
+  recomputeMock: vi.fn<(childId: string) => Promise<void>>(),
+}));
+
+vi.mock('../nap-schedule', () => ({
+  recomputeNapSchedule: (childId: string) => recomputeMock(childId),
+}));
 
 import {
   cancelNapNotificationSafe,
@@ -13,35 +26,40 @@ import {
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const sourcePath = path.resolve(__dirname, '../schedule-nap-side-effects.ts');
 
-describe('schedule-nap-side-effects (web no-op mock)', () => {
-  it('exports rescheduleNapNotification as resolved no-op', async () => {
-    await expect(
-      rescheduleNapNotification('child-id', new Date()),
-    ).resolves.toBeUndefined();
-    await expect(
-      rescheduleNapNotification('child-id', null),
-    ).resolves.toBeUndefined();
+describe('schedule-nap-side-effects (delegacja do recomputeNapSchedule)', () => {
+  beforeEach(() => {
+    recomputeMock.mockReset();
+    recomputeMock.mockResolvedValue(undefined);
   });
 
-  it('exports cancelNapNotificationSafe as resolved no-op', async () => {
-    await expect(cancelNapNotificationSafe('child-id')).resolves.toBeUndefined();
+  it('rescheduleNapNotification przelicza harmonogram dziecka', async () => {
+    await rescheduleNapNotification('child-1', new Date());
+    expect(recomputeMock).toHaveBeenCalledTimes(1);
+    expect(recomputeMock).toHaveBeenCalledWith('child-1');
   });
 
-  it('exports rescheduleFromLastEnded as resolved no-op', async () => {
-    await expect(rescheduleFromLastEnded('child-id')).resolves.toBeUndefined();
+  it('cancelNapNotificationSafe przelicza harmonogram dziecka', async () => {
+    await cancelNapNotificationSafe('child-2');
+    expect(recomputeMock).toHaveBeenCalledTimes(1);
+    expect(recomputeMock).toHaveBeenCalledWith('child-2');
   });
 
-  // Invariant: web build NIE moze importowac expo-notifications (native-only,
-  // poza scope PWA per plan techniczny "Granice scope'u").
+  it('rescheduleFromLastEnded przelicza harmonogram dziecka', async () => {
+    await rescheduleFromLastEnded('child-3');
+    expect(recomputeMock).toHaveBeenCalledTimes(1);
+    expect(recomputeMock).toHaveBeenCalledWith('child-3');
+  });
+
+  it('blad przeliczenia NIE propaguje (fire-and-forget z hooks.ts)', async () => {
+    recomputeMock.mockRejectedValue(new Error('network down'));
+    await expect(rescheduleNapNotification('child-1', null)).resolves.toBeUndefined();
+    await expect(cancelNapNotificationSafe('child-1')).resolves.toBeUndefined();
+    await expect(rescheduleFromLastEnded('child-1')).resolves.toBeUndefined();
+  });
+
+  // Invariant: web build NIE moze importowac expo-notifications (native-only).
   it('does NOT import expo-notifications', () => {
     const source = readFileSync(sourcePath, 'utf-8');
     expect(source).not.toContain('expo-notifications');
-  });
-
-  // Invariant: web build NIE importuje nawet @/lib/notifications. Mock jest
-  // celowo standalone — eliminuje calkowity graf zaleznosci notyfikacji.
-  it('does NOT import @/lib/notifications (standalone web mock)', () => {
-    const source = readFileSync(sourcePath, 'utf-8');
-    expect(source).not.toMatch(/from\s+['"]@\/lib\/notifications['"]/);
   });
 });

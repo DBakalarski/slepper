@@ -1,34 +1,35 @@
-// Web PWA — no-op mock dla schedule-nap-side-effects.
-//
-// Push/local notifications wykluczone w scope PWA (patrz
-// docs/plans/2026-06-05-001-feat-sleeper-web-pwa-plan.md sekcja "Granice scope'u").
-// Eksporty zachowują signatures sleeper-app żeby skopiowany `hooks.ts`
-// (useStartSession/useEndSession/useUpdateSession/useDeleteSession) resolve'ował
-// bez modyfikacji importów.
-//
-// Sygnatury (params + return types) MUSZA byc identyczne z
-// sleeper-app/src/features/sessions/schedule-nap-side-effects.ts. Jakakolwiek
-// niezgodnosc wyjdzie jako blad TS gdy hooks.ts jest kopiowany 1:1.
-//
-// CELOWO bez importow z @/lib/notifications — to-be-no-op-anyway, a brak
-// importu trzyma graf zaleznosci minimalny i ulatwia bundlerowi tree-shake.
+// Side-effects harmonogramu powiadomien push po mutacjach sesji.
+// Do 2026-07-12 no-op (push wykluczony ze scope PWA); wypelnione w ramach
+// feature/web-push-notifications — patrz spec
+// docs/superpowers/specs/2026-07-12-web-push-notifications-design.md.
+// Sygnatury bez zmian — hooks.ts (callsite'y start/end/update/delete) nietkniete.
+// Wszystkie trzy funkcje deleguja do jednego przeliczenia z bazy: to scisle
+// mocniejsza wersja kazdej z dawnych semantyk (cancel/reschedule/from-last-ended).
 
-// Schedule notyfikacja po zakonczeniu sesji LUB po update/delete ostatniej sesji.
-// Web: no-op, ignorujemy oba argumenty (są w sygnaturze dla parity z sleeper-app).
+import { recomputeNapSchedule } from './nap-schedule';
+
+async function recomputeSafe(childId: string): Promise<void> {
+  try {
+    await recomputeNapSchedule(childId);
+  } catch (err) {
+    // Fire-and-forget: harmonogram powiadomien nie moze wywalic mutacji sesji.
+    if (process.env.NODE_ENV !== 'production') {
+      console.warn('[nap-schedule] recompute failed', err);
+    }
+  }
+}
+
 export async function rescheduleNapNotification(
-  _childId: string,
+  childId: string,
   _lastSleepEndAt: Date | null,
 ): Promise<void> {
-  // no-op
+  await recomputeSafe(childId);
 }
 
-// Anuluj notyfikacje po starcie sesji. Web: no-op.
-export async function cancelNapNotificationSafe(_childId: string): Promise<void> {
-  // no-op
+export async function cancelNapNotificationSafe(childId: string): Promise<void> {
+  await recomputeSafe(childId);
 }
 
-// Po mutacji ktora mogla zmienic ktora sesja jest "ostatnia zakonczona" —
-// rescheduluj notyfikacje. Web: no-op.
-export async function rescheduleFromLastEnded(_childId: string): Promise<void> {
-  // no-op
+export async function rescheduleFromLastEnded(childId: string): Promise<void> {
+  await recomputeSafe(childId);
 }
