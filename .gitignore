@@ -10,6 +10,9 @@ node_modules/
 dist/
 coverage/
 
+# Supabase CLI cache (link ref) — root i per-package
+**/supabase/.temp/
+
 # Local env / secrets
 .env
 .env.local
