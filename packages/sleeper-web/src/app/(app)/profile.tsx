@@ -11,6 +11,8 @@ import { useAuth } from '@/features/auth/AuthProvider';
 import { useChildren, type Child } from '@/features/children/hooks';
 import { useActiveChild } from '@/features/children/useActiveChild';
 import { useCurrentFamily } from '@/features/family/hooks';
+import { NotificationsBottomSheet } from '@/features/notifications/NotificationsBottomSheet';
+import { usePushSettings } from '@/features/notifications/usePushSettings';
 import { ThemeModeBottomSheet } from '@/features/settings/ThemeModeBottomSheet';
 import { useEffectiveTheme } from '@/features/settings/ThemeProvider';
 import { useThemeStore } from '@/features/settings/useThemeStore';
@@ -53,6 +55,8 @@ export default function ProfileScreen() {
   const effectiveTheme = useEffectiveTheme();
   const themeMode = useThemeStore((s) => s.mode);
   const [themeSheetVisible, setThemeSheetVisible] = useState(false);
+  const [notifSheetVisible, setNotifSheetVisible] = useState(false);
+  const pushSettings = usePushSettings();
 
   const isDark = effectiveTheme === 'dark';
   const gearIconColor = isDark ? COLORS.cream : COLORS.navy;
@@ -108,10 +112,8 @@ export default function ProfileScreen() {
               iconColor={COLORS.orange}
               chevronColor={chevronColor}
               label="Przypomnienia"
-              value="Wlaczone"
-              onPress={() => {
-                // Placeholder — flow `expo-notifications` out of scope redesignu.
-              }}
+              value={pushSettings.isEnabled ? 'Wlaczone' : 'Wylaczone'}
+              onPress={() => setNotifSheetVisible(true)}
               isLast={false}
             />
             <ShortcutRow
@@ -131,6 +133,10 @@ export default function ProfileScreen() {
       <ThemeModeBottomSheet
         visible={themeSheetVisible}
         onClose={() => setThemeSheetVisible(false)}
+      />
+      <NotificationsBottomSheet
+        visible={notifSheetVisible}
+        onClose={() => setNotifSheetVisible(false)}
       />
     </SafeAreaView>
   );

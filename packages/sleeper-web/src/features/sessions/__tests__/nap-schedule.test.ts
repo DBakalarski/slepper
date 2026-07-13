@@ -1,5 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { computeNextSleepAt } from '../nap-schedule';
+
+// vi.mock jest hoistowany nad importy — mocki musza byc w vi.hoisted.
 const { recommendGallandMock, recommendKotkiMock } = vi.hoisted(() => ({
   recommendGallandMock: vi.fn(),
   recommendKotkiMock: vi.fn(),
@@ -8,8 +11,6 @@ const { recommendGallandMock, recommendKotkiMock } = vi.hoisted(() => ({
 vi.mock('sleeper-machine', () => ({ recommend: recommendGallandMock }));
 vi.mock('sleeper-machine-kotki', () => ({ recommendKotkiDwa: recommendKotkiMock }));
 vi.mock('@/lib/supabase', () => ({ supabase: {} }));
-
-import { computeNextSleepAt } from '../nap-schedule';
 
 const CHILD = {
   birth_date: '2025-11-01',

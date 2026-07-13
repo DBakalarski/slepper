@@ -9,6 +9,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 // i fail-safe (fire-and-forget). Spec:
 // docs/superpowers/specs/2026-07-12-web-push-notifications-design.md.
 
+import {
+  cancelNapNotificationSafe,
+  rescheduleFromLastEnded,
+  rescheduleNapNotification,
+} from '../schedule-nap-side-effects';
+
+// vi.mock jest hoistowany nad importy — mock musi byc w vi.hoisted.
 const { recomputeMock } = vi.hoisted(() => ({
   recomputeMock: vi.fn<(childId: string) => Promise<void>>(),
 }));
@@ -16,12 +23,6 @@ const { recomputeMock } = vi.hoisted(() => ({
 vi.mock('../nap-schedule', () => ({
   recomputeNapSchedule: (childId: string) => recomputeMock(childId),
 }));
-
-import {
-  cancelNapNotificationSafe,
-  rescheduleFromLastEnded,
-  rescheduleNapNotification,
-} from '../schedule-nap-side-effects';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const sourcePath = path.resolve(__dirname, '../schedule-nap-side-effects.ts');

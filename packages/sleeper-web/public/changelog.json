@@ -1,5 +1,14 @@
 [
   {
+    "v": 11,
+    "version": "0.11.0",
+    "date": "2026-07-13",
+    "items": [
+      "Powiadomienia push na telefon — aplikacja przypomni o zbliżającej się drzemce lub śnie nocnym, także gdy jest zamknięta (wymaga zainstalowanej aplikacji na ekranie głównym)",
+      "Nowe ustawienia w Profilu → Przypomnienia: włączanie powiadomień na tym urządzeniu i wybór, ile minut przed snem ma przyjść przypomnienie (5–30 min)"
+    ]
+  },
+  {
     "v": 10,
     "version": "0.10.0",
     "date": "2026-07-10",
