@@ -237,6 +237,13 @@ function GroupedHistoryList({ sessions, onPressSession }: GroupedHistoryListProp
   const now = useMemo(() => new Date(), []);
   const groups = useMemo(() => groupByDay(sessions, now), [sessions, now]);
 
+  // Gapy "aktywnosci" liczymy raz na CALEJ liscie (nie per dzien) — dzieki temu
+  // pierwsza drzemka dnia dostaje gap od konca snu nocnego, ktory zaczal sie
+  // poprzedniego wieczora (inna grupa dnia) a skonczyl tego poranka. Helper
+  // sam sortuje i pilnuje, ze prevEnd i nextStart sa tego samego dnia app tz,
+  // wiec przerwa w trackingu nie wygeneruje fikcyjnego wielogodzinnego gapu.
+  const gapMap = useMemo(() => computeGapsBetweenSessions(sessions), [sessions]);
+
   if (groups.length === 0) {
     return (
       <Card>
@@ -253,6 +260,7 @@ function GroupedHistoryList({ sessions, onPressSession }: GroupedHistoryListProp
         <DayGroupSection
           key={group.dayKey}
           group={group}
+          gapMap={gapMap}
           onPressSession={onPressSession}
         />
       ))}
@@ -262,24 +270,22 @@ function GroupedHistoryList({ sessions, onPressSession }: GroupedHistoryListProp
 
 interface DayGroupSectionProps {
   group: DayGroup;
+  // Gapy "aktywnosci" liczone globalnie w GroupedHistoryList (na calej liscie
+  // sesji), zeby pierwsza drzemka dnia dostala gap od snu nocnego z poprzedniej
+  // grupy dnia. Sekcja tylko odczytuje wartosc per sesja.
+  gapMap: Map<string, number>;
   onPressSession: (id: string) => void;
 }
 
-function DayGroupSection({ group, onPressSession }: DayGroupSectionProps) {
+function DayGroupSection({ group, gapMap, onPressSession }: DayGroupSectionProps) {
   // Sortuj malejaco wewnatrz dnia — najnowsza u gory (sen nocny), pierwsza
-  // drzemka na dole. Spojnie ze strona glowna ("Sesje dzisiaj"). Gapy
-  // "aktywnosci" licza sie poprawnie niezaleznie od kolejnosci wejscia
-  // (computeGapsBetweenSessions sortuje wewnetrznie), a gapPosition="below"
-  // renderuje je miedzy sasiednimi sesjami (wczesniejsza jest nizej).
+  // drzemka na dole. Spojnie ze strona glowna ("Sesje dzisiaj"). gapPosition="below"
+  // renderuje aktywnosc miedzy sasiednimi sesjami (wczesniejsza jest nizej).
   const orderedSessions = useMemo(() => {
     return [...group.sessions].sort((a, b) => {
       return new Date(b.start_at).getTime() - new Date(a.start_at).getTime();
     });
   }, [group.sessions]);
-
-  const gapMap = useMemo(() => {
-    return computeGapsBetweenSessions(orderedSessions);
-  }, [orderedSessions]);
 
   const sessionCount = orderedSessions.length;
 
