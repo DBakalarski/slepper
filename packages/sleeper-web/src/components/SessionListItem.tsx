@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { ChevronRight, Moon, StickyNote, Sun } from '@/lib/icons';
+import { ChevronRight, FileText, Moon, Sun } from '@/lib/icons';
 import { Pressable, Text, View } from 'react-native';
 
 import { SessionNotePopup } from '@/components/SessionNotePopup';
@@ -142,7 +142,7 @@ export function SessionListItem({
           hitSlop={8}
           style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
           className="ml-2 max-w-[40%] flex-row items-center gap-1">
-          <StickyNote size={14} color={chevronColor} />
+          <FileText size={16} color={chevronColor} />
           <Text
             numberOfLines={1}
             ellipsizeMode="tail"

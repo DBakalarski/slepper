@@ -24,8 +24,8 @@ describe('SessionListItem: wskaznik notatki', () => {
     expect(LIST_ITEM_SRC).toMatch(/hasNote \?/);
   });
 
-  it('renderuje ikone StickyNote + skrocony tekst notatki', () => {
-    expect(LIST_ITEM_SRC).toMatch(/<StickyNote/);
+  it('renderuje ikone FileText + skrocony tekst notatki', () => {
+    expect(LIST_ITEM_SRC).toMatch(/<FileText/);
     expect(LIST_ITEM_SRC).toMatch(/numberOfLines=\{1\}/);
     expect(LIST_ITEM_SRC).toMatch(/ellipsizeMode="tail"/);
   });
