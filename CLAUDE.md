@@ -191,6 +191,17 @@ Dlaczego ta zmiana, jakie odchylenia od planu.
 
 Pelny opis: `.claude/docs/dev-pipeline.md`. Skille bezargumentowe wyciagaja kontekst z sesji.
 
+## Superpowers — dobor modelu
+
+Przy `subagent-driven-development` / `executing-plans` / dispatchu subagentow Superpowers:
+
+- Planowanie, brainstorming, koordynacja (kontroler) → zostaja na modelu sesji (**Opus**).
+- Implementery i fixery (kodowanie) → ZAWSZE dispatch z `model: sonnet`.
+- Task-reviewery → `model: sonnet`.
+- Final whole-branch review → `model: opus` (najzdolniejszy, zgodnie z sekcja Model Selection skilla).
+
+Pole `model:` w prompt-template jest wymagane przy kazdym dispatchu — ta regula ustala jego wartosc zamiast zostawiac "wg uznania". Dla `executing-plans` (osobna sesja): sesja planujaca na Opusie, osobna sesja wykonawcza na Sonnecie (`/model sonnet`).
+
 ## Czego NIE robic
 
 - Nie podnosic SDK z 54 bez explicit approval.
