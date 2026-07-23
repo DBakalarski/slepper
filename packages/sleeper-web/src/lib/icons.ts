@@ -23,6 +23,7 @@ export { default as Moon } from 'lucide-react/dist/esm/icons/moon';
 export { default as Plus } from 'lucide-react/dist/esm/icons/plus';
 export { default as Settings } from 'lucide-react/dist/esm/icons/settings';
 export { default as Smartphone } from 'lucide-react/dist/esm/icons/smartphone';
+export { default as StickyNote } from 'lucide-react/dist/esm/icons/sticky-note';
 export { default as Sun } from 'lucide-react/dist/esm/icons/sun';
 export { default as Upload } from 'lucide-react/dist/esm/icons/upload';
 export { default as User } from 'lucide-react/dist/esm/icons/user';

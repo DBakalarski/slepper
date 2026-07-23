@@ -1,7 +1,9 @@
 import { useRouter } from 'expo-router';
-import { ChevronRight, Moon, Sun } from '@/lib/icons';
+import { useState } from 'react';
+import { ChevronRight, Moon, StickyNote, Sun } from '@/lib/icons';
 import { Pressable, Text, View } from 'react-native';
 
+import { SessionNotePopup } from '@/components/SessionNotePopup';
 import type { SleepSession } from '@/features/sessions/hooks';
 import { useEffectiveTheme } from '@/features/settings/ThemeProvider';
 import { COLORS } from '@/lib/colors';
@@ -73,6 +75,10 @@ export function SessionListItem({
   const rangeLabel = `${formatTime(start)} — ${end ? formatTime(end) : 'trwa'}`;
   const subtitleSuffix = isActive ? 'trwa' : formatDuration(durationMs);
 
+  const [isNoteVisible, setIsNoteVisible] = useState(false);
+  const noteText = session.notes?.trim() ?? '';
+  const hasNote = noteText.length > 0;
+
   const handlePress = () => {
     if (onPress) {
       onPress();
@@ -82,11 +88,16 @@ export function SessionListItem({
     router.push({ pathname: '/session/[id]', params: { id: session.id } });
   };
 
-  const isPressable = Boolean(onPress) || !disableNavigation;
+  const canNavigate = Boolean(onPress) || !disableNavigation;
   const showGap = typeof gapBeforeMs === 'number' && gapBeforeMs > 0;
 
-  const row = (
-    <View className="flex-row items-center gap-3 py-3">
+  // VoiceOver/TalkBack: dolacz kontekst gapu "po aktywnosci Xg Ym" jesli widoczny
+  // nad sesja (P3 a11y batch Fazy 6).
+  const gapSuffix = showGap ? `, po aktywnosci ${formatDuration(gapBeforeMs)}` : '';
+  const rowLabel = `Otworz sesje ${TYPE_LABELS[session.type]} ${rangeLabel}${gapSuffix}`;
+
+  const chipAndBody = (
+    <>
       <View
         className={`h-11 w-11 items-center justify-center rounded-pill ${chipClassName}`}>
         <IconComponent size={20} color={iconColor} />
@@ -102,7 +113,58 @@ export function SessionListItem({
           </Text>
         </View>
       </View>
-      <ChevronRight size={20} color={chevronColor} />
+    </>
+  );
+
+  // Glowna tresc wiersza (chip + zakres) nawiguje do sesji. Notatka to OSOBNY tap
+  // target (otwiera popup, NIE nawiguje) — dlatego nie zagniezdzamy Pressable w
+  // Pressable (na RN web klikniecia babelkuja). Chevron nawiguje jak glowna tresc.
+  const row = (
+    <View className="flex-row items-center py-3">
+      {canNavigate ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={rowLabel}
+          onPress={handlePress}
+          style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
+          className="flex-1 flex-row items-center gap-3">
+          {chipAndBody}
+        </Pressable>
+      ) : (
+        <View className="flex-1 flex-row items-center gap-3">{chipAndBody}</View>
+      )}
+
+      {hasNote ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Pokaż notatkę"
+          onPress={() => setIsNoteVisible(true)}
+          hitSlop={8}
+          style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
+          className="ml-2 max-w-[40%] flex-row items-center gap-1">
+          <StickyNote size={14} color={chevronColor} />
+          <Text
+            numberOfLines={1}
+            ellipsizeMode="tail"
+            className="text-xs text-text-muted dark:text-cream/70">
+            {noteText}
+          </Text>
+        </Pressable>
+      ) : null}
+
+      {canNavigate ? (
+        <Pressable
+          accessible={false}
+          onPress={handlePress}
+          hitSlop={8}
+          className="pl-2">
+          <ChevronRight size={20} color={chevronColor} />
+        </Pressable>
+      ) : (
+        <View className="pl-2">
+          <ChevronRight size={20} color={chevronColor} />
+        </View>
+      )}
     </View>
   );
 
@@ -115,26 +177,19 @@ export function SessionListItem({
     </View>
   ) : null;
 
-  const content = (
+  return (
     <View>
       {gapPosition === 'above' ? gapNode : null}
       {row}
       {gapPosition === 'below' ? gapNode : null}
+      {hasNote ? (
+        <SessionNotePopup
+          visible={isNoteVisible}
+          onClose={() => setIsNoteVisible(false)}
+          note={noteText}
+          headerLabel={`${TYPE_LABELS[session.type]} · ${rangeLabel}`}
+        />
+      ) : null}
     </View>
-  );
-
-  if (!isPressable) return content;
-
-  // VoiceOver/TalkBack: dolacz kontekst gapu "po aktywnosci Xg Ym" jesli widoczny
-  // nad sesja (P3 a11y batch Fazy 6).
-  const gapSuffix = showGap ? `, po aktywnosci ${formatDuration(gapBeforeMs)}` : '';
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={`Otworz sesje ${TYPE_LABELS[session.type]} ${rangeLabel}${gapSuffix}`}
-      onPress={handlePress}
-      style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}>
-      {content}
-    </Pressable>
   );
 }
